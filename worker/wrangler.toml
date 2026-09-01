@@ -1,0 +1,7 @@
+name = "evaz-property-index-api"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Set BACKEND_URL in the Cloudflare dashboard as a secret/environment variable.
+# Example: https://amlakevaz.onrender.com
