@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, APIRouter, Depends, HTTPException
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import pool, open_pool, close_pool
 from .auth import require_roles, verify_password, create_token
+from .excel_import import parse_workbook, commit_workbook
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -100,5 +101,35 @@ def create_transaction(payload: TransactionIn, user=Depends(require_roles("owner
 
 @admin.get("/me")
 def admin_me(user=Depends(require_roles("owner","admin","data_entry","analyst","editor","viewer"))): return user
+
+@admin.post("/import/preview")
+async def import_preview(file: UploadFile = File(...), user=Depends(require_roles("owner","admin","data_entry","analyst"))):
+    if not file.filename or not file.filename.lower().endswith((".xlsx", ".xlsm")):
+        raise HTTPException(400, "فقط فایل Excel با فرمت xlsx یا xlsm پذیرفته می‌شود")
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(413, "حجم فایل نباید بیشتر از ۱۰ مگابایت باشد")
+    try:
+        report = parse_workbook(content)
+    except Exception as exc:
+        raise HTTPException(400, "فایل Excel قابل خواندن نیست") from exc
+    return {"filename": file.filename, **report}
+
+@admin.post("/import/commit")
+async def import_commit(file: UploadFile = File(...), user=Depends(require_roles("owner","admin","data_entry"))):
+    if not file.filename or not file.filename.lower().endswith((".xlsx", ".xlsm")):
+        raise HTTPException(400, "فقط فایل Excel با فرمت xlsx یا xlsm پذیرفته می‌شود")
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(413, "حجم فایل نباید بیشتر از ۱۰ مگابایت باشد")
+    try:
+        with pool.connection() as conn:
+            result = commit_workbook(content, conn, user.get("sub"))
+        return {"filename": file.filename, **result}
+    except ValueError as exc:
+        detail = exc.args[0] if exc.args else "فایل دارای خطا است"
+        raise HTTPException(422, detail if isinstance(detail, (dict, list)) else str(detail)) from exc
+    except Exception as exc:
+        raise HTTPException(400, "ثبت فایل انجام نشد؛ هیچ ردیفی ذخیره نشده است") from exc
 
 app.include_router(public); app.include_router(admin)
