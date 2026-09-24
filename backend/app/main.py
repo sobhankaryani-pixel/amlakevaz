@@ -1,11 +1,10 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import pool, open_pool, close_pool
 from .auth import require_roles, verify_password, create_token
-from .excel_import import parse_workbook, commit_workbook
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -102,34 +101,155 @@ def create_transaction(payload: TransactionIn, user=Depends(require_roles("owner
 @admin.get("/me")
 def admin_me(user=Depends(require_roles("owner","admin","data_entry","analyst","editor","viewer"))): return user
 
-@admin.post("/import/preview")
-async def import_preview(file: UploadFile = File(...), user=Depends(require_roles("owner","admin","data_entry","analyst"))):
-    if not file.filename or not file.filename.lower().endswith((".xlsx", ".xlsm")):
-        raise HTTPException(400, "فقط فایل Excel با فرمت xlsx یا xlsm پذیرفته می‌شود")
-    content = await file.read()
-    if len(content) > 10 * 1024 * 1024:
-        raise HTTPException(413, "حجم فایل نباید بیشتر از ۱۰ مگابایت باشد")
-    try:
-        report = parse_workbook(content)
-    except Exception as exc:
-        raise HTTPException(400, "فایل Excel قابل خواندن نیست") from exc
-    return {"filename": file.filename, **report}
+class DirectPropertyIn(BaseModel):
+    public_code: str = Field(min_length=2, max_length=80)
+    property_type_id: str
+    region_id: str
+    neighborhood: str | None = None
+    address: str | None = None
+    area_m2: float | None = Field(default=None, gt=0)
+    building_area_m2: float | None = Field(default=None, gt=0)
+    commercial_area_m2: float | None = Field(default=None, gt=0)
+    usage_type: str | None = None
+    status: str
+    asking_price_toman: int | None = Field(default=None, gt=0)
+    registration_month: str | None = None
+    notes: str | None = None
+    street_width: float | None = Field(default=None, gt=0)
+    street_frontage_m: float | None = Field(default=None, gt=0)
+    mehr_block: str | None = None
+    mehr_floor: int | None = None
+    mehr_unit: str | None = None
+    national_phase: str | None = None
+    national_stage: str | None = None
+    national_notes: str | None = None
+    build_year: int | None = None
+    bedrooms: int | None = Field(default=None, ge=0)
+    sale_date: str | None = None
+    sale_price_toman: int | None = Field(default=None, gt=0)
+    sale_notes: str | None = None
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
 
-@admin.post("/import/commit")
-async def import_commit(file: UploadFile = File(...), user=Depends(require_roles("owner","admin","data_entry"))):
-    if not file.filename or not file.filename.lower().endswith((".xlsx", ".xlsm")):
-        raise HTTPException(400, "فقط فایل Excel با فرمت xlsx یا xlsm پذیرفته می‌شود")
-    content = await file.read()
-    if len(content) > 10 * 1024 * 1024:
-        raise HTTPException(413, "حجم فایل نباید بیشتر از ۱۰ مگابایت باشد")
+@public.get("/map-listings")
+def map_listings():
+    with pool.connection() as conn:
+        rows = conn.execute("""SELECT p.public_code, t.name AS property_type, t.category,
+          r.name AS region, p.area_m2, p.building_area_m2,
+          p.latitude, p.longitude, l.asking_price_toman
+          FROM app.listings l
+          JOIN app.market_records m ON m.id=l.market_record_id
+          JOIN app.properties p ON p.id=m.property_id
+          JOIN app.property_types t ON t.id=p.property_type_id
+          LEFT JOIN app.regions r ON r.id=p.region_id
+          WHERE l.is_public=true AND l.status='published'
+          AND p.latitude IS NOT NULL AND p.longitude IS NOT NULL
+          ORDER BY l.published_at DESC LIMIT 1000""").fetchall()
+    return {"items":[dict(row) for row in rows]}
+
+@admin.post("/properties/direct")
+def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles("owner","admin","data_entry"))):
+    if (payload.latitude is None) != (payload.longitude is None):
+        raise HTTPException(422, "عرض و طول جغرافیایی باید با هم وارد شوند")
+    if payload.status not in ("آگهی فروش", "فروخته شده", "لغو شده"):
+        raise HTTPException(422, "وضعیت ملک معتبر نیست")
+    if payload.status == "آگهی فروش" and not payload.asking_price_toman:
+        raise HTTPException(422, "قیمت پیشنهادی برای آگهی لازم است")
+    if payload.status == "فروخته شده" and (not payload.sale_date or not payload.sale_price_toman):
+        raise HTTPException(422, "تاریخ و قیمت معامله لازم است")
     try:
         with pool.connection() as conn:
-            result = commit_workbook(content, conn, user.get("sub"))
-        return {"filename": file.filename, **result}
-    except ValueError as exc:
-        detail = exc.args[0] if exc.args else "فایل دارای خطا است"
-        raise HTTPException(422, detail if isinstance(detail, (dict, list)) else str(detail)) from exc
+            with conn.transaction():
+                kind = conn.execute("SELECT id FROM app.property_types WHERE id=%s", (payload.property_type_id,)).fetchone()
+                region = conn.execute("SELECT id,name FROM app.regions WHERE id=%s", (payload.region_id,)).fetchone()
+                if not kind or not region:
+                    raise HTTPException(422, "نوع ملک یا منطقه معتبر نیست")
+                row = conn.execute("""INSERT INTO app.properties
+                  (public_code,property_type_id,region_id,general_area,private_address,area_m2,
+                   building_area_m2,commercial_area_m2,usage_type,status,public_notes,
+                   street_width,street_frontage_m,mehr_block,floor,mehr_unit,national_phase,
+                   national_stage,national_notes,build_year,bedrooms,registration_month,latitude,longitude)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                   RETURNING id,public_code""",
+                  (payload.public_code.strip(),payload.property_type_id,payload.region_id,
+                   payload.neighborhood,payload.address,payload.area_m2,payload.building_area_m2,
+                   payload.commercial_area_m2,payload.usage_type,payload.status,payload.notes,
+                   payload.street_width,payload.street_frontage_m,payload.mehr_block,payload.mehr_floor,
+                   payload.mehr_unit,payload.national_phase,payload.national_stage,payload.national_notes,
+                   payload.build_year,payload.bedrooms,payload.registration_month,payload.latitude,payload.longitude)).fetchone()
+                if payload.status == "آگهی فروش":
+                    record = conn.execute("""INSERT INTO app.market_records
+                      (property_id,record_month,property_type_id,region_id,region_name_snapshot,status,is_public)
+                      VALUES (%s,CURRENT_DATE,%s,%s,%s,'verified',true) RETURNING id""",
+                      (row['id'],payload.property_type_id,payload.region_id,region['name'])).fetchone()
+                    conn.execute("""INSERT INTO app.listings(market_record_id,asking_price_toman,status,is_public,published_at)
+                      VALUES (%s,%s,'published',true,now())""",(record['id'],payload.asking_price_toman))
+                elif payload.status == "فروخته شده":
+                    conn.execute("INSERT INTO app.property_sales(property_id,sale_date,sale_price_toman,notes) VALUES (%s,%s,%s,%s)",
+                                 (row['id'],payload.sale_date,payload.sale_price_toman,payload.sale_notes))
+                conn.execute("INSERT INTO app.audit_logs(user_id,action,entity_type,entity_id) VALUES (%s,'create','property',%s)",
+                             (user['sub'],row['id']))
+        return {"id":str(row['id']),"public_code":row['public_code'],"status":payload.status}
+    except HTTPException:
+        raise
     except Exception as exc:
-        raise HTTPException(400, "ثبت فایل انجام نشد؛ هیچ ردیفی ذخیره نشده است") from exc
+        if getattr(exc, 'sqlstate', None) == '23505':
+            raise HTTPException(409, "این کد ملک قبلاً ثبت شده است") from exc
+        raise HTTPException(400, "ثبت ملک انجام نشد؛ اطلاعات را بررسی کنید") from exc
+
+class PriceRangeIn(BaseModel):
+    region_id: str
+    property_type_id: str
+    period: str = Field(min_length=5, max_length=20)
+    low_price_toman: int = Field(gt=0)
+    high_price_toman: int = Field(gt=0)
+
+class PropertyLocationIn(BaseModel):
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+
+@admin.put("/properties/{public_code}/location")
+def update_property_location(public_code: str, payload: PropertyLocationIn,
+                             user=Depends(require_roles("owner","admin","data_entry"))):
+    if (payload.latitude is None) != (payload.longitude is None):
+        raise HTTPException(422, "عرض و طول جغرافیایی باید با هم وارد شوند")
+    with pool.connection() as conn:
+        with conn.transaction():
+            row = conn.execute("""UPDATE app.properties SET latitude=%s, longitude=%s
+                                  WHERE public_code=%s RETURNING id,public_code""",
+                               (payload.latitude,payload.longitude,public_code)).fetchone()
+            if not row:
+                raise HTTPException(404,"ملک پیدا نشد")
+            conn.execute("""INSERT INTO app.audit_logs(user_id,action,entity_type,entity_id)
+                            VALUES (%s,'update_location','property',%s)""",
+                         (user['sub'],row['id']))
+    return {"public_code":row['public_code'],"latitude":payload.latitude,"longitude":payload.longitude}
+
+@admin.post("/price-ranges")
+def save_price_range(payload: PriceRangeIn, user=Depends(require_roles("owner","admin"))):
+    if payload.high_price_toman < payload.low_price_toman:
+        raise HTTPException(422,"حد بالا باید از حد پایین بیشتر باشد")
+    with pool.connection() as conn:
+        row=conn.execute("""INSERT INTO app.manual_price_ranges(region_id,property_type_id,period,low_price_toman,high_price_toman)
+           VALUES (%s,%s,%s,%s,%s) ON CONFLICT(region_id,property_type_id,period) DO UPDATE SET
+           low_price_toman=EXCLUDED.low_price_toman,high_price_toman=EXCLUDED.high_price_toman RETURNING id""",
+           (payload.region_id,payload.property_type_id,payload.period,payload.low_price_toman,payload.high_price_toman)).fetchone()
+        conn.commit()
+    return {"id":str(row['id'])}
+
+@admin.get("/properties/direct")
+def list_direct_properties(user=Depends(require_roles("owner","admin","data_entry","analyst","editor","viewer"))):
+    with pool.connection() as conn:
+        rows=conn.execute("""SELECT p.public_code,p.status,p.registration_month,p.area_m2,p.private_address,
+          p.latitude,p.longitude,
+          t.name AS property_type,r.name AS region,l.asking_price_toman,s.sale_date,s.sale_price_toman
+          FROM app.properties p JOIN app.property_types t ON t.id=p.property_type_id
+          LEFT JOIN app.regions r ON r.id=p.region_id
+          LEFT JOIN app.market_records m ON m.property_id=p.id
+          LEFT JOIN app.listings l ON l.market_record_id=m.id
+          LEFT JOIN app.property_sales s ON s.property_id=p.id
+          ORDER BY p.created_at DESC LIMIT 100""").fetchall()
+    return {"items":[dict(row) for row in rows]}
+
 
 app.include_router(public); app.include_router(admin)

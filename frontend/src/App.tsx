@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
-const nav=[['home','خانه'],['index','شاخص قیمت'],['areas','مناطق'],['transactions','معاملات'],['listings','آگهی‌ها'],['reports','گزارش‌ها']];
+import PropertyMap from "./PropertyMap";
+const nav=[['home','خانه'],['index','شاخص قیمت'],['areas','مناطق'],['transactions','معاملات'],['listings','آگهی‌ها'],['map','املاک روی نقشه'],['reports','گزارش‌ها']];
 const areas=['همه مناطق','مرکز شهر','بردسپی','پشت سیتی‌سنتر','شهرک فردوس','کنارسبز','شهرک فرصتی','باستانه','محله کامیاب','پشت ایران خودرو'];
 const listings=[['آپارتمان','آپارتمان نورگیر و خوش‌نقشه','مرکز شهر','۱۲۵ متر','۵.۲ میلیارد'],['زمین مسکونی','زمین با دسترسی عالی','شهرک فردوس','۲۸۰ متر','۴.۷ میلیارد'],['خانه','خانه حیاط‌دار بازسازی‌شده','بردسپی','۱۹۰ متر','۶.۴ میلیارد']];
 const tx=[['۲۳ مرداد ۱۴۰۵','مرکز شهر','خانه','۵.۲ میلیارد','۴۰ میلیون / متر'],['۱۹ مرداد ۱۴۰۵','کنارسبز','زمین','۳.۸ میلیارد','۱۳.۵ میلیون / متر'],['۰۸ مرداد ۱۴۰۵','شهرک فردوس','آپارتمان','۴.۱ میلیارد','۳۲ میلیون / متر']];
@@ -31,7 +32,7 @@ export default function Home(){const [page,setPage]=useState('home');const [area
 <small>شاخص املاک اوز</small>
 </div>
 </a>
-<nav>{nav.slice(0,4).map(n=>
+<nav>{nav.filter(n=>['home','index','areas','listings','map'].includes(n[0])).map(n=>
 <button className={page===n[0]?'sel':''} onClick={()=>setPage(n[0])} key={n[0]}>{n[1]}</button>)}</nav>
 <div className="actions">
 <a className="social-icon" href="https://www.instagram.com/melkekhodmoonii/" target="_blank" aria-label="اینستاگرام">
@@ -46,7 +47,7 @@ export default function Home(){const [page,setPage]=useState('home');const [area
 </header>
 <div className="mobile-nav">{nav.map(n=>
 <button className={page===n[0]?'sel':''} onClick={()=>setPage(n[0])} key={n[0]}>
-<b>{n[0]==='home'?'⌂':n[0]==='index'?'⌁':n[0]==='areas'?'⌖':n[0]==='transactions'?'▣':n[0]==='listings'?'▤':'▥'}</b>{n[1]}</button>)}</div>
+<b>{n[0]==='home'?'⌂':n[0]==='index'?'⌁':n[0]==='areas'?'⌖':n[0]==='transactions'?'▣':n[0]==='listings'?'▤':n[0]==='map'?'⌖':'▥'}</b>{n[1]}</button>)}</div>
 {page==='home'?<>
 <section className="hero">
 <span className="eyebrow">● گزارش زنده بازار اوز · مرداد ۱۴۰۵</span>
@@ -186,7 +187,7 @@ export default function Home(){const [page,setPage]=useState('home');const [area
 </div>
 <a className="gold" href="#lead">ارزیابی دقیق و مشاوره ←</a>
 </section>
-</>:<section className="inner section">
+</>:page==='map'?<PropertyMap/>:<section className="inner section">
 <span>شاخص املاک اوز</span>
 <h1>{title}</h1>
 <p>این بخش در Preview با داده‌های نمونه نمایش داده می‌شود و در نسخه نهایی از نتایج تأییدشده سیستم تغذیه خواهد شد.</p>{page==='index'&&<>
