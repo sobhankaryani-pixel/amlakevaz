@@ -71,9 +71,10 @@ def public_price_series(source: str = "manual", region: str = "all"):
                  WHERE region_key=%s ORDER BY period""", (region,)).fetchall()
             series = {s: [] for s in SEGMENTS}
             for r in rows:
-                series[r['segment']].append({'period': r['period'], 'value_toman': r['value_toman'], 'count': None})
+                if r['segment'] in series:
+                    series[r['segment']].append({'period': r['period'], 'value_toman': r['value_toman'], 'count': None})
         else:
-            rows = conn.execute("""SELECT t.code,p.usage_type,p.house_condition,p.area_m2,p.building_area_m2,
+            rows = conn.execute("""SELECT t.code,p.usage_type,p.house_condition,p.mehr_level,p.area_m2,p.building_area_m2,
                     r.slug AS region_key,s.sale_date,s.sale_price_toman
                     FROM app.property_sales s JOIN app.properties p ON p.id=s.property_id
                     JOIN app.property_types t ON t.id=p.property_type_id
@@ -278,6 +279,8 @@ def sell_property(public_code: str, payload: SaleIn, user=Depends(require_roles(
 def save_estimate(payload: EstimateIn, user=Depends(require_roles('owner','admin'))):
     if payload.segment not in SEGMENTS or payload.segment.startswith('land_') and payload.region_key == 'all':
         raise HTTPException(422, 'گروه قیمت یا منطقه معتبر نیست')
+    if not payload.segment.startswith('land_') and payload.region_key != 'all':
+        raise HTTPException(422, 'برای زیربنا و مسکن مهر، منطقه باید کل اوز باشد')
     with pool.connection() as conn:
         if payload.region_key != 'all' and not conn.execute("SELECT 1 FROM app.regions WHERE slug=%s AND LEFT(slug, 2) = 'R-'", (payload.region_key,)).fetchone():
             raise HTTPException(422, 'منطقه معتبر نیست')
