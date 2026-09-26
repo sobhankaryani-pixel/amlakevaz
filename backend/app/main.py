@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import json
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
@@ -236,6 +237,89 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
             raise HTTPException(409, "این کد ملک قبلاً ثبت شده است") from exc
         raise HTTPException(400, "ثبت ملک انجام نشد؛ اطلاعات را بررسی کنید") from exc
 
+@admin.put('/properties/{public_code}/direct')
+def update_direct_property(public_code: str, payload: DirectPropertyIn,
+                           user=Depends(require_roles('owner','admin','data_entry'))):
+    if payload.public_code != public_code:
+        raise HTTPException(422, 'کد ملک را نمی‌توان تغییر داد')
+    if payload.status != 'آگهی فروش' or not payload.asking_price_toman:
+        raise HTTPException(422, 'قیمت پیشنهادی آگهی معتبر نیست')
+    if (payload.latitude is None) != (payload.longitude is None):
+        raise HTTPException(422, 'عرض و طول جغرافیایی باید با هم وارد شوند')
+    if payload.mehr_section and payload.mehr_section not in ('محلی','فرهنگیان'):
+        raise HTTPException(422, 'بخش مسکن مهر معتبر نیست')
+    if payload.mehr_level and payload.mehr_level not in ('بالا','پایین'):
+        raise HTTPException(422, 'طبقهٔ مسکن مهر معتبر نیست')
+    if payload.house_condition and payload.house_condition not in ('نوساز','کلنگی'):
+        raise HTTPException(422, 'وضعیت ساختمان معتبر نیست')
+    with pool.connection() as conn:
+        with conn.transaction():
+            row = conn.execute('SELECT id,status FROM app.properties WHERE public_code=%s FOR UPDATE', (public_code,)).fetchone()
+            if not row:
+                raise HTTPException(404, 'ملک پیدا نشد')
+            if row['status'] not in ('آگهی فروش','غیرفعال'):
+                raise HTTPException(409, 'مشخصات معاملهٔ ثبت‌شده از این بخش قابل ویرایش نیست')
+            kind = conn.execute('SELECT id FROM app.property_types WHERE id=%s', (payload.property_type_id,)).fetchone()
+            region = conn.execute('SELECT id,name FROM app.regions WHERE id=%s', (payload.region_id,)).fetchone()
+            if not kind or not region:
+                raise HTTPException(422, 'نوع ملک یا منطقه معتبر نیست')
+            listing = conn.execute('''SELECT l.id,l.asking_price_toman FROM app.listings l
+                JOIN app.market_records m ON m.id=l.market_record_id
+                WHERE m.property_id=%s ORDER BY l.published_at DESC NULLS LAST LIMIT 1 FOR UPDATE OF l''', (row['id'],)).fetchone()
+            if not listing:
+                raise HTTPException(409, 'آگهی این ملک پیدا نشد')
+            before = {'status':row['status'],'asking_price_toman':listing['asking_price_toman']}
+            conn.execute('''UPDATE app.properties SET property_type_id=%s,region_id=%s,general_area=%s,
+                private_address=%s,area_m2=%s,building_area_m2=%s,commercial_area_m2=%s,usage_type=%s,
+                public_notes=%s,street_width=%s,street_frontage_m=%s,mehr_block=%s,floor=%s,mehr_unit=%s,
+                national_phase=%s,national_stage=%s,national_notes=%s,build_year=%s,bedrooms=%s,
+                registration_month=%s,latitude=%s,longitude=%s,land_length_m=%s,land_width_m=%s,
+                mehr_section=%s,mehr_level=%s,house_condition=%s,floor_count=%s WHERE id=%s''',
+                (payload.property_type_id,payload.region_id,payload.neighborhood,payload.address,payload.area_m2,
+                 payload.building_area_m2,payload.commercial_area_m2,payload.usage_type,payload.notes,
+                 payload.street_width,payload.street_frontage_m,payload.mehr_block,payload.mehr_floor,
+                 payload.mehr_unit,payload.national_phase,payload.national_stage,payload.national_notes,
+                 payload.build_year,payload.bedrooms,payload.registration_month,payload.latitude,payload.longitude,
+                 payload.land_length_m,payload.land_width_m,payload.mehr_section,payload.mehr_level,
+                 payload.house_condition,payload.floor_count,row['id']))
+            conn.execute('''UPDATE app.market_records SET property_type_id=%s,region_id=%s,region_name_snapshot=%s
+                WHERE property_id=%s''', (payload.property_type_id,payload.region_id,region['name'],row['id']))
+            if listing['asking_price_toman'] != payload.asking_price_toman:
+                conn.execute('''INSERT INTO app.listing_price_history
+                  (listing_id,old_price_toman,new_price_toman,changed_by,reason)
+                  VALUES (%s,%s,%s,%s,%s)''',
+                  (listing['id'],listing['asking_price_toman'],payload.asking_price_toman,user['sub'],'ویرایش آگهی'))
+                conn.execute('UPDATE app.listings SET asking_price_toman=%s WHERE id=%s',
+                             (payload.asking_price_toman,listing['id']))
+            conn.execute('''INSERT INTO app.audit_logs(user_id,action,entity_type,entity_id,before_data)
+                VALUES (%s,'update','property',%s,%s)''',(user['sub'],row['id'],json.dumps(before)))
+    return {'public_code':public_code,'status':row['status']}
+
+@admin.put('/properties/{public_code}/visibility')
+def set_property_visibility(public_code: str, active: bool,
+                            user=Depends(require_roles('owner','admin','data_entry'))):
+    with pool.connection() as conn:
+        with conn.transaction():
+            row = conn.execute('SELECT id,status FROM app.properties WHERE public_code=%s FOR UPDATE', (public_code,)).fetchone()
+            if not row:
+                raise HTTPException(404, 'ملک پیدا نشد')
+            if row['status'] not in ('آگهی فروش','غیرفعال'):
+                raise HTTPException(409, 'آگهی ملک فروخته‌شده قابل تغییر نیست')
+            listing = conn.execute('''SELECT l.id FROM app.listings l JOIN app.market_records m
+                ON m.id=l.market_record_id WHERE m.property_id=%s
+                ORDER BY l.published_at DESC NULLS LAST LIMIT 1 FOR UPDATE OF l''', (row['id'],)).fetchone()
+            if not listing:
+                raise HTTPException(409, 'آگهی ملک پیدا نشد')
+            new_status = 'آگهی فروش' if active else 'غیرفعال'
+            conn.execute('UPDATE app.properties SET status=%s WHERE id=%s',(new_status,row['id']))
+            conn.execute('''UPDATE app.listings SET status=%s,is_public=%s,
+                closed_at=CASE WHEN %s THEN NULL ELSE now() END,
+                published_at=CASE WHEN %s THEN now() ELSE published_at END WHERE id=%s''',
+                ('published' if active else 'closed',active,active,active,listing['id']))
+            conn.execute('''INSERT INTO app.audit_logs(user_id,action,entity_type,entity_id)
+                VALUES (%s,%s,'property',%s)''',(user['sub'],'reactivate' if active else 'deactivate',row['id']))
+    return {'public_code':public_code,'status':new_status}
+
 class PriceRangeIn(BaseModel):
     region_id: str
     property_type_id: str
@@ -336,9 +420,14 @@ def save_price_range(payload: PriceRangeIn, user=Depends(require_roles("owner","
 @admin.get("/properties/direct")
 def list_direct_properties(user=Depends(require_roles("owner","admin","data_entry","analyst","editor","viewer"))):
     with pool.connection() as conn:
-        rows=conn.execute("""SELECT p.public_code,p.status,p.registration_month,p.area_m2,p.private_address,
-          p.latitude,p.longitude,
-          t.name AS property_type,r.name AS region,l.asking_price_toman,s.sale_date,s.sale_price_toman
+        rows=conn.execute("""SELECT p.public_code,p.property_type_id,p.region_id,p.status,p.registration_month,
+          p.area_m2,p.building_area_m2,p.commercial_area_m2,p.usage_type,p.general_area AS neighborhood,
+          p.private_address AS address,p.public_notes AS notes,p.street_width,p.street_frontage_m,
+          p.mehr_block,p.floor AS mehr_floor,p.mehr_unit,p.national_phase,p.national_stage,
+          p.national_notes,p.build_year,p.bedrooms,p.land_length_m,p.land_width_m,p.mehr_section,
+          p.mehr_level,p.house_condition,p.floor_count,p.latitude,p.longitude,
+          t.name AS property_type,t.code AS property_type_code,r.name AS region,
+          l.asking_price_toman,s.sale_date,s.sale_price_toman
           FROM app.properties p JOIN app.property_types t ON t.id=p.property_type_id
           LEFT JOIN app.regions r ON r.id=p.region_id
           LEFT JOIN LATERAL (SELECT l.asking_price_toman FROM app.listings l
