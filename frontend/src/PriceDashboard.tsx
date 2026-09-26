@@ -28,11 +28,17 @@ export default function PriceDashboard({compact=false}:{compact?:boolean}){
  const landPoints=region?result?.series[usage]||[]:[];
  return <div className={compact?'price-dashboard compact':'price-dashboard'} dir="rtl">
  <div className="price-intro"><h2>روند قیمت ملک در اوز</h2><p>قیمت‌های معامله‌شده و برآورد ماهانهٔ خودمونی جدا نمایش داده می‌شوند. قیمت آگهی در این نمودارها محاسبه نمی‌شود.</p></div>
- <div className="price-controls"><label>منبع قیمت<select value={source} onChange={e=>setSource(e.target.value)}><option value="manual">برآورد ماهانهٔ خودمونی</option><option value="sales">معاملات ثبت‌شده</option></select></label><label>منطقهٔ زمین<select value={region} onChange={e=>setRegion(e.target.value)}><option value="all">کل اوز</option>{regions.map(r=><option key={r.slug} value={r.slug}>{r.name}</option>)}</select></label><label>کاربری زمین<select value={usage} onChange={e=>setUsage(e.target.value)}><option value="land_residential">مسکونی</option><option value="land_commercial">تجاری</option></select></label><label>نوع زیربنا<select value={homeType} onChange={e=>setHomeType(e.target.value)}><option value="house_new">خانهٔ ویلایی نوساز</option><option value="apartment">آپارتمان</option></select></label><label>موقعیت طبقهٔ مسکن مهر<select value={mehrType} onChange={e=>setMehrType(e.target.value)}><option value="mehr_upper">طبقهٔ بالا</option><option value="mehr_lower">طبقهٔ پایین</option>{(result?.series.mehr||[]).length>0&&<option value="mehr">قدیمی بدون تفکیک طبقه</option>}</select></label></div>
+ <div className="price-controls"><label>منبع قیمت<select value={source} onChange={e=>setSource(e.target.value)}><option value="manual">برآورد ماهانهٔ خودمونی</option><option value="sales">معاملات ثبت‌شده</option></select></label></div>
  {error?<p role="alert" className="price-empty">{error}</p>:<div className="price-cards">
+ <section className="price-chart-section"><div className="price-controls price-chart-controls"><label>منطقهٔ زمین<select value={region} onChange={e=>setRegion(e.target.value)}><option value="all">کل اوز</option>{regions.map(r=><option key={r.slug} value={r.slug}>{r.name}</option>)}</select></label><label>کاربری زمین<select value={usage} onChange={e=>setUsage(e.target.value)}><option value="land_residential">مسکونی</option><option value="land_commercial">تجاری</option></select></label></div>
  <Graph name={`${names[usage]} · ${regions.find(r=>r.slug===region)?.name||'کل اوز'}`} points={landPoints} color="#1766a7" unit="برای هر متر زمین" source={source}/>
+ </section>
+ <section className="price-chart-section"><div className="price-controls price-chart-controls"><label>نوع زیربنا<select value={homeType} onChange={e=>setHomeType(e.target.value)}><option value="house_new">خانهٔ ویلایی نوساز</option><option value="apartment">آپارتمان</option></select></label></div>
  <Graph name={`${names[homeType]} · کل اوز`} points={result?.series[homeType]||[]} color="#13a781" unit="برای هر متر زیربنا" source={source}/>
+ </section>
+ <section className="price-chart-section"><div className="price-controls price-chart-controls"><label>موقعیت طبقهٔ مسکن مهر<select value={mehrType} onChange={e=>setMehrType(e.target.value)}><option value="mehr_upper">طبقهٔ بالا</option><option value="mehr_lower">طبقهٔ پایین</option>{(result?.series.mehr||[]).length>0&&<option value="mehr">قدیمی بدون تفکیک طبقه</option>}</select></label></div>
  <Graph name={`${names[mehrType]} · کل اوز`} points={result?.series[mehrType]||[]} color="#8a63b6" unit="برای کل واحد" source={source}/>
+ </section>
  </div>}
  <p className="price-method">هر نقطه در حالت معاملات، میانهٔ قیمت معاملات ثبت‌شده در همان ماه است. برای خانه فقط ویلایی نوساز حساب می‌شود؛ ملک بدون متراژ معتبر وارد قیمت هر متر نمی‌شود. ماه‌های بدون داده خالی می‌مانند.</p>
  </div>
