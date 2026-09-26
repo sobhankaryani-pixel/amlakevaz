@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import pool, open_pool, close_pool
 from .auth import require_roles, verify_password, create_token
+from .price_series import SEGMENTS, sale_series
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -56,6 +57,31 @@ def login(payload: LoginIn):
 
 @public.get("/indices")
 def public_indices(): return {"items": [], "message": "Published indices will appear here."}
+
+@public.get("/price-series")
+def public_price_series(source: str = "manual", region: str = "all"):
+    if source not in ("manual", "sales") or len(region) > 30:
+        raise HTTPException(422, "فیلتر نامعتبر است")
+    with pool.connection() as conn:
+        regions = conn.execute("SELECT name,slug FROM app.regions WHERE is_public=true AND slug LIKE 'R-%' ORDER BY slug").fetchall()
+        if region != 'all' and region not in {r['slug'] for r in regions}:
+            raise HTTPException(422, "منطقه معتبر نیست")
+        if source == 'manual':
+            rows = conn.execute("""SELECT period,segment,region_key,value_toman FROM app.monthly_price_estimates
+                 WHERE region_key=%s ORDER BY period""", (region,)).fetchall()
+            series = {s: [] for s in SEGMENTS}
+            for r in rows:
+                series[r['segment']].append({'period': r['period'], 'value_toman': r['value_toman'], 'count': None})
+        else:
+            rows = conn.execute("""SELECT t.code,p.usage_type,p.house_condition,p.area_m2,p.building_area_m2,
+                    r.slug AS region_key,s.sale_date,s.sale_price_toman
+                    FROM app.property_sales s JOIN app.properties p ON p.id=s.property_id
+                    JOIN app.property_types t ON t.id=p.property_type_id
+                    LEFT JOIN app.regions r ON r.id=p.region_id
+                    WHERE p.status='فروخته شده'""").fetchall()
+            series = {s: [] for s in SEGMENTS}
+            series.update(sale_series(rows,region))
+    return {'regions': [dict(r) for r in regions], 'source': source, 'series': series}
 
 @public.get("/transactions")
 def public_transactions():
@@ -130,13 +156,22 @@ class DirectPropertyIn(BaseModel):
     sale_notes: str | None = None
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
+    land_length_m: float | None = Field(default=None, gt=0)
+    land_width_m: float | None = Field(default=None, gt=0)
+    mehr_section: str | None = None
+    mehr_level: str | None = None
+    house_condition: str | None = None
+    floor_count: int | None = Field(default=None, gt=0)
 
 @public.get("/map-listings")
 def map_listings():
     with pool.connection() as conn:
-        rows = conn.execute("""SELECT p.public_code, t.name AS property_type, t.category,
+        rows = conn.execute("""SELECT p.public_code, t.code AS property_code, t.name AS property_type, t.category,
           r.name AS region, p.area_m2, p.building_area_m2,
-          p.latitude, p.longitude, l.asking_price_toman
+          p.latitude, p.longitude, l.asking_price_toman, p.usage_type,
+          p.land_length_m, p.land_width_m, p.mehr_section, p.mehr_level,
+          p.house_condition, p.bedrooms, p.floor_count, p.commercial_area_m2,
+          p.national_phase, p.national_stage
           FROM app.listings l
           JOIN app.market_records m ON m.id=l.market_record_id
           JOIN app.properties p ON p.id=m.property_id
@@ -151,12 +186,10 @@ def map_listings():
 def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles("owner","admin","data_entry"))):
     if (payload.latitude is None) != (payload.longitude is None):
         raise HTTPException(422, "عرض و طول جغرافیایی باید با هم وارد شوند")
-    if payload.status not in ("آگهی فروش", "فروخته شده", "لغو شده"):
+    if payload.status != "آگهی فروش":
         raise HTTPException(422, "وضعیت ملک معتبر نیست")
-    if payload.status == "آگهی فروش" and not payload.asking_price_toman:
+    if not payload.asking_price_toman:
         raise HTTPException(422, "قیمت پیشنهادی برای آگهی لازم است")
-    if payload.status == "فروخته شده" and (not payload.sale_date or not payload.sale_price_toman):
-        raise HTTPException(422, "تاریخ و قیمت معامله لازم است")
     try:
         with pool.connection() as conn:
             with conn.transaction():
@@ -164,29 +197,34 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
                 region = conn.execute("SELECT id,name FROM app.regions WHERE id=%s", (payload.region_id,)).fetchone()
                 if not kind or not region:
                     raise HTTPException(422, "نوع ملک یا منطقه معتبر نیست")
+                if payload.mehr_section and payload.mehr_section not in ("محلی", "فرهنگیان"):
+                    raise HTTPException(422, "بخش مسکن مهر معتبر نیست")
+                if payload.mehr_level and payload.mehr_level not in ("بالا", "پایین"):
+                    raise HTTPException(422, "طبقهٔ مسکن مهر معتبر نیست")
+                if payload.house_condition and payload.house_condition not in ("نوساز", "کلنگی"):
+                    raise HTTPException(422, "وضعیت ساختمان معتبر نیست")
                 row = conn.execute("""INSERT INTO app.properties
                   (public_code,property_type_id,region_id,general_area,private_address,area_m2,
                    building_area_m2,commercial_area_m2,usage_type,status,public_notes,
                    street_width,street_frontage_m,mehr_block,floor,mehr_unit,national_phase,
-                   national_stage,national_notes,build_year,bedrooms,registration_month,latitude,longitude)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                   national_stage,national_notes,build_year,bedrooms,registration_month,latitude,longitude,
+                   land_length_m,land_width_m,mehr_section,mehr_level,house_condition,floor_count)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                    RETURNING id,public_code""",
                   (payload.public_code.strip(),payload.property_type_id,payload.region_id,
                    payload.neighborhood,payload.address,payload.area_m2,payload.building_area_m2,
                    payload.commercial_area_m2,payload.usage_type,payload.status,payload.notes,
                    payload.street_width,payload.street_frontage_m,payload.mehr_block,payload.mehr_floor,
                    payload.mehr_unit,payload.national_phase,payload.national_stage,payload.national_notes,
-                   payload.build_year,payload.bedrooms,payload.registration_month,payload.latitude,payload.longitude)).fetchone()
-                if payload.status == "آگهی فروش":
-                    record = conn.execute("""INSERT INTO app.market_records
-                      (property_id,record_month,property_type_id,region_id,region_name_snapshot,status,is_public)
-                      VALUES (%s,CURRENT_DATE,%s,%s,%s,'verified',true) RETURNING id""",
-                      (row['id'],payload.property_type_id,payload.region_id,region['name'])).fetchone()
-                    conn.execute("""INSERT INTO app.listings(market_record_id,asking_price_toman,status,is_public,published_at)
-                      VALUES (%s,%s,'published',true,now())""",(record['id'],payload.asking_price_toman))
-                elif payload.status == "فروخته شده":
-                    conn.execute("INSERT INTO app.property_sales(property_id,sale_date,sale_price_toman,notes) VALUES (%s,%s,%s,%s)",
-                                 (row['id'],payload.sale_date,payload.sale_price_toman,payload.sale_notes))
+                   payload.build_year,payload.bedrooms,payload.registration_month,payload.latitude,payload.longitude,
+                   payload.land_length_m,payload.land_width_m,payload.mehr_section,payload.mehr_level,
+                   payload.house_condition,payload.floor_count)).fetchone()
+                record = conn.execute("""INSERT INTO app.market_records
+                  (property_id,record_month,property_type_id,region_id,region_name_snapshot,status,is_public)
+                  VALUES (%s,CURRENT_DATE,%s,%s,%s,'verified',true) RETURNING id""",
+                  (row['id'],payload.property_type_id,payload.region_id,region['name'])).fetchone()
+                conn.execute("""INSERT INTO app.listings(market_record_id,asking_price_toman,status,is_public,published_at)
+                  VALUES (%s,%s,'published',true,now())""",(record['id'],payload.asking_price_toman))
                 conn.execute("INSERT INTO app.audit_logs(user_id,action,entity_type,entity_id) VALUES (%s,'create','property',%s)",
                              (user['sub'],row['id']))
         return {"id":str(row['id']),"public_code":row['public_code'],"status":payload.status}
@@ -203,6 +241,61 @@ class PriceRangeIn(BaseModel):
     period: str = Field(min_length=5, max_length=20)
     low_price_toman: int = Field(gt=0)
     high_price_toman: int = Field(gt=0)
+
+class EstimateIn(BaseModel):
+    period: str = Field(pattern=r'^[0-9]{4}/(0[1-9]|1[0-2])$')
+    segment: str
+    region_key: str = 'all'
+    value_toman: int = Field(gt=0)
+
+class SaleIn(BaseModel):
+    sale_date: str = Field(pattern=r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])$')
+    sale_price_toman: int = Field(gt=0)
+    notes: str | None = None
+
+@admin.put('/properties/{public_code}/sell')
+def sell_property(public_code: str, payload: SaleIn, user=Depends(require_roles('owner','admin','data_entry'))):
+    with pool.connection() as conn:
+        with conn.transaction():
+            row = conn.execute("SELECT id,status FROM app.properties WHERE public_code=%s FOR UPDATE", (public_code,)).fetchone()
+            if not row:
+                raise HTTPException(404, 'ملک پیدا نشد')
+            if row['status'] != 'آگهی فروش':
+                raise HTTPException(409, 'فقط آگهی فعال را می‌توان معامله‌شده ثبت کرد')
+            listing = conn.execute("""UPDATE app.listings SET status='closed',is_public=false,closed_at=now()
+              WHERE market_record_id IN (SELECT id FROM app.market_records WHERE property_id=%s)
+                AND status='published' RETURNING id""", (row['id'],)).fetchone()
+            if not listing:
+                raise HTTPException(409, 'آگهی فعال برای این ملک پیدا نشد')
+            conn.execute("UPDATE app.properties SET status='فروخته شده' WHERE id=%s", (row['id'],))
+            conn.execute("""INSERT INTO app.property_sales(property_id,sale_date,sale_price_toman,notes)
+              VALUES (%s,%s,%s,%s)""", (row['id'],payload.sale_date,payload.sale_price_toman,payload.notes))
+            conn.execute("""INSERT INTO app.audit_logs(user_id,action,entity_type,entity_id)
+              VALUES (%s,'sell','property',%s)""", (user['sub'],row['id']))
+    return {'public_code': public_code, 'status': 'فروخته شده'}
+
+@admin.post('/monthly-estimates')
+def save_estimate(payload: EstimateIn, user=Depends(require_roles('owner','admin'))):
+    if payload.segment not in SEGMENTS or payload.segment.startswith('land_') and payload.region_key == 'all':
+        raise HTTPException(422, 'گروه قیمت یا منطقه معتبر نیست')
+    with pool.connection() as conn:
+        if payload.region_key != 'all' and not conn.execute("SELECT 1 FROM app.regions WHERE slug=%s AND slug LIKE 'R-%'", (payload.region_key,)).fetchone():
+            raise HTTPException(422, 'منطقه معتبر نیست')
+        row = conn.execute("""INSERT INTO app.monthly_price_estimates(period,segment,region_key,value_toman)
+            VALUES (%s,%s,%s,%s) ON CONFLICT(period,segment,region_key)
+            DO UPDATE SET value_toman=EXCLUDED.value_toman,updated_at=now() RETURNING id""",
+            (payload.period,payload.segment,payload.region_key,payload.value_toman)).fetchone()
+        conn.execute("""INSERT INTO app.audit_logs(user_id,action,entity_type,entity_id)
+          VALUES (%s,'save_estimate','monthly_price_estimate',%s)""", (user['sub'],row['id']))
+        conn.commit()
+    return {'id': str(row['id'])}
+
+@admin.get('/monthly-estimates')
+def list_estimates(user=Depends(require_roles('owner','admin'))):
+    with pool.connection() as conn:
+        rows = conn.execute("""SELECT period,segment,region_key,value_toman FROM app.monthly_price_estimates
+              ORDER BY period DESC,segment,region_key LIMIT 200""").fetchall()
+    return {'items': [dict(r) for r in rows]}
 
 class PropertyLocationIn(BaseModel):
     latitude: float | None = Field(default=None, ge=-90, le=90)
@@ -245,8 +338,9 @@ def list_direct_properties(user=Depends(require_roles("owner","admin","data_entr
           t.name AS property_type,r.name AS region,l.asking_price_toman,s.sale_date,s.sale_price_toman
           FROM app.properties p JOIN app.property_types t ON t.id=p.property_type_id
           LEFT JOIN app.regions r ON r.id=p.region_id
-          LEFT JOIN app.market_records m ON m.property_id=p.id
-          LEFT JOIN app.listings l ON l.market_record_id=m.id
+          LEFT JOIN LATERAL (SELECT l.asking_price_toman FROM app.listings l
+            JOIN app.market_records m ON m.id=l.market_record_id WHERE m.property_id=p.id
+            ORDER BY l.published_at DESC NULLS LAST LIMIT 1) l ON true
           LEFT JOIN app.property_sales s ON s.property_id=p.id
           ORDER BY p.created_at DESC LIMIT 100""").fetchall()
     return {"items":[dict(row) for row in rows]}
