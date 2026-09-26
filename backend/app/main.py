@@ -279,7 +279,7 @@ def save_estimate(payload: EstimateIn, user=Depends(require_roles('owner','admin
     if payload.segment not in SEGMENTS or payload.segment.startswith('land_') and payload.region_key == 'all':
         raise HTTPException(422, 'گروه قیمت یا منطقه معتبر نیست')
     with pool.connection() as conn:
-        if payload.region_key != 'all' and not conn.execute("SELECT 1 FROM app.regions WHERE slug=%s AND slug LIKE 'R-%'", (payload.region_key,)).fetchone():
+        if payload.region_key != 'all' and not conn.execute("SELECT 1 FROM app.regions WHERE slug=%s AND LEFT(slug, 2) = 'R-'", (payload.region_key,)).fetchone():
             raise HTTPException(422, 'منطقه معتبر نیست')
         row = conn.execute("""INSERT INTO app.monthly_price_estimates(period,segment,region_key,value_toman)
             VALUES (%s,%s,%s,%s) ON CONFLICT(period,segment,region_key)
