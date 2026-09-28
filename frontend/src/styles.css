@@ -33,3 +33,13 @@
 @media(min-width:1101px){.hero-panel{width:min(790px,100%);padding:36px 38px}.hero-panel h1{font-size:clamp(27px,2.7vw,40px);white-space:nowrap}}
 @media(min-width:701px) and (max-width:1100px){.price-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.price-cards{grid-template-columns:1fr}.price-chart-controls{flex-wrap:wrap}.price-chart-controls label{flex:1 1 100%}}
+/* Restore the unobtrusive brand watermark behind page sections. */
+.site{position:relative;isolation:isolate}
+.site::before{content:"";position:fixed;top:24%;left:50%;transform:translateX(-50%);width:min(55vw,700px);aspect-ratio:1024/810;background:url('/brand/logo.png') center/contain no-repeat;opacity:.045;pointer-events:none;z-index:0}
+.site>.content-section,.site>.contact-banner,.site>.site-footer,.site>.home-hero,.site>.map-page{position:relative;z-index:1}
+.header-inner{min-height:124px}
+.brand-link img{width:116px;height:108px}
+.footer-about img{width:158px;height:152px}
+@media(max-width:1080px){.header-inner{min-height:105px}.brand-link img{width:96px;height:90px}}
+@media(max-width:760px){.header-inner{min-height:100px}.nav-links{top:100px}.brand-link img{width:90px;height:85px}}
+@media(max-width:550px){.header-inner{min-height:94px}.nav-links{top:94px}.brand-link img{width:86px;height:80px}.brand-link strong{font-size:16px}.header-social{display:none}.site::before{width:90vw;top:30%;opacity:.035}.footer-about img{width:150px;height:145px}}
