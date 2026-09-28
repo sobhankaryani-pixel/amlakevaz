@@ -63,3 +63,9 @@
 :root[data-theme=dark] .hero-panel .hero-description{color:#d4e5ee}
 :root[data-theme=dark] .nav-links button:hover,:root[data-theme=dark] .nav-links button.selected{background:#1f405c;color:#a7d3ff}
 @media(max-width:550px){.hero-panel{-webkit-backdrop-filter:blur(14px) saturate(125%);backdrop-filter:blur(14px) saturate(125%)}}
+
+/* Badge above the featured listing section, immediately after the hero. */
+.featured .featured-badge{display:inline-flex;align-items:center;gap:9px;padding:9px 17px;border:1px solid #bdcfea;background:#eaf1ff;border-radius:999px;color:#103b82;font-size:13px;font-weight:800;line-height:1.5}
+.featured-badge-dot{width:9px;height:9px;border-radius:50%;background:#0748b7;flex:none}
+.featured .section-heading h2{margin-top:16px}
+:root[data-theme=dark] .featured .featured-badge{background:#1e375c;border-color:#4468a0;color:#cfe2ff}
