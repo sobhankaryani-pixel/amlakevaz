@@ -1,76 +1,53 @@
-"use client";
-import {useEffect,useState} from "react";
-import PropertyMap from "./PropertyMap";
-import PriceDashboard from "./PriceDashboard";
-const nav=[['home','خانه'],['index','شاخص قیمت'],['areas','مناطق'],['transactions','معاملات'],['listings','آگهی‌ها'],['map','املاک روی نقشه'],['reports','گزارش‌ها']];
-export default function Home(){const [page,setPage]=useState('home');const [dark,setDark]=useState(false);const title=nav.find(n=>n[0]===page)?.[1];useEffect(()=>{document.documentElement.dataset.theme=dark?'dark':'light';localStorage.setItem('evaz-theme',dark?'dark':'light')},[dark]);useEffect(()=>{setDark(localStorage.getItem('evaz-theme')==='dark')},[]);return <main>
-<header>
-<a className="brand" href="#" onClick={()=>setPage('home')}>
-<img className="brand-logo" src="/brand/logo.png" alt="لوگوی خودمونی"/>
-<div>
-<strong>خودمونی</strong>
-<small>شاخص املاک اوز</small>
-</div>
-</a>
-<nav>{nav.filter(n=>['home','index','areas','listings','map'].includes(n[0])).map(n=>
-<button className={page===n[0]?'sel':''} onClick={()=>setPage(n[0])} key={n[0]}>{n[1]}</button>)}</nav>
-<div className="actions">
-<a className="social-icon" href="https://www.instagram.com/melkekhodmoonii/" target="_blank" aria-label="اینستاگرام">
-<img src="/brand/instagram.png" alt=""/>
-</a>
-<a className="social-icon" href="https://wa.me/989212745755" target="_blank" aria-label="واتساپ">
-<img src="/brand/whatsapp.png" alt=""/>
-</a>
-<button className="theme-toggle" onClick={()=>setDark(!dark)} aria-label="تغییر تم">{dark?'☀':'☾'}</button>
-<a className="cta" href="#lead">درخواست مشاوره</a>
-</div>
-</header>
-<div className="mobile-nav">{nav.map(n=>
-<button className={page===n[0]?'sel':''} onClick={()=>setPage(n[0])} key={n[0]}>
-<b>{n[0]==='home'?'⌂':n[0]==='index'?'⌁':n[0]==='areas'?'⌖':n[0]==='transactions'?'▣':n[0]==='listings'?'▤':n[0]==='map'?'⌖':'▥'}</b>{n[1]}</button>)}</div>
-{page==='home'?<>
-<section className="hero">
-<span className="eyebrow">● قیمت‌های ثبت‌شدهٔ بازار اوز</span>
-<h1>نبض بازار ملک <em>اوز</em>
-<br/>با داده، نه حدس.</h1>
-<p>مرجع مستقل قیمت، معاملات و تحلیل بازار املاک اوز؛ ساخته‌شده توسط خودمونی.</p>
-<div className="hero-buttons">
-<button className="cta" onClick={()=>setPage('index')}>مشاهده شاخص قیمت ←</button>
-<button className="valuation-cta" onClick={()=>document.getElementById('valuation')?.scrollIntoView({behavior:'smooth'})}>ملک من چقدر می‌ارزد؟</button>
-</div>
-<small>نمودارهای معامله و برآورد ماهانه با برچسب جدا نمایش داده می‌شوند</small>
-</section>
-<section className="section"><PriceDashboard compact/></section>
-<section className="valuation" id="valuation">
-<div>
-<span>ارزیابی قیمت</span>
-<h2>ملک من در بازار اوز چقدر می‌ارزد؟</h2>
-<p>اطلاعات کلی ملک خود را بفرستید تا بر اساس داده‌های موجود، بازه ارزش تقریبی دریافت کنید.</p>
-</div>
-<a className="gold" href="#lead">ارزیابی دقیق و مشاوره ←</a>
-</section>
-</>:page==='map'?<PropertyMap/>:<section className="inner section">
-<span>شاخص املاک اوز</span>
-<h1>{title}</h1>
-{(page==='index'||page==='areas')?<PriceDashboard/>:page==='listings'?<div className="panel"><p>برای دیدن آگهی‌های دارای موقعیت، نقشهٔ املاک را باز کنید.</p><button onClick={()=>setPage('map')}>مشاهدهٔ املاک روی نقشه</button></div>:<div className="panel"><p>هنوز داده‌ای برای نمایش این بخش منتشر نشده است.</p></div>}</section>}
-<section className="lead" id="lead">
-<div>
-<span>با خودمونی در ارتباط باشید</span>
-<h2>برای تصمیم بهتر، با داده شروع کنید.</h2>
-<p>برای قیمت ملک، فروش فایل یا ارزیابی قیمت با ما در ارتباط باشید.</p>
-</div>
-<div>
-<a className="gold" href="https://wa.me/989212745755" target="_blank">پیام در واتساپ ↗</a>
-<a className="outline" href="https://www.instagram.com/melkekhodmoonii/" target="_blank">اینستاگرام خودمونی ↗</a>
-</div>
-</section>
-<footer>
-<a className="brand" href="#" onClick={()=>setPage('home')}>
-<img className="brand-logo" src="/brand/logo.png" alt="لوگوی خودمونی"/>
-<strong>خودمونی<small>مرجع بازار ملک اوز</small>
-</strong>
-</a>
+import {useEffect,useRef,useState} from 'react';
+import PropertyMap from './PropertyMap';
+import PriceDashboard from './PriceDashboard';
 
-<small>© ۱۴۰۵ خودمونی</small>
-</footer>
-</main>}
+const API='https://api.evazmelk.ir';
+const contact='https://wa.me/989212745755';
+type Page='home'|'listings'|'map'|'index'|'areas';
+type Property={public_code:string;property_code:string;property_type:string;region:string|null;region_key:string|null;neighborhood:string|null;area_m2:number|null;building_area_m2:number|null;commercial_area_m2:number|null;bedrooms:number|null;mehr_section:string|null;mehr_level:string|null;usage_type:string|null;house_condition:string|null;floor_count:number|null;latitude:number|null;longitude:number|null;cover_photo_url:string|null;asking_price_toman:number;published_at:string|null};
+const money=(n:number)=>n>=1e9?`${(n/1e9).toLocaleString('fa-IR',{maximumFractionDigits:1})} میلیارد تومان`:n>=1e6?`${(n/1e6).toLocaleString('fa-IR',{maximumFractionDigits:0})} میلیون تومان`:`${n.toLocaleString('fa-IR')} تومان`;
+const propertyKinds=[{value:'all',label:'همهٔ املاک'},{value:'land',label:'زمین'},{value:'villa',label:'خانهٔ ویلایی'},{value:'apartment',label:'آپارتمان'},{value:'mehr',label:'مسکن مهر'},{value:'national',label:'مسکن ملی'},{value:'shop',label:'مغازه'},{value:'garden',label:'باغ شهری'}];
+function kindOf(p:Property){const c=p.property_code;return c==='urban_garden'?'garden':c==='mehr_housing'?'mehr':c==='national_housing'?'national':c==='apartment'?'apartment':['shop','commercial'].includes(c)?'shop':['villa_house','villa'].includes(c)?'villa':'land'}
+function facts(p:Property){const v:string[]=[];if(p.area_m2)v.push(`${Number(p.area_m2).toLocaleString('fa-IR')} متر زمین`);if(p.building_area_m2)v.push(`${Number(p.building_area_m2).toLocaleString('fa-IR')} متر زیربنا`);if(p.commercial_area_m2)v.push(`${Number(p.commercial_area_m2).toLocaleString('fa-IR')} متر مغازه`);if(p.bedrooms!=null)v.push(`${Number(p.bedrooms).toLocaleString('fa-IR')} خواب`);if(p.mehr_level)v.push(`طبقهٔ ${p.mehr_level}`);if(p.mehr_section)v.push(`بخش ${p.mehr_section}`);if(p.usage_type)v.push(`کاربری ${p.usage_type}`);return v.slice(0,3)}
+function imageUrl(p:Property){return p.cover_photo_url?.startsWith('https://')?p.cover_photo_url:null}
+function ListingCard({item,onOpen}:{item:Property;onOpen:(item:Property)=>void}){const [broken,setBroken]=useState(false);const photo=imageUrl(item);return <article className="listing-card"><button type="button" className="listing-open" onClick={()=>onOpen(item)} aria-label={`مشخصات ملک ${item.public_code}`}><div className="listing-image">{photo&&!broken?<img src={photo} alt={`تصویر ثبت‌شده برای ${item.property_type}`} loading="lazy" onError={()=>setBroken(true)}/>:<div className="listing-image-empty"><span aria-hidden="true">⌂</span>تصویری برای این ملک ثبت نشده است</div>}<span className="listing-tag">{item.property_type}</span></div><div className="listing-body"><span className="listing-code">کد ملک {item.public_code}</span><h3>{item.property_type} در {item.neighborhood||item.region||'اوز'}</h3><strong>{money(Number(item.asking_price_toman))}</strong><p>{facts(item).length?facts(item).join(' · '):'مشخصات بیشتر در آگهی'}</p><div className="listing-location"><span aria-hidden="true">⌖</span>{item.region||'اوز'}{item.neighborhood?`، ${item.neighborhood}`:''}</div></div></button></article>}
+function Carousel({items,onOpen}:{items:Property[];onOpen:(p:Property)=>void}){
+ const viewport=useRef<HTMLDivElement>(null);const [visible,setVisible]=useState(3),[width,setWidth]=useState(0),[at,setAt]=useState(3),[animate,setAnimate]=useState(true),[paused,setPaused]=useState(false);
+ const looping=items.length>visible;const count=items.length;
+ useEffect(()=>{if(!viewport.current)return;const update=()=>{if(!viewport.current)return;setWidth(viewport.current.clientWidth);setVisible(window.innerWidth<680?1:window.innerWidth<1040?2:3)};update();const resize=new ResizeObserver(update);resize.observe(viewport.current);return()=>resize.disconnect()},[]);
+ useEffect(()=>{setAnimate(false);setAt(3);const id=requestAnimationFrame(()=>requestAnimationFrame(()=>setAnimate(true)));return()=>cancelAnimationFrame(id)},[count,visible]);
+ useEffect(()=>{if(!looping||paused||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;const timer=window.setInterval(()=>setAt(v=>v+1),3000);return()=>window.clearInterval(timer)},[looping,paused]);
+ const move=(direction:number)=>{if(!looping)return;setAt(v=>v+direction)};
+ const ended=(event:React.TransitionEvent<HTMLDivElement>)=>{if(!looping||event.target!==event.currentTarget||event.propertyName!=='transform')return;if(at>=count+3){setAnimate(false);setAt(3);requestAnimationFrame(()=>requestAnimationFrame(()=>setAnimate(true)))}else if(at<3){setAnimate(false);setAt(count+2);requestAnimationFrame(()=>requestAnimationFrame(()=>setAnimate(true)))}};
+ const cards=looping?[...items.slice(-3),...items,...items.slice(0,3)]:items;
+ const gap=18;const step=width?((width-gap*(visible-1))/visible)+gap:0;
+ return <div className="carousel" onMouseEnter={()=>setPaused(true)} onMouseLeave={()=>setPaused(false)} onFocusCapture={()=>setPaused(true)} onBlurCapture={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node))setPaused(false)}}>
+ <div className="carousel-viewport" ref={viewport} aria-label="آگهی‌های فعال، قابل جابه‌جایی با فلش‌ها"><div className="carousel-track" onTransitionEnd={ended} style={{transform:`translateX(${looping?at*step:0}px)`,transition:animate&&looping?'transform .55s cubic-bezier(.2,.8,.2,1)':'none','--card-width':`${width ? (width - gap * (visible - 1)) / visible : 300}px`} as React.CSSProperties}>{cards.map((p,i)=><ListingCard item={p} onOpen={onOpen} key={`${p.public_code}-${i}`}/>)}</div></div>
+ {looping&&<><button className="slide-arrow slide-next" type="button" onClick={()=>move(1)} aria-label="آگهی بعدی">‹</button><button className="slide-arrow slide-prev" type="button" onClick={()=>move(-1)} aria-label="آگهی قبلی">›</button></>}
+ </div>
+}
+export default function App(){
+ const [page,setPage]=useState<Page>('home'),[items,setItems]=useState<Property[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ const [query,setQuery]=useState(''),[kind,setKind]=useState('all'),[region,setRegion]=useState('all'),[selected,setSelected]=useState<Property|null>(null),[menu,setMenu]=useState(false),[dark,setDark]=useState(false);
+ useEffect(()=>{document.documentElement.dataset.theme=dark?'dark':'light'},[dark]);
+ useEffect(()=>{let live=true;fetch(`${API}/api/public/property-cards`).then(async r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{if(live)setItems(d.items||[])}).catch(()=>{if(live)setError('دریافت آگهی‌ها انجام نشد. کمی بعد دوباره امتحان کنید.')}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[]);
+ const regions=[...new Map(items.filter(p=>p.region_key).map(p=>[p.region_key,{slug:p.region_key!,name:p.region||p.region_key!}])).values()];
+ const matching=items.filter(p=>(kind==='all'||kindOf(p)===kind)&&(region==='all'||p.region_key===region)&&(!query.trim()||`${p.region||''} ${p.neighborhood||''} ${p.property_type} ${p.public_code}`.toLocaleLowerCase('fa-IR').includes(query.trim().toLocaleLowerCase('fa-IR'))));
+ const go=(next:Page)=>{setPage(next);setSelected(null);setMenu(false);window.scrollTo({top:0,behavior:'smooth'})};
+ const search=(e:React.FormEvent)=>{e.preventDefault();go('listings')};
+ return <div className="site" dir="rtl">
+ <header className="site-header"><div className="header-inner"><button className="brand-link" onClick={()=>go('home')} aria-label="صفحهٔ اصلی خودمونی"><img src="/brand/logo.png" alt=""/><span><strong>خودمونی</strong><small>املاک اوز</small></span></button><nav className={menu?'nav-links open':'nav-links'} aria-label="منوی اصلی">{([['home','خانه'],['listings','آگهی‌ها'],['map','املاک روی نقشه'],['index','شاخص قیمت'],['areas','مناطق']] as [Page,string][]).map(([id,label])=><button key={id} className={page===id?'selected':''} onClick={()=>go(id)}>{label}</button>)}</nav><div className="header-tools"><a className="header-social" href={contact} target="_blank" rel="noopener noreferrer" aria-label="واتساپ"><img src="/brand/whatsapp.png" alt=""/></a><a className="header-social" href="https://www.instagram.com/melkekhodmoonii/" target="_blank" rel="noopener noreferrer" aria-label="اینستاگرام"><img src="/brand/instagram.png" alt=""/></a><a className="header-contact" href={contact} target="_blank" rel="noopener noreferrer">درخواست مشاوره</a><button className="theme-switch" type="button" onClick={()=>setDark(v=>!v)} aria-label="تغییر حالت روشن و تیره">{dark?'☀':'☾'}</button><button className="menu-switch" type="button" onClick={()=>setMenu(v=>!v)} aria-label="باز و بسته‌کردن منو" aria-expanded={menu}>☰</button></div></div></header>
+ {page==='home'&&<><section className="home-hero"><div className="hero-inner"><div className="hero-panel"><span className="section-kicker">املاک خودمونی · ویژهٔ اوز</span><h1>بازار املاک اوز، <em>شفاف‌تر</em> از همیشه</h1><p className="hero-subtitle">از جست‌وجوی ملک تا انتخابی مطمئن</p><p className="hero-description">مرجع مستقل قیمت، معاملات و تحلیل بازار املاک اوز؛ ساخته‌شده توسط خودمونی.</p><form className="hero-search" onSubmit={search}><label className="sr-only" htmlFor="hero-query">جستجو در منطقه، محله یا کد ملک</label><input id="hero-query" value={query} onChange={e=>setQuery(e.target.value)} placeholder="جستجو در منطقه، محله یا کد ملک..."/><label className="sr-only" htmlFor="hero-type">نوع ملک</label><select id="hero-type" value={kind} onChange={e=>setKind(e.target.value)}>{propertyKinds.map(k=><option key={k.value} value={k.value}>{k.label}</option>)}</select><button type="submit">جستجوی ملک ↗</button></form><div className="hero-quick"><span>دسترسی سریع:</span><button onClick={()=>go('map')}>املاک روی نقشه</button><button onClick={()=>go('index')}>شاخص قیمت اوز</button></div></div></div><small className="hero-image-note">تصویر مفهومی از معماری جنوب ایران</small></section>
+ <section className="content-section featured"><div className="section-heading"><div><span className="section-kicker">آگهی‌های فعال</span><h2>تازه‌ترین آگهی‌های اوز</h2><p>زمین، خانه، آپارتمان و سایر املاک ثبت‌شدهٔ خودمونی</p></div><button className="link-button" onClick={()=>go('listings')}>مشاهدهٔ همهٔ آگهی‌ها ←</button></div>{loading?<p className="state-message">در حال دریافت آگهی‌ها...</p>:error?<p className="state-message" role="alert">{error}</p>:items.length?<Carousel items={items} onOpen={setSelected}/>:<p className="state-message">هنوز آگهی فعالی ثبت نشده است.</p>}</section>
+ <section className="content-section index-section"><div className="section-heading"><div><span className="section-kicker">نبض بازار اوز</span><h2>شاخص قیمت املاک اوز</h2><p>برآورد ماهانه و معاملات واقعی، هرکدام به‌صورت جداگانه</p></div><button className="link-button" onClick={()=>go('index')}>جزئیات شاخص قیمت ←</button></div><PriceDashboard compact/></section>
+ <section className="content-section services-section"><div className="section-heading"><div><span className="section-kicker">از جستجو تا تصمیم</span><h2>آنچه در خودمونی پیدا می‌کنید</h2></div></div><div className="service-grid"><button onClick={()=>go('listings')}><span>⌂</span><h3>جستجوی ملک</h3><p>آگهی‌ها را با توجه به منطقه و نوع ملک بررسی کنید.</p><b>دیدن آگهی‌ها ←</b></button><button onClick={()=>go('map')}><span>⌖</span><h3>املاک روی نقشه</h3><p>موقعیت املاک ثبت‌شده را روی نقشهٔ اوز ببینید.</p><b>باز کردن نقشه ←</b></button><button onClick={()=>go('index')}><span>⌁</span><h3>روند قیمت</h3><p>سه نمودار زمین، زیربنا و مسکن مهر را دنبال کنید.</p><b>مشاهدهٔ نمودارها ←</b></button></div></section></>}
+ {page==='listings'&&<section className="content-section listing-page"><div className="page-heading"><span className="section-kicker">فهرست آگهی‌های فعال</span><h1>آگهی‌های املاک اوز</h1><p>ملک مناسب خود را در میان آگهی‌های ثبت‌شده جستجو کنید.</p></div><form className="listing-filter" onSubmit={e=>e.preventDefault()}><label>جستجو<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="منطقه، محله یا کد ملک"/></label><label>نوع ملک<select value={kind} onChange={e=>setKind(e.target.value)}>{propertyKinds.map(k=><option value={k.value} key={k.value}>{k.label}</option>)}</select></label><label>منطقه<select value={region} onChange={e=>setRegion(e.target.value)}><option value="all">همهٔ مناطق</option>{regions.map(r=><option value={r.slug} key={r.slug}>{r.name}</option>)}</select></label></form>{loading?<p className="state-message">در حال دریافت آگهی‌ها...</p>:error?<p role="alert" className="state-message">{error}</p>:<><p className="result-count">{matching.length.toLocaleString('fa-IR')} آگهی پیدا شد</p>{matching.length?<div className="listing-grid">{matching.map(p=><ListingCard key={p.public_code} item={p} onOpen={setSelected}/>)}</div>:<p className="state-message">آگهی‌ای برای این جستجو پیدا نشد.</p>}</>}</section>}
+ {page==='map'&&<PropertyMap/>}
+ {page==='index'&&<section className="content-section standalone"><div className="page-heading"><span className="section-kicker">روند قیمت در اوز</span><h1>شاخص قیمت املاک</h1></div><PriceDashboard/></section>}
+ {page==='areas'&&<section className="content-section standalone"><div className="page-heading"><span className="section-kicker">منطقه‌های اوز</span><h1>ملک را در منطقهٔ دلخواه پیدا کنید</h1><p>منطقه‌ای را انتخاب کنید تا آگهی‌های فعال آن را ببینید.</p></div>{regions.length?<div className="areas-grid">{regions.map(r=><button key={r.slug} onClick={()=>{setRegion(r.slug);go('listings')}}><span>⌖</span><strong>{r.name}</strong><small>{r.slug}</small></button>)}</div>:<p className="state-message">پس از ثبت آگهی، مناطق دارای ملک در اینجا نمایش داده می‌شوند.</p>}</section>}
+ <section className="contact-banner" id="contact"><div><span>در کنار شما برای تصمیم بهتر</span><h2>دربارهٔ یک ملک سؤال دارید؟</h2><p>برای اطلاع از جزئیات آگهی‌ها و مشاورهٔ خرید، با خودمونی در تماس باشید.</p></div><a href={contact} target="_blank" rel="noopener noreferrer">گفتگو در واتساپ ↗</a></section>
+ <footer className="site-footer"><div className="footer-columns"><div className="footer-about"><img src="/brand/logo.png" alt="لوگوی املاک خودمونی"/><p>خودمونی، همراه شما برای شناخت بازار و پیدا کردن ملک در اوز.</p></div><div><h3>دسترسی سریع</h3><button onClick={()=>go('home')}>صفحهٔ اصلی</button><button onClick={()=>go('listings')}>آگهی‌ها</button><button onClick={()=>go('map')}>املاک روی نقشه</button></div><div><h3>بازار املاک اوز</h3><button onClick={()=>go('index')}>شاخص قیمت</button><button onClick={()=>go('areas')}>مناطق اوز</button><a href={contact} target="_blank" rel="noopener noreferrer">مشاورهٔ املاک</a></div><div><h3>ارتباط با ما</h3><a href={contact} target="_blank" rel="noopener noreferrer">واتساپ خودمونی</a><a href="https://www.instagram.com/melkekhodmoonii/" target="_blank" rel="noopener noreferrer">اینستاگرام خودمونی</a></div></div><div className="footer-bottom"><span>© خودمونی · املاک اوز</span><span>قیمت آگهی‌ها با شاخص معاملات متفاوت است.</span></div></footer>
+ {selected&&<div className="detail-overlay" onMouseDown={e=>{if(e.target===e.currentTarget)setSelected(null)}}><div className="detail-dialog" role="dialog" aria-modal="true" aria-label={`مشخصات ملک ${selected.public_code}`}><button className="detail-close" onClick={()=>setSelected(null)} aria-label="بستن پنجره">×</button><div className="detail-photo">{imageUrl(selected)?<img src={imageUrl(selected)!} alt={`تصویر ملک ${selected.public_code}`}/>:<div className="listing-image-empty"><span>⌂</span>تصویری برای این ملک ثبت نشده است</div>}</div><div className="detail-info"><span className="section-kicker">آگهی فروش · کد {selected.public_code}</span><h2>{selected.property_type} در {selected.neighborhood||selected.region||'اوز'}</h2><strong>{money(Number(selected.asking_price_toman))}</strong><p>{facts(selected).join(' · ')||'برای اطلاعات بیشتر با ما تماس بگیرید.'}</p><p>⌖ {selected.region||'اوز'}{selected.neighborhood?`، ${selected.neighborhood}`:''}</p><div className="detail-actions"><a href={`${contact}?text=${encodeURIComponent(`سلام، درباره ملک با کد ${selected.public_code} سؤال دارم.`)}`} target="_blank" rel="noopener noreferrer">پرس‌وجو در واتساپ</a>{selected.latitude!=null&&selected.longitude!=null&&<button onClick={()=>go('map')}>دیدن روی نقشه</button>}</div></div></div></div>}
+ </div>
+}

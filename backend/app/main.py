@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 import json
+from urllib.parse import urlsplit
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
@@ -164,6 +165,27 @@ class DirectPropertyIn(BaseModel):
     mehr_level: str | None = None
     house_condition: str | None = None
     floor_count: int | None = Field(default=None, gt=0)
+    cover_photo_url: str | None = Field(default=None, max_length=2048)
+
+def check_cover_photo(url: str | None):
+    if url and (urlsplit(url).scheme != 'https' or not urlsplit(url).netloc or any(c.isspace() for c in url)):
+        raise HTTPException(422, 'آدرس عکس باید یک لینک امن https باشد')
+
+@public.get('/property-cards')
+def public_property_cards():
+    with pool.connection() as conn:
+        rows = conn.execute('''SELECT p.public_code,t.code AS property_code,t.name AS property_type,
+             r.name AS region,r.slug AS region_key,p.general_area AS neighborhood,p.area_m2,
+             p.building_area_m2,p.commercial_area_m2,p.bedrooms,p.mehr_section,p.mehr_level,
+             p.usage_type,p.house_condition,p.floor_count,p.latitude,p.longitude,p.cover_photo_url,
+             l.asking_price_toman,l.published_at
+             FROM app.listings l JOIN app.market_records m ON m.id=l.market_record_id
+             JOIN app.properties p ON p.id=m.property_id
+             JOIN app.property_types t ON t.id=p.property_type_id
+             LEFT JOIN app.regions r ON r.id=p.region_id
+             WHERE l.is_public=true AND l.status='published' AND p.status='آگهی فروش'
+             ORDER BY l.published_at DESC NULLS LAST LIMIT 500''').fetchall()
+    return {'items':[dict(row) for row in rows]}
 
 @public.get("/map-listings")
 def map_listings():
@@ -186,6 +208,7 @@ def map_listings():
 
 @admin.post("/properties/direct")
 def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles("owner","admin","data_entry"))):
+    check_cover_photo(payload.cover_photo_url)
     if (payload.latitude is None) != (payload.longitude is None):
         raise HTTPException(422, "عرض و طول جغرافیایی باید با هم وارد شوند")
     if payload.status != "آگهی فروش":
@@ -210,8 +233,8 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
                    building_area_m2,commercial_area_m2,usage_type,status,public_notes,
                    street_width,street_frontage_m,mehr_block,floor,mehr_unit,national_phase,
                    national_stage,national_notes,build_year,bedrooms,registration_month,latitude,longitude,
-                   land_length_m,land_width_m,mehr_section,mehr_level,house_condition,floor_count)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                   land_length_m,land_width_m,mehr_section,mehr_level,house_condition,floor_count,cover_photo_url)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                    RETURNING id,public_code""",
                   (payload.public_code.strip(),payload.property_type_id,payload.region_id,
                    payload.neighborhood,payload.address,payload.area_m2,payload.building_area_m2,
@@ -220,7 +243,7 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
                    payload.mehr_unit,payload.national_phase,payload.national_stage,payload.national_notes,
                    payload.build_year,payload.bedrooms,payload.registration_month,payload.latitude,payload.longitude,
                    payload.land_length_m,payload.land_width_m,payload.mehr_section,payload.mehr_level,
-                   payload.house_condition,payload.floor_count)).fetchone()
+                   payload.house_condition,payload.floor_count,payload.cover_photo_url)).fetchone()
                 record = conn.execute("""INSERT INTO app.market_records
                   (property_id,record_month,property_type_id,region_id,region_name_snapshot,status,is_public)
                   VALUES (%s,CURRENT_DATE,%s,%s,%s,'verified',true) RETURNING id""",
@@ -240,6 +263,7 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
 @admin.put('/properties/{public_code}/direct')
 def update_direct_property(public_code: str, payload: DirectPropertyIn,
                            user=Depends(require_roles('owner','admin','data_entry'))):
+    check_cover_photo(payload.cover_photo_url)
     if payload.public_code != public_code:
         raise HTTPException(422, 'کد ملک را نمی‌توان تغییر داد')
     if payload.status != 'آگهی فروش' or not payload.asking_price_toman:
@@ -274,14 +298,14 @@ def update_direct_property(public_code: str, payload: DirectPropertyIn,
                 public_notes=%s,street_width=%s,street_frontage_m=%s,mehr_block=%s,floor=%s,mehr_unit=%s,
                 national_phase=%s,national_stage=%s,national_notes=%s,build_year=%s,bedrooms=%s,
                 registration_month=%s,latitude=%s,longitude=%s,land_length_m=%s,land_width_m=%s,
-                mehr_section=%s,mehr_level=%s,house_condition=%s,floor_count=%s WHERE id=%s''',
+                mehr_section=%s,mehr_level=%s,house_condition=%s,floor_count=%s,cover_photo_url=%s WHERE id=%s''',
                 (payload.property_type_id,payload.region_id,payload.neighborhood,payload.address,payload.area_m2,
                  payload.building_area_m2,payload.commercial_area_m2,payload.usage_type,payload.notes,
                  payload.street_width,payload.street_frontage_m,payload.mehr_block,payload.mehr_floor,
                  payload.mehr_unit,payload.national_phase,payload.national_stage,payload.national_notes,
                  payload.build_year,payload.bedrooms,payload.registration_month,payload.latitude,payload.longitude,
                  payload.land_length_m,payload.land_width_m,payload.mehr_section,payload.mehr_level,
-                 payload.house_condition,payload.floor_count,row['id']))
+                 payload.house_condition,payload.floor_count,payload.cover_photo_url,row['id']))
             conn.execute('''UPDATE app.market_records SET property_type_id=%s,region_id=%s,region_name_snapshot=%s
                 WHERE property_id=%s''', (payload.property_type_id,payload.region_id,region['name'],row['id']))
             if listing['asking_price_toman'] != payload.asking_price_toman:
@@ -425,7 +449,7 @@ def list_direct_properties(user=Depends(require_roles("owner","admin","data_entr
           p.private_address AS address,p.public_notes AS notes,p.street_width,p.street_frontage_m,
           p.mehr_block,p.floor AS mehr_floor,p.mehr_unit,p.national_phase,p.national_stage,
           p.national_notes,p.build_year,p.bedrooms,p.land_length_m,p.land_width_m,p.mehr_section,
-          p.mehr_level,p.house_condition,p.floor_count,p.latitude,p.longitude,
+          p.mehr_level,p.house_condition,p.floor_count,p.cover_photo_url,p.latitude,p.longitude,
           t.name AS property_type,t.code AS property_type_code,r.name AS region,
           l.asking_price_toman,s.sale_date,s.sale_price_toman
           FROM app.properties p JOIN app.property_types t ON t.id=p.property_type_id
