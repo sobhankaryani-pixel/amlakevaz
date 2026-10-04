@@ -124,3 +124,9 @@
 :root[data-theme=dark] .theme-switch{background:#243e5b;color:#f5c984;border-color:#49627e}
 @media(max-width:900px){.nav-links{top:calc(12px + 45px + 78px)}}
 @media(max-width:600px){.site-header{padding-top:9px}.header-utility{border-radius:7px 7px 0 0}.utility-phone .phone-icon{width:16px;height:16px}.utility-socials .header-social img{width:24px;height:24px}.nav-links{top:calc(9px + 45px + 70px)}}
+/* Taller navy utility bar requested by the owner. */
+.header-utility-inner{min-height:90px}
+.utility-socials .header-social{width:44px;height:44px}.utility-socials .header-social img{width:39px;height:39px}
+.utility-phone{font-size:15px}.utility-phone b{font-size:17px}.utility-phone .phone-icon{width:23px;height:23px}
+@media(max-width:900px){.header-utility-inner{min-height:90px}.nav-links{top:calc(12px + 90px + 78px)}}
+@media(max-width:600px){.header-utility-inner{min-height:90px}.utility-socials .header-social{width:33px;height:33px}.utility-socials .header-social img{width:31px;height:31px}.utility-phone{font-size:12px}.utility-phone b{font-size:13px}.nav-links{top:calc(9px + 90px + 70px)}}
