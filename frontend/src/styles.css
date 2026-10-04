@@ -113,3 +113,14 @@
 .contact-banner{background:linear-gradient(115deg,#17304e,#225275);box-shadow:0 14px 35px rgba(18,42,69,.14)}.contact-banner span{color:#f0c78b}.contact-banner p{color:#e7edf3}.contact-banner>a{color:#173b6c}.site-footer{background:linear-gradient(125deg,#14263d,#1c3854)}.footer-about p,.footer-columns button,.footer-columns a{color:#d1dce8}.footer-bottom{color:#c4d1df}
 :root[data-theme=dark] .nav-links button.selected,:root[data-theme=dark] .nav-links button:hover{color:#a8ceff}:root[data-theme=dark] .index-section{background:#1b2e44}:root[data-theme=dark] .featured .featured-badge{background:#243d60;border-color:#4d6590;color:#e5f0ff}
 @media(max-width:900px){.nav-links{background:var(--paper)}}
+/* Final icon and breathing-room refinements. */
+.site-header{padding-top:12px;background:var(--page)}
+.header-utility{border-radius:10px 10px 0 0}
+.utility-phone .phone-icon{width:20px;height:20px;fill:none;stroke:#f8c47c;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.utility-socials .header-social img{display:block;width:30px;height:30px;border:0;background:none;border-radius:0;box-shadow:none}
+.theme-switch{display:grid;place-items:center;color:#244773;border-color:#bed0e2;background:#f2f6fa}
+.theme-switch:hover{background:#e2ebf5;color:#0849a7}
+.theme-switch svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+:root[data-theme=dark] .theme-switch{background:#243e5b;color:#f5c984;border-color:#49627e}
+@media(max-width:900px){.nav-links{top:calc(12px + 45px + 78px)}}
+@media(max-width:600px){.site-header{padding-top:9px}.header-utility{border-radius:7px 7px 0 0}.utility-phone .phone-icon{width:16px;height:16px}.utility-socials .header-social img{width:24px;height:24px}.nav-links{top:calc(9px + 45px + 70px)}}
