@@ -1,8 +1,9 @@
 from contextlib import asynccontextmanager
 import json
+from psycopg.types.json import Jsonb
 from urllib.parse import urlsplit
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import pool, open_pool, close_pool
@@ -19,6 +20,97 @@ app.add_middleware(CORSMiddleware, allow_origins=[x.strip() for x in settings.al
 
 public = APIRouter(prefix="/api/public", tags=["public"])
 admin = APIRouter(prefix="/api/admin", tags=["admin"])
+
+NATIONAL_STAGES = ('مرحله سقف اول','مرحله سقف دوم','اتمام اسکلت کامل','اسکلت + تأسیسات کامل','تأسیسات + نما','کامل‌شده')
+
+class SellerSubmissionIn(BaseModel):
+    seller_name: str = Field(min_length=2, max_length=120)
+    seller_phone: str = Field(min_length=10, max_length=20, pattern=r'^\+?[0-9۰-۹٠-٩\s\-]{10,20}$')
+    kind: str
+    neighborhood: str | None = Field(default=None, max_length=120)
+    region_key: str | None = Field(default=None, max_length=30)
+    area_m2: float | None = Field(default=None, gt=0)
+    building_area_m2: float | None = Field(default=None, gt=0)
+    land_length_m: float | None = Field(default=None, gt=0)
+    land_width_m: float | None = Field(default=None, gt=0)
+    usage_type: str | None = None
+    house_condition: str | None = None
+    bedrooms: int | None = Field(default=None, ge=0)
+    floor_count: int | None = Field(default=None, gt=0)
+    build_year: int | None = None
+    mehr_section: str | None = None
+    mehr_level: str | None = None
+    national_phase: str | None = None
+    national_block: str | None = Field(default=None, max_length=30)
+    national_level: str | None = None
+    national_stage: str | None = None
+    asking_price_toman: int = Field(gt=0, le=9000000000000000)
+    extra_details: str | None = Field(default=None, max_length=2000)
+    website: str = ''  # Spam trap: ordinary users never see this input.
+
+    @model_validator(mode='after')
+    def check_kind(self):
+        if self.kind not in ('land','villa','apartment','mehr','national'):
+            raise ValueError('نوع ملک معتبر نیست')
+        if self.kind == 'land' and (not self.region_key or not self.area_m2 or self.usage_type not in ('مسکونی','تجاری')):
+            raise ValueError('منطقه، متراژ و کاربری زمین لازم است')
+        if self.kind == 'villa' and (not self.area_m2 or not self.building_area_m2 or self.house_condition not in ('نوساز','کلنگی')):
+            raise ValueError('متراژ و وضعیت خانهٔ ویلایی لازم است')
+        if self.kind == 'apartment' and not self.building_area_m2:
+            raise ValueError('زیربنای آپارتمان لازم است')
+        if self.kind == 'mehr' and (self.mehr_section not in ('محلی','فرهنگیان') or self.mehr_level not in ('بالا','پایین')):
+            raise ValueError('بخش و طبقهٔ مسکن مهر لازم است')
+        if self.kind == 'national' and (self.national_phase not in ('1','2','3','4','5') or not self.national_block or not self.national_block.isdecimal() or self.national_level not in ('بالا','پایین','نامشخص') or self.national_stage not in NATIONAL_STAGES):
+            raise ValueError('فاز، بلوک، طبقه و مرحلهٔ ساخت مسکن ملی لازم است')
+        return self
+
+@public.get('/submission-regions')
+def public_submission_regions():
+    with pool.connection() as conn:
+        rows = conn.execute("SELECT slug,name FROM app.regions WHERE is_public=true AND slug LIKE 'R-%' ORDER BY slug").fetchall()
+    return {'items':[dict(r) for r in rows]}
+
+@public.post('/property-submissions', status_code=201)
+def create_seller_submission(payload: SellerSubmissionIn):
+    if payload.website:
+        return {'message':'درخواست شما برای بررسی دریافت شد.'}
+    data=payload.model_dump(exclude={'seller_name','seller_phone','website'})
+    with pool.connection() as conn:
+        if payload.region_key and not conn.execute('SELECT 1 FROM app.regions WHERE slug=%s AND is_public=true AND slug LIKE %s', (payload.region_key,'R-%')).fetchone():
+            raise HTTPException(422, 'منطقهٔ زمین معتبر نیست')
+        row=conn.execute('''INSERT INTO app.property_submissions(seller_name,seller_phone,kind,details)
+          VALUES (%s,%s,%s,%s) RETURNING id''', (payload.seller_name.strip(),payload.seller_phone.strip(),payload.kind,Jsonb(data))).fetchone()
+        conn.commit()
+    return {'id':str(row['id']),'message':'درخواست شما برای بررسی دریافت شد. پس از بررسی با شما تماس می‌گیریم.'}
+
+@admin.get('/property-submissions')
+def list_seller_submissions(user=Depends(require_roles('owner','admin','data_entry'))):
+    with pool.connection() as conn:
+        rows=conn.execute('''SELECT id,created_at,status,seller_name,seller_phone,kind,details
+          FROM app.property_submissions WHERE status='pending' ORDER BY created_at DESC LIMIT 200''').fetchall()
+    return {'items':[dict(r) for r in rows]}
+
+class SubmissionDecision(BaseModel):
+    status: str
+    approved_property_code: str | None = None
+
+@admin.post('/property-submissions/{submission_id}/decision')
+def decide_seller_submission(submission_id: str, payload: SubmissionDecision,
+                             user=Depends(require_roles('owner','admin','data_entry'))):
+    if payload.status not in ('approved','rejected'):
+        raise HTTPException(422,'تصمیم معتبر نیست')
+    with pool.connection() as conn:
+        with conn.transaction():
+            row=conn.execute('SELECT status FROM app.property_submissions WHERE id=%s FOR UPDATE',(submission_id,)).fetchone()
+            if not row: raise HTTPException(404,'درخواست پیدا نشد')
+            if row['status']!='pending': raise HTTPException(409,'این درخواست قبلاً بررسی شده است')
+            if payload.status=='approved':
+                if not payload.approved_property_code or not conn.execute('SELECT 1 FROM app.properties WHERE public_code=%s',(payload.approved_property_code,)).fetchone():
+                    raise HTTPException(422,'برای تأیید، ملک ثبت‌شده را مشخص کنید')
+            conn.execute('''UPDATE app.property_submissions SET status=%s,approved_property_code=%s,
+              reviewed_at=now(),reviewed_by=%s WHERE id=%s''',
+              (payload.status,payload.approved_property_code if payload.status=='approved' else None,user['sub'],submission_id))
+    return {'status':payload.status}
 
 class PropertyIn(BaseModel):
     public_code: str = Field(min_length=2, max_length=80)
@@ -150,6 +242,8 @@ class DirectPropertyIn(BaseModel):
     mehr_floor: int | None = None
     mehr_unit: str | None = None
     national_phase: str | None = None
+    national_block: str | None = None
+    national_level: str | None = None
     national_stage: str | None = None
     national_notes: str | None = None
     build_year: int | None = None
@@ -171,13 +265,24 @@ def check_cover_photo(url: str | None):
     if url and (urlsplit(url).scheme != 'https' or not urlsplit(url).netloc or any(c.isspace() for c in url)):
         raise HTTPException(422, 'آدرس عکس باید یک لینک امن https باشد')
 
+def check_national(payload: DirectPropertyIn):
+    if payload.national_phase and payload.national_phase not in ('1','2','3','4','5'):
+        raise HTTPException(422,'فاز مسکن ملی معتبر نیست')
+    if payload.national_block and not payload.national_block.isdecimal():
+        raise HTTPException(422,'شمارهٔ بلوک مسکن ملی باید عدد باشد')
+    if payload.national_level and payload.national_level not in ('بالا','پایین','نامشخص'):
+        raise HTTPException(422,'طبقهٔ مسکن ملی معتبر نیست')
+    if payload.national_stage and payload.national_stage not in NATIONAL_STAGES:
+        raise HTTPException(422,'مرحلهٔ ساخت مسکن ملی معتبر نیست')
+
 @public.get('/property-cards')
 def public_property_cards():
     with pool.connection() as conn:
         rows = conn.execute('''SELECT p.public_code,t.code AS property_code,t.name AS property_type,
              r.name AS region,r.slug AS region_key,p.general_area AS neighborhood,p.area_m2,
              p.building_area_m2,p.commercial_area_m2,p.bedrooms,p.mehr_section,p.mehr_level,
-             p.usage_type,p.house_condition,p.floor_count,p.latitude,p.longitude,p.cover_photo_url,
+             p.usage_type,p.house_condition,p.floor_count,p.national_phase,p.national_block,
+             p.national_level,p.national_stage,p.latitude,p.longitude,p.cover_photo_url,
              l.asking_price_toman,l.published_at
              FROM app.listings l JOIN app.market_records m ON m.id=l.market_record_id
              JOIN app.properties p ON p.id=m.property_id
@@ -195,7 +300,7 @@ def map_listings():
           p.latitude, p.longitude, l.asking_price_toman, p.usage_type,
           p.land_length_m, p.land_width_m, p.mehr_section, p.mehr_level,
           p.house_condition, p.bedrooms, p.floor_count, p.commercial_area_m2,
-          p.national_phase, p.national_stage
+          p.national_phase, p.national_block, p.national_level, p.national_stage
           FROM app.listings l
           JOIN app.market_records m ON m.id=l.market_record_id
           JOIN app.properties p ON p.id=m.property_id
@@ -209,6 +314,7 @@ def map_listings():
 @admin.post("/properties/direct")
 def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles("owner","admin","data_entry"))):
     check_cover_photo(payload.cover_photo_url)
+    check_national(payload)
     if (payload.latitude is None) != (payload.longitude is None):
         raise HTTPException(422, "عرض و طول جغرافیایی باید با هم وارد شوند")
     if payload.status != "آگهی فروش":
@@ -231,16 +337,16 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
                 row = conn.execute("""INSERT INTO app.properties
                   (public_code,property_type_id,region_id,general_area,private_address,area_m2,
                    building_area_m2,commercial_area_m2,usage_type,status,public_notes,
-                   street_width,street_frontage_m,mehr_block,floor,mehr_unit,national_phase,
+                   street_width,street_frontage_m,mehr_block,floor,mehr_unit,national_phase,national_block,national_level,
                    national_stage,national_notes,build_year,bedrooms,registration_month,latitude,longitude,
                    land_length_m,land_width_m,mehr_section,mehr_level,house_condition,floor_count,cover_photo_url)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                    RETURNING id,public_code""",
                   (payload.public_code.strip(),payload.property_type_id,payload.region_id,
                    payload.neighborhood,payload.address,payload.area_m2,payload.building_area_m2,
                    payload.commercial_area_m2,payload.usage_type,payload.status,payload.notes,
                    payload.street_width,payload.street_frontage_m,payload.mehr_block,payload.mehr_floor,
-                   payload.mehr_unit,payload.national_phase,payload.national_stage,payload.national_notes,
+                   payload.mehr_unit,payload.national_phase,payload.national_block,payload.national_level,payload.national_stage,payload.national_notes,
                    payload.build_year,payload.bedrooms,payload.registration_month,payload.latitude,payload.longitude,
                    payload.land_length_m,payload.land_width_m,payload.mehr_section,payload.mehr_level,
                    payload.house_condition,payload.floor_count,payload.cover_photo_url)).fetchone()
@@ -264,6 +370,7 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
 def update_direct_property(public_code: str, payload: DirectPropertyIn,
                            user=Depends(require_roles('owner','admin','data_entry'))):
     check_cover_photo(payload.cover_photo_url)
+    check_national(payload)
     if payload.public_code != public_code:
         raise HTTPException(422, 'کد ملک را نمی‌توان تغییر داد')
     if payload.status != 'آگهی فروش' or not payload.asking_price_toman:
@@ -296,13 +403,13 @@ def update_direct_property(public_code: str, payload: DirectPropertyIn,
             conn.execute('''UPDATE app.properties SET property_type_id=%s,region_id=%s,general_area=%s,
                 private_address=%s,area_m2=%s,building_area_m2=%s,commercial_area_m2=%s,usage_type=%s,
                 public_notes=%s,street_width=%s,street_frontage_m=%s,mehr_block=%s,floor=%s,mehr_unit=%s,
-                national_phase=%s,national_stage=%s,national_notes=%s,build_year=%s,bedrooms=%s,
+                national_phase=%s,national_block=%s,national_level=%s,national_stage=%s,national_notes=%s,build_year=%s,bedrooms=%s,
                 registration_month=%s,latitude=%s,longitude=%s,land_length_m=%s,land_width_m=%s,
                 mehr_section=%s,mehr_level=%s,house_condition=%s,floor_count=%s,cover_photo_url=%s WHERE id=%s''',
                 (payload.property_type_id,payload.region_id,payload.neighborhood,payload.address,payload.area_m2,
                  payload.building_area_m2,payload.commercial_area_m2,payload.usage_type,payload.notes,
                  payload.street_width,payload.street_frontage_m,payload.mehr_block,payload.mehr_floor,
-                 payload.mehr_unit,payload.national_phase,payload.national_stage,payload.national_notes,
+                 payload.mehr_unit,payload.national_phase,payload.national_block,payload.national_level,payload.national_stage,payload.national_notes,
                  payload.build_year,payload.bedrooms,payload.registration_month,payload.latitude,payload.longitude,
                  payload.land_length_m,payload.land_width_m,payload.mehr_section,payload.mehr_level,
                  payload.house_condition,payload.floor_count,payload.cover_photo_url,row['id']))
@@ -447,7 +554,7 @@ def list_direct_properties(user=Depends(require_roles("owner","admin","data_entr
         rows=conn.execute("""SELECT p.public_code,p.property_type_id,p.region_id,p.status,p.registration_month,
           p.area_m2,p.building_area_m2,p.commercial_area_m2,p.usage_type,p.general_area AS neighborhood,
           p.private_address AS address,p.public_notes AS notes,p.street_width,p.street_frontage_m,
-          p.mehr_block,p.floor AS mehr_floor,p.mehr_unit,p.national_phase,p.national_stage,
+          p.mehr_block,p.floor AS mehr_floor,p.mehr_unit,p.national_phase,p.national_block,p.national_level,p.national_stage,
           p.national_notes,p.build_year,p.bedrooms,p.land_length_m,p.land_width_m,p.mehr_section,
           p.mehr_level,p.house_condition,p.floor_count,p.cover_photo_url,p.latitude,p.longitude,
           t.name AS property_type,t.code AS property_type_code,r.name AS region,

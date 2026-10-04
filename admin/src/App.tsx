@@ -4,7 +4,7 @@ import LocationPicker from './LocationPicker';
 const API = 'https://api.evazmelk.ir';
 type Ref = {id:string;name:string;code?:string;slug?:string};
 const months=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-const initial={public_code:'',property_type_id:'',region_id:'',neighborhood:'',address:'',area_m2:'',building_area_m2:'',commercial_area_m2:'',usage_type:'',status:'آگهی فروش',asking_price_toman:'',registration_year:'',registration_month_name:'',notes:'',street_width:'',street_frontage_m:'',mehr_block:'',mehr_floor:'',mehr_unit:'',national_phase:'',national_stage:'',national_notes:'',build_year:'',bedrooms:'',sale_date:'',sale_price_toman:'',sale_notes:'',latitude:'',longitude:'',land_length_m:'',land_width_m:'',mehr_section:'',mehr_level:'',house_condition:'',floor_count:'',cover_photo_url:''};
+const initial={public_code:'',property_type_id:'',region_id:'',neighborhood:'',address:'',area_m2:'',building_area_m2:'',commercial_area_m2:'',usage_type:'',status:'آگهی فروش',asking_price_toman:'',registration_year:'',registration_month_name:'',notes:'',street_width:'',street_frontage_m:'',mehr_block:'',mehr_floor:'',mehr_unit:'',national_phase:'',national_block:'',national_level:'',national_stage:'',national_notes:'',build_year:'',bedrooms:'',sale_date:'',sale_price_toman:'',sale_notes:'',latitude:'',longitude:'',land_length_m:'',land_width_m:'',mehr_section:'',mehr_level:'',house_condition:'',floor_count:'',cover_photo_url:''};
 type Form = typeof initial;
 type Kind = 'land'|'villa'|'apartment'|'mehr'|'national'|'shop'|'garden';
 const kinds:{value:Kind;label:string;codes:string[]}[]=[
@@ -25,6 +25,9 @@ export default function App(){
  const [editingLocation,setEditingLocation]=useState<{code:string;lat:string;lng:string}|null>(null);
  const [selling,setSelling]=useState<{code:string;date:string;price:string;notes:string}|null>(null);
  const [estimates,setEstimates]=useState<any[]>([]);
+ const [submissions,setSubmissions]=useState<any[]>([]);
+ const [fromSubmission,setFromSubmission]=useState<string|null>(null);
+ const [pendingApprovalCode,setPendingApprovalCode]=useState<string|null>(null);
  const [form,setForm]=useState<Form>(initial);
  const [kind,setKind]=useState<Kind|null>(null);
  const [editCode,setEditCode]=useState<string|null>(null);
@@ -34,6 +37,7 @@ export default function App(){
  useEffect(()=>{if(!token)return;let live=true;request('/api/admin/reference').then(d=>{if(live){setTypes(d.property_types);setRegions(d.regions)}}).catch(e=>{if(live)setError(e.message)});return()=>{live=false}},[token]);
  useEffect(()=>{if(token&&section==='املاک ثبت‌شده')request('/api/admin/properties/direct').then(d=>setItems(d.items)).catch(e=>setError(e.message))},[token,section]);
  useEffect(()=>{if(token&&section==='قیمت شاخص')request('/api/admin/monthly-estimates').then(d=>setEstimates(d.items)).catch(e=>setError(e.message))},[token,section]);
+ useEffect(()=>{if(token&&section==='درخواست‌های ثبت ملک')request('/api/admin/property-submissions').then(d=>setSubmissions(d.items)).catch(e=>setError(e.message))},[token,section]);
  async function login(e:FormEvent){e.preventDefault();setError('');try{const r=await fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});const d=await r.json();if(!r.ok)throw Error(d.detail||'ورود ناموفق بود');localStorage.setItem('evazmelk_admin_token',d.access_token);setToken(d.access_token)}catch(x){setError(x instanceof Error?x.message:'خطای اتصال')}}
  async function saveProperty(e:FormEvent){e.preventDefault();setError('');setSaved('');setBusy(true);try{
   if(!kind)throw Error('نوع ملک را انتخاب کنید.');
@@ -42,7 +46,12 @@ export default function App(){
   if(!type)throw Error('این نوع ملک در پایگاه داده تعریف نشده است.');
   const payload:any={...form,property_type_id:type.id,registration_month:form.registration_year&&form.registration_month_name?`${form.registration_year}/${form.registration_month_name}`:null};delete payload.registration_year;delete payload.registration_month_name;
   numeric.forEach(k=>payload[k]=form[k as keyof Form]===''?null:Number(form[k as keyof Form]));for(const k of Object.keys(payload))if(payload[k]==='')payload[k]=null;
-  const d=await request(editCode?`/api/admin/properties/${encodeURIComponent(editCode)}/direct`:'/api/admin/properties/direct',{method:editCode?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const d=pendingApprovalCode?{public_code:pendingApprovalCode}:await request(editCode?`/api/admin/properties/${encodeURIComponent(editCode)}/direct`:'/api/admin/properties/direct',{method:editCode?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  if(fromSubmission){
+   setPendingApprovalCode(d.public_code);
+   await request(`/api/admin/property-submissions/${encodeURIComponent(fromSubmission)}/decision`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'approved',approved_property_code:d.public_code})});
+   setFromSubmission(null);setPendingApprovalCode(null);
+  }
   setSaved(`ملک ${d.public_code} ${editCode?'ویرایش':'ثبت'} شد.`);setForm(initial);setKind(null);setEditCode(null);
   if(editCode){const fresh=await request('/api/admin/properties/direct');setItems(fresh.items);setSection('املاک ثبت‌شده')}
  }catch(x){setError(x instanceof Error?x.message:'ثبت انجام نشد')}finally{setBusy(false)}}
@@ -54,7 +63,22 @@ export default function App(){
    if(p[key]!=null && key!=='status')next[key]=String(p[key]);
   }
   if(p.registration_month){const [year,month]=String(p.registration_month).split('/');next.registration_year=year||'';next.registration_month_name=month||''}
-  setForm(next);setKind(selected);setEditCode(p.public_code);setSelling(null);setEditingLocation(null);setError('');setSaved('');setSection('ثبت ملک');
+  setForm(next);setKind(selected);setEditCode(p.public_code);setFromSubmission(null);setSelling(null);setEditingLocation(null);setError('');setSaved('');setSection('ثبت ملک');
+ }
+ function prepareSubmission(s:any){
+  const next={...initial};
+  for(const key of Object.keys(initial) as (keyof Form)[])if(s.details[key]!=null)next[key]=String(s.details[key]);
+  const reg=regions.find(r=>r.slug===(s.kind==='land'?s.details.region_key:'evaz'));
+  next.region_id=reg?.id||'';
+  next.notes=s.details.extra_details||'';
+  setForm(next);setKind(s.kind);setEditCode(null);setFromSubmission(s.id);setPendingApprovalCode(null);setError('');setSaved('');setSection('ثبت ملک');window.scrollTo(0,0);
+ }
+ async function rejectSubmission(id:string){
+  if(!window.confirm('درخواست ثبت ملک رد شود؟'))return;
+  setBusy(true);setError('');try{
+   await request(`/api/admin/property-submissions/${encodeURIComponent(id)}/decision`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'rejected'})});
+   setSubmissions(v=>v.filter(s=>s.id!==id));setSaved('درخواست رد شد.');
+  }catch(e){setError(e instanceof Error?e.message:'ثبت تصمیم انجام نشد')}finally{setBusy(false)}
  }
  async function changeVisibility(p:any){
   const active=p.status==='غیرفعال';
@@ -63,26 +87,28 @@ export default function App(){
   try{await request(`/api/admin/properties/${encodeURIComponent(p.public_code)}/visibility?active=${active}`,{method:'PUT'});const fresh=await request('/api/admin/properties/direct');setItems(fresh.items);setSaved(active?'آگهی دوباره فعال شد.':'آگهی غیرفعال شد؛ معامله‌ای ثبت نشد.')}
   catch(x){setError(x instanceof Error?x.message:'تغییر وضعیت انجام نشد')}finally{setBusy(false)}
  }
- function changeKind(value:Kind){setKind(value);setError('');setSaved('');setForm(v=>({...initial,public_code:v.public_code,region_id:v.region_id,neighborhood:v.neighborhood,address:v.address,asking_price_toman:v.asking_price_toman,latitude:v.latitude,longitude:v.longitude}));}
+ function changeKind(value:Kind){setKind(value);setError('');setSaved('');setForm(v=>({...initial,public_code:v.public_code,region_id:value==='land'?v.region_id:regions.find(r=>r.slug==='evaz')?.id||'',neighborhood:v.neighborhood,address:v.address,asking_price_toman:v.asking_price_toman,latitude:v.latitude,longitude:v.longitude}));}
  async function saveEstimate(e:FormEvent){e.preventDefault();setError('');setSaved('');setBusy(true);try{await request('/api/admin/monthly-estimates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...estimate,region_key:estimate.region_key||'all',value_toman:Number(estimate.value_toman)})});const d=await request('/api/admin/monthly-estimates');setEstimates(d.items);setSaved('قیمت ماهانه ذخیره شد.');setEstimate(v=>({...v,value_toman:''}))}catch(x){setError(x instanceof Error?x.message:'ثبت انجام نشد')}finally{setBusy(false)}}
  async function saveSale(e:FormEvent){e.preventDefault();if(!selling)return;setError('');setSaved('');setBusy(true);try{await request(`/api/admin/properties/${encodeURIComponent(selling.code)}/sell`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({sale_date:selling.date,sale_price_toman:Number(selling.price),notes:selling.notes||null})});const d=await request('/api/admin/properties/direct');setItems(d.items);setSaved(`معاملهٔ ملک ${selling.code} ثبت شد و آگهی آن بسته شد.`);setSelling(null)}catch(x){setError(x instanceof Error?x.message:'ثبت معامله انجام نشد')}finally{setBusy(false)}}
  async function saveLocation(e:FormEvent){e.preventDefault();if(!editingLocation)return;setError('');setSaved('');setBusy(true);try{if((!!editingLocation.lat)!=(!!editingLocation.lng))throw Error('هر دو مختصات را وارد کنید.');await request(`/api/admin/properties/${encodeURIComponent(editingLocation.code)}/location`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({latitude:editingLocation.lat?Number(editingLocation.lat):null,longitude:editingLocation.lng?Number(editingLocation.lng):null})});const d=await request('/api/admin/properties/direct');setItems(d.items);setSaved(`موقعیت ملک ${editingLocation.code} ذخیره شد.`);setEditingLocation(null)}catch(x){setError(x instanceof Error?x.message:'ثبت موقعیت انجام نشد')}finally{setBusy(false)}}
- const field=(key:keyof Form,label:string,kind='text',required=false)=><label key={key}>{label}<input type={kind} min={kind==='number'?'0':undefined} step={kind==='number'&&!['bedrooms','floor_count','build_year','registration_year','mehr_floor'].includes(key)?'any':undefined} required={required} readOnly={key==='public_code'&&!!editCode} value={form[key]} onChange={e=>set(key,e.target.value)}/></label>;
+ const field=(key:keyof Form,label:string,kind='text',required=false)=><label key={key}>{label}<input type={kind} min={kind==='number'?'0':undefined} step={kind==='number'&&!['bedrooms','floor_count','build_year','registration_year','mehr_floor','national_block'].includes(key)?'any':undefined} required={required} readOnly={key==='public_code'&&!!editCode} value={form[key]} onChange={e=>set(key,e.target.value)}/></label>;
  const select=(key:keyof Form,label:string,options:{value:string;label:string}[],required=false)=><label>{label}<select required={required} value={form[key]} onChange={e=>set(key,e.target.value)}><option value="">انتخاب کنید</option>{options.map(x=><option key={x.value} value={x.value}>{x.label}</option>)}</select></label>;
  if(!token)return <main className="login" dir="rtl"><div className="card"><div className="mark">خ</div><h1>خودمونی</h1><p>ورود به مدیریت املاک اوز</p><form onSubmit={login}><label>ایمیل<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><label>رمز عبور<input type="password" required value={password} onChange={e=>setPassword(e.target.value)}/></label>{error&&<div className="error">{error}</div>}<button>ورود</button></form></div></main>;
- return <div className="shell" dir="rtl"><aside><div className="brand"><span className="mark small">خ</span>خودمونی</div><div className="muted">مدیریت املاک اوز</div>{['ثبت ملک','املاک ثبت‌شده','قیمت شاخص'].map(x=><button key={x} className={section===x?'nav active':'nav'} onClick={()=>{setSection(x);setError('');setSaved('')}}>{x}</button>)}<button className="logout" onClick={()=>{localStorage.removeItem('evazmelk_admin_token');setToken(null)}}>خروج</button></aside><main className="content"><header><h1>{section}</h1></header>
+ return <div className="shell" dir="rtl"><aside><div className="brand"><span className="mark small">خ</span>خودمونی</div><div className="muted">مدیریت املاک اوز</div>{['ثبت ملک','درخواست‌های ثبت ملک','املاک ثبت‌شده','قیمت شاخص'].map(x=><button key={x} className={section===x?'nav active':'nav'} onClick={()=>{setSection(x);setError('');setSaved('')}}>{x}</button>)}<button className="logout" onClick={()=>{localStorage.removeItem('evazmelk_admin_token');setToken(null)}}>خروج</button></aside><main className="content"><header><h1>{section}</h1></header>
+ {section==='درخواست‌های ثبت ملک'&&<div className="panel"><h2>درخواست‌های فروشندگان</h2><p className="hint">درخواست‌ها پیش از بررسی شما در سایت نمایش داده نمی‌شوند.</p>{submissions.length===0?<p>درخواست بررسی‌نشده‌ای ندارید.</p>:<div className="table-wrap"><table><thead><tr><th>زمان</th><th>فروشنده</th><th>شماره تماس</th><th>نوع ملک</th><th>مشخصات</th><th>بررسی</th></tr></thead><tbody>{submissions.map(s=><tr key={s.id}><td>{new Date(s.created_at).toLocaleString('fa-IR')}</td><td>{s.seller_name}</td><td dir="ltr">{s.seller_phone}</td><td>{kinds.find(k=>k.value===s.kind)?.label||s.kind}</td><td><details><summary>دیدن مشخصات</summary><div style={{whiteSpace:'pre-wrap'}}>{Object.entries(s.details).filter(([k,v])=>v!=null&&v!==''&&k!=='kind').map(([k,v])=>`${k}: ${String(v)}`).join('\n')}</div></details></td><td><button type="button" className="secondary" onClick={()=>prepareSubmission(s)}>انتقال به فرم ثبت</button> <button type="button" disabled={busy} className="secondary" onClick={()=>rejectSubmission(s.id)}>رد</button></td></tr>)}</tbody></table></div>}</div>}
  {section==='ثبت ملک'&&<form className="entry" onSubmit={saveProperty}>
+ {fromSubmission&&<div className="panel"><h2>بررسی درخواست فروشنده</h2><p className="hint">{pendingApprovalCode?`آگهی با کد ${pendingApprovalCode} ثبت شده است. برای تکمیل تأیید دوباره دکمهٔ پایین فرم را بزنید.`:'مشخصات را بررسی و کد ملک را وارد کنید. بعد از ذخیره، آگهی منتشر و درخواست تأیید می‌شود.'}</p><button type="button" className="secondary" onClick={()=>{setFromSubmission(null);setPendingApprovalCode(null);setForm(initial);setKind(null);setSection('درخواست‌های ثبت ملک')}}>بازگشت به درخواست‌ها</button></div>}
  {editCode&&<div className="panel"><h2>ویرایش ملک {editCode}</h2><p className="hint">مشخصات و قیمت آگهی را اصلاح کن. وضعیت معامله و کد ملک از اینجا تغییر نمی‌کند.</p><button type="button" className="secondary" onClick={()=>{setEditCode(null);setForm(initial);setKind(null);setSection('املاک ثبت‌شده')}}>انصراف از ویرایش</button></div>}
  <div className="panel"><h2>نوع ملک</h2><div className="kind-grid">{kinds.map(k=><button type="button" key={k.value} disabled={!!editCode} className={kind===k.value?'kind selected':'kind'} onClick={()=>changeKind(k.value)}>{k.label}</button>)}</div></div>
  {kind&&<>
  <div className="panel"><h2>مشخصات {kinds.find(k=>k.value===kind)?.label}</h2><div className="fields">
  {field('public_code','کد ملک','text',true)}
- {select('region_id','منطقه',regions.filter(r=>r.slug?.startsWith('R-')).map(r=>({value:r.id,label:`${r.slug} — ${r.name}`})),true)}
+ {kind==='land'?select('region_id','منطقه',regions.filter(r=>r.slug?.startsWith('R-')).map(r=>({value:r.id,label:`${r.slug} — ${r.name}`})),true):<p className="hint">محدودهٔ ثبت: کل اوز</p>}
  {kind==='mehr'&&<>{select('mehr_section','بخش مسکن مهر',[{value:'محلی',label:'محلی'},{value:'فرهنگیان',label:'فرهنگیان'}],true)}{select('mehr_level','موقعیت طبقه',[{value:'بالا',label:'طبقهٔ بالا'},{value:'پایین',label:'طبقهٔ پایین'}],true)}</>}
  {kind==='land'&&<>{select('usage_type','کاربری',[{value:'مسکونی',label:'مسکونی'},{value:'تجاری',label:'تجاری'}],true)}{field('area_m2','متراژ زمین (مترمربع)','number',true)}{field('land_length_m','طول زمین (متر)','number')}{field('land_width_m','عرض زمین (متر)','number')}</>}
  {kind==='villa'&&<>{select('house_condition','نوع ساختمان',[{value:'نوساز',label:'نوساز'},{value:'کلنگی',label:'کلنگی'}],true)}{field('area_m2','متراژ زمین (مترمربع)','number',true)}{field('building_area_m2','زیربنا (مترمربع)','number',true)}{field('bedrooms','تعداد خواب','number')}{field('floor_count','تعداد طبقه','number')}</>}
  {kind==='apartment'&&<>{field('building_area_m2','زیربنا (مترمربع)','number',true)}{field('bedrooms','تعداد خواب','number')}{field('floor_count','تعداد طبقات ساختمان','number')}{field('build_year','سال ساخت (شمسی)','number')}</>}
- {kind==='national'&&<>{field('national_phase','فاز مسکن ملی')}{select('national_stage','مرحله ساخت',['مرحله سقف اول','مرحله سقف دوم','اتمام اسکلت کامل','اسکلت + تأسیسات کامل','تأسیسات + نما','کامل‌شده'].map(x=>({value:x,label:x})))}{field('building_area_m2','زیربنا (مترمربع)','number')}{field('national_notes','توضیحات مسکن ملی')}</>}
+ {kind==='national'&&<>{select('national_phase','فاز مسکن ملی',[1,2,3,4,5].map(x=>({value:String(x),label:`فاز ${x}`})),true)}{field('national_block','بلوک','number',true)}{select('national_level','موقعیت طبقه',[{value:'بالا',label:'بالا'},{value:'پایین',label:'پایین'},{value:'نامشخص',label:'نامشخص'}],true)}{select('national_stage','مرحله ساخت',['مرحله سقف اول','مرحله سقف دوم','اتمام اسکلت کامل','اسکلت + تأسیسات کامل','تأسیسات + نما','کامل‌شده'].map(x=>({value:x,label:x})),true)}{field('building_area_m2','زیربنا (مترمربع)','number')}{field('national_notes','توضیحات مسکن ملی')}</>}
  {kind==='shop'&&<>{field('commercial_area_m2','متراژ مغازه (مترمربع)','number',true)}{field('street_frontage_m','بر خیابان (متر)','number')}</>}
  {kind==='garden'&&<>{field('area_m2','متراژ باغ (مترمربع)','number',true)}{field('land_length_m','طول باغ (متر)','number')}{field('land_width_m','عرض باغ (متر)','number')}</>}
  {field('asking_price_toman','قیمت پیشنهادی (تومان)','number',true)}
