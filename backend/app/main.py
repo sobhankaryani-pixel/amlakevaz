@@ -9,6 +9,8 @@ from .config import settings
 from .db import pool, open_pool, close_pool
 from .auth import require_roles, verify_password, create_token
 from .price_series import SEGMENTS, sale_series
+from .seller_auth import seller,require_seller
+from .crm import crm
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -70,18 +72,18 @@ def public_submission_regions():
         rows = conn.execute("SELECT slug,name FROM app.regions WHERE is_public=true AND slug LIKE 'R-%' ORDER BY slug").fetchall()
     return {'items':[dict(r) for r in rows]}
 
-@public.post('/property-submissions', status_code=201)
-def create_seller_submission(payload: SellerSubmissionIn):
+@seller.post('/property-submissions', status_code=201)
+def create_seller_submission(payload: SellerSubmissionIn, user=Depends(require_seller)):
     if payload.website:
         return {'message':'درخواست شما برای بررسی دریافت شد.'}
     data=payload.model_dump(exclude={'seller_name','seller_phone','website'})
     with pool.connection() as conn:
         if payload.region_key and not conn.execute('SELECT 1 FROM app.regions WHERE slug=%s AND is_public=true AND slug LIKE %s', (payload.region_key,'R-%')).fetchone():
             raise HTTPException(422, 'منطقهٔ زمین معتبر نیست')
-        row=conn.execute('''INSERT INTO app.property_submissions(seller_name,seller_phone,kind,details)
-          VALUES (%s,%s,%s,%s) RETURNING id''', (payload.seller_name.strip(),payload.seller_phone.strip(),payload.kind,Jsonb(data))).fetchone()
+        row=conn.execute('''INSERT INTO app.property_submissions(seller_name,seller_phone,seller_id,kind,details)
+          VALUES (%s,%s,%s,%s,%s) RETURNING id''', (payload.seller_name.strip(),user['phone'],user['id'],payload.kind,Jsonb(data))).fetchone()
         conn.commit()
-    return {'id':str(row['id']),'message':'درخواست شما برای بررسی دریافت شد. پس از بررسی با شما تماس می‌گیریم.'}
+    return {'id':str(row['id']),'message':'درخواست شما ثبت شد. پس از بررسی و تأیید مدیر، آگهی در سایت منتشر می‌شود.'}
 
 @admin.get('/property-submissions')
 def list_seller_submissions(user=Depends(require_roles('owner','admin','data_entry'))):
@@ -569,4 +571,4 @@ def list_direct_properties(user=Depends(require_roles("owner","admin","data_entr
     return {"items":[dict(row) for row in rows]}
 
 
-app.include_router(public); app.include_router(admin)
+app.include_router(public); app.include_router(admin); app.include_router(seller); app.include_router(crm)
