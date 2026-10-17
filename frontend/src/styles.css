@@ -337,13 +337,13 @@
 .site-header .menu-switch{display:none;color:#fff;background:transparent;border:1px solid rgba(224,238,251,.45)}
 .home-hero{min-height:418px;background:linear-gradient(90deg,rgba(13,43,67,.08),rgba(13,43,67,.17)),url('/visual/evaz-inspired-hero.png') center 53%/cover no-repeat}
 .hero-inner-simplified{max-width:1320px;min-height:418px;display:flex;justify-content:flex-start;align-items:center;padding:32px 24px}
-.hero-copy-float{width:min(100%,455px);max-width:455px;margin-inline-start:0;margin-inline-end:auto;padding:24px 27px;border-radius:20px;background:rgba(247,250,252,.34);border:1px solid rgba(255,255,255,.68);backdrop-filter:blur(13px) saturate(130%);-webkit-backdrop-filter:blur(13px) saturate(130%);box-shadow:0 16px 42px rgba(8,31,52,.13),inset 0 1px 0 rgba(255,255,255,.42);text-align:right}
-.hero-copy-float .section-kicker{font-size:11px;margin-bottom:7px;color:#0757bc;text-shadow:0 1px 3px rgba(255,255,255,.8)}
-.hero-copy-float h1{font-size:clamp(27px,2.8vw,37px);line-height:1.48;margin:0 0 8px;font-weight:900;color:#143b60;text-shadow:0 1px 8px rgba(255,255,255,.38);-webkit-text-stroke:.25px rgba(255,255,255,.72);paint-order:stroke fill}
+.hero-copy-float{width:min(100%,455px);max-width:455px;margin-inline-start:0;margin-inline-end:auto;padding:24px 27px;border-radius:20px;background:linear-gradient(135deg,rgba(247,250,252,.20),rgba(247,250,252,.13));border:1px solid rgba(255,255,255,.38);backdrop-filter:blur(10px) saturate(120%);-webkit-backdrop-filter:blur(10px) saturate(120%);box-shadow:0 12px 32px rgba(8,31,52,.10),inset 0 1px 0 rgba(255,255,255,.22);text-align:right}
+.hero-copy-float .section-kicker{font-size:11px;margin-bottom:7px;color:#0757bc;text-shadow:none;-webkit-text-stroke:0}
+.hero-copy-float h1{font-size:clamp(27px,2.8vw,37px);line-height:1.48;margin:0 0 8px;font-weight:900;color:#143b60;text-shadow:0 1px 2px rgba(8,31,52,.10);-webkit-text-stroke:0;paint-order:normal}
 .hero-copy-float h1 .hero-title-line{display:block;white-space:nowrap}
-.hero-copy-float h1 em{color:#1686df;font-style:normal;-webkit-text-stroke:.25px rgba(255,255,255,.78)}
-.hero-copy-float .hero-subtitle{font-size:clamp(16px,1.7vw,22px);font-weight:800;color:#173f64;line-height:1.65;margin:0 0 7px;text-shadow:0 1px 6px rgba(255,255,255,.5);-webkit-text-stroke:.15px rgba(255,255,255,.7);paint-order:stroke fill}
-.hero-copy-float .hero-description{font-size:12px;line-height:1.9;color:#315777;margin:0 0 15px;text-shadow:0 1px 5px rgba(255,255,255,.48)}
+.hero-copy-float h1 em{color:#1686df;font-style:normal;-webkit-text-stroke:0;text-shadow:none}
+.hero-copy-float .hero-subtitle{font-size:clamp(16px,1.7vw,22px);font-weight:800;color:#173f64;line-height:1.65;margin:0 0 7px;text-shadow:0 1px 2px rgba(8,31,52,.08);-webkit-text-stroke:0;paint-order:normal}
+.hero-copy-float .hero-description{font-size:12px;line-height:1.9;color:#315777;margin:0 0 15px;text-shadow:none;-webkit-text-stroke:0}
 .hero-listings-cta{display:inline-flex;align-items:center;justify-content:center;gap:12px;border:0;border-radius:12px;background:#0757bc;color:#fff;padding:12px 23px;font-size:14px;font-weight:900;box-shadow:0 8px 18px rgba(7,87,188,.2);transition:transform .18s,background .18s}
 .hero-listings-cta:hover{background:#086bd8;transform:translateY(-1px)}
 .home-benefits{padding:10px 24px;background:var(--page);border-bottom:1px solid var(--line)}
