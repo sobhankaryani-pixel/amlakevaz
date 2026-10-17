@@ -621,4 +621,66 @@ def list_direct_properties(user=Depends(require_roles("owner","admin","data_entr
     return {"items":[dict(row) for row in rows]}
 
 
+
+class HomepagePromotionUpdate(BaseModel):
+    title: str = Field(min_length=2, max_length=100)
+    subtitle: str = Field(default="", max_length=220)
+    badge: str = Field(default="ویژه", max_length=40)
+    image_url: str = Field(min_length=1, max_length=600)
+    cta_text: str = Field(default="مشاهده آگهی‌ها", max_length=40)
+    target_page: str = "listings"
+    sort_order: int = Field(default=1, ge=1, le=20)
+    is_active: bool = True
+
+    @model_validator(mode="after")
+    def validate_promotion(self):
+        if self.target_page not in ("listings", "map", "index", "areas", "register", "home"):
+            raise ValueError("مقصد کارت معتبر نیست")
+        if not (self.image_url.startswith("/") or self.image_url.startswith("https://")):
+            raise ValueError("آدرس عکس باید مسیر محلی یا لینک HTTPS عمومی باشد")
+        if self.image_url.startswith("//"):
+            raise ValueError("آدرس عکس معتبر نیست")
+        return self
+
+
+def _promotion_dict(row):
+    return {
+        "id": row["id"], "slug": row["slug"], "title": row["title"],
+        "subtitle": row["subtitle"], "badge": row["badge"],
+        "image_url": row["image_url"], "cta_text": row["cta_text"],
+        "target_page": row["target_page"], "sort_order": row["sort_order"],
+        "is_active": row["is_active"],
+    }
+
+
+@public.get("/homepage-promotions")
+def list_public_homepage_promotions():
+    with pool.connection() as conn:
+        rows = conn.execute("""SELECT id,slug,title,subtitle,badge,image_url,cta_text,target_page,sort_order,is_active
+            FROM app.homepage_promotions WHERE is_active=true ORDER BY sort_order,id LIMIT 8""").fetchall()
+    return {"items": [_promotion_dict(row) for row in rows]}
+
+
+@admin.get("/homepage-promotions")
+def list_admin_homepage_promotions(user=Depends(require_roles("owner", "admin", "editor", "data_entry"))):
+    with pool.connection() as conn:
+        rows = conn.execute("""SELECT id,slug,title,subtitle,badge,image_url,cta_text,target_page,sort_order,is_active
+            FROM app.homepage_promotions ORDER BY sort_order,id""").fetchall()
+    return {"items": [_promotion_dict(row) for row in rows]}
+
+
+@admin.put("/homepage-promotions/{promotion_id}")
+def update_homepage_promotion(promotion_id: int, payload: HomepagePromotionUpdate,
+                              user=Depends(require_roles("owner", "admin", "editor", "data_entry"))):
+    with pool.connection() as conn:
+        row = conn.execute("""UPDATE app.homepage_promotions SET title=%s,subtitle=%s,badge=%s,image_url=%s,
+            cta_text=%s,target_page=%s,sort_order=%s,is_active=%s,updated_at=now()
+            WHERE id=%s RETURNING id,slug,title,subtitle,badge,image_url,cta_text,target_page,sort_order,is_active""",
+            (payload.title.strip(), payload.subtitle.strip(), payload.badge.strip(), payload.image_url.strip(),
+             payload.cta_text.strip(), payload.target_page, payload.sort_order, payload.is_active, promotion_id)).fetchone()
+        if not row:
+            raise HTTPException(404, "کارت تبلیغاتی پیدا نشد")
+        conn.commit()
+    return {"item": _promotion_dict(row), "message": "کارت صفحهٔ اصلی ذخیره شد."}
+
 app.include_router(public); app.include_router(admin); app.include_router(seller); app.include_router(crm)
