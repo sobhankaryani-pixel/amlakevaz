@@ -9,7 +9,7 @@ from .config import settings
 from .db import pool, open_pool, close_pool
 from .auth import require_roles, verify_password, create_token
 from .price_series import SEGMENTS, sale_series
-from .seller_auth import seller,require_seller
+from .seller_auth import seller,require_seller,normalize_phone
 from .crm import crm
 
 @asynccontextmanager
@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
     open_pool(); yield; close_pool()
 
 app = FastAPI(title="Evaz Property Index API", version="0.1.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=[x.strip() for x in settings.allowed_origins.split(",")], allow_credentials=True, allow_methods=["GET","POST","PUT","DELETE"], allow_headers=["Authorization","Content-Type"])
+app.add_middleware(CORSMiddleware, allow_origins=[x.strip() for x in settings.allowed_origins.split(",")], allow_credentials=True, allow_methods=["GET","POST","PUT","DELETE"], allow_headers=["Authorization","Content-Type"], expose_headers=["X-Export-Count"])
 
 public = APIRouter(prefix="/api/public", tags=["public"])
 admin = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -65,6 +65,56 @@ class SellerSubmissionIn(BaseModel):
         if self.kind == 'national' and (self.national_phase not in ('1','2','3','4','5') or not self.national_block or not self.national_block.isdecimal() or self.national_level not in ('بالا','پایین','نامشخص') or self.national_stage not in NATIONAL_STAGES):
             raise ValueError('فاز، بلوک، طبقه و مرحلهٔ ساخت مسکن ملی لازم است')
         return self
+
+class PublicContactSubscriptionIn(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    phone: str = Field(min_length=10, max_length=20, pattern=r'^\+?[0-9۰-۹٠-٩\s\-]{10,20}$')
+    sms_opt_in: bool = False
+    whatsapp_opt_in: bool = False
+    website: str = Field(default='', max_length=200)  # Honeypot; ordinary visitors never see it.
+
+    @model_validator(mode='after')
+    def require_channel_consent(self):
+        if not self.website and not (self.sms_opt_in or self.whatsapp_opt_in):
+            raise ValueError('حداقل یکی از راه‌های دریافت پیام را انتخاب کنید')
+        return self
+
+
+@public.post('/contact-subscriptions', status_code=201)
+def create_public_contact_subscription(payload: PublicContactSubscriptionIn):
+    # Bots filling the hidden field receive the same generic response without a database write.
+    if payload.website:
+        return {'message': 'درخواست شما ثبت شد. از همراهی شما سپاسگزاریم.'}
+    phone = normalize_phone(payload.phone)
+    name = payload.name.strip()
+    if len(name) < 2:
+        raise HTTPException(422, 'نام معتبر نیست')
+    sms_source = 'فرم عضویت عمومی سایت؛ رضایت صریح برای پیامک'
+    whatsapp_source = 'فرم عضویت عمومی سایت؛ رضایت صریح برای واتساپ'
+    with pool.connection() as conn:
+        try:
+            conn.execute('''INSERT INTO app.customer_contacts AS existing
+              (phone,name,source,marketing_opt_in,consent_at,consent_source,
+               whatsapp_opt_in,whatsapp_consent_at,whatsapp_consent_source)
+              VALUES (%s,%s,'website_form',%s,CASE WHEN %s THEN now() END,
+                CASE WHEN %s THEN %s END,%s,CASE WHEN %s THEN now() END,
+                CASE WHEN %s THEN %s END)
+              ON CONFLICT (phone) DO UPDATE SET
+                name=CASE WHEN btrim(existing.name)='' THEN EXCLUDED.name ELSE existing.name END,
+                marketing_opt_in=existing.marketing_opt_in OR EXCLUDED.marketing_opt_in,
+                consent_at=CASE WHEN EXCLUDED.marketing_opt_in THEN now() ELSE existing.consent_at END,
+                consent_source=CASE WHEN EXCLUDED.marketing_opt_in THEN EXCLUDED.consent_source ELSE existing.consent_source END,
+                whatsapp_opt_in=existing.whatsapp_opt_in OR EXCLUDED.whatsapp_opt_in,
+                whatsapp_consent_at=CASE WHEN EXCLUDED.whatsapp_opt_in THEN now() ELSE existing.whatsapp_consent_at END,
+                whatsapp_consent_source=CASE WHEN EXCLUDED.whatsapp_opt_in THEN EXCLUDED.whatsapp_consent_source ELSE existing.whatsapp_consent_source END''',
+              (phone, name, payload.sms_opt_in, payload.sms_opt_in, payload.sms_opt_in, sms_source,
+               payload.whatsapp_opt_in, payload.whatsapp_opt_in, payload.whatsapp_opt_in, whatsapp_source))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+    return {'message': 'درخواست شما ثبت شد. از همراهی شما سپاسگزاریم.'}
+
 
 @public.get('/submission-regions')
 def public_submission_regions():

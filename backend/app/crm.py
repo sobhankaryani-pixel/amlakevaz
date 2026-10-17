@@ -1,5 +1,8 @@
 """Private customer/contact directory and staged SMS campaigns."""
+import csv
+import io
 from fastapi import APIRouter,Depends,HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel,Field
 from .auth import require_roles
 from .db import pool
@@ -15,7 +18,9 @@ def overview(user=manager):
         stats=conn.execute('''SELECT count(*) AS total,
           count(*) FILTER (WHERE account_enabled) AS accounts,
           count(*) FILTER (WHERE marketing_opt_in AND is_active) AS opted_in,
-          count(*) FILTER (WHERE source='manual') AS manual
+          count(*) FILTER (WHERE whatsapp_opt_in AND is_active) AS whatsapp_opted_in,
+          count(*) FILTER (WHERE source='manual') AS manual,
+          count(*) FILTER (WHERE source='website_form') AS website_signups
           FROM app.customer_contacts''').fetchone()
         pending=conn.execute("SELECT count(*) AS n FROM app.property_submissions WHERE status='pending'").fetchone()['n']
     return {'stats':dict(stats),'pending_submissions':pending,'sms_configured':configured()}
@@ -25,10 +30,64 @@ def contacts(q:str='',offset:int=0,user=manager):
     if len(q)>100 or offset<0: raise HTTPException(422,'جست‌وجو معتبر نیست')
     with pool.connection() as conn:
         rows=conn.execute('''SELECT id,phone,name,source,account_enabled,marketing_opt_in,
-          consent_at,consent_source,notes,created_at,last_login_at,is_active
+          consent_at,consent_source,whatsapp_opt_in,whatsapp_consent_at,whatsapp_consent_source,
+          notes,created_at,last_login_at,is_active
           FROM app.customer_contacts WHERE (phone LIKE %s OR name ILIKE %s)
           ORDER BY created_at DESC LIMIT 100 OFFSET %s''',('%'+q+'%','%'+q+'%',offset)).fetchall()
     return {'items':[dict(r) for r in rows]}
+
+@crm.get('/export')
+def export_contacts(channel: str = 'whatsapp', format: str = 'txt', user=manager):
+    if channel not in ('whatsapp', 'sms'):
+        raise HTTPException(422, 'کانال خروجی معتبر نیست')
+    if format not in ('txt', 'csv'):
+        raise HTTPException(422, 'قالب خروجی معتبر نیست')
+    consent_column = 'whatsapp_opt_in' if channel == 'whatsapp' else 'marketing_opt_in'
+    with pool.connection() as conn:
+        rows = conn.execute(f'''SELECT name,phone FROM app.customer_contacts
+          WHERE is_active=true AND {consent_column}=true
+          ORDER BY created_at DESC,phone''').fetchall()
+    contacts = [dict(row) for row in rows]
+    suffix = 'whatsapp' if channel == 'whatsapp' else 'sms'
+    if format == 'txt':
+        # Business Sender can import a plain list; keep one local Iranian number per line.
+        content = '\n'.join(item['phone'] for item in contacts)
+        return Response(content=content, media_type='text/plain; charset=utf-8',
+                        headers={'Content-Disposition': f'attachment; filename="evazmelk-{suffix}-contacts.txt"',
+                                 'X-Export-Count': str(len(contacts))})
+    output = io.StringIO(newline='')
+    writer = csv.writer(output)
+    writer.writerow(['name', 'phone', 'phone_e164'])
+    for item in contacts:
+        phone = item['phone']
+        international = '+98' + phone[1:] if phone.startswith('09') else phone
+        writer.writerow([item['name'] or '', phone, international])
+    content = '\ufeff' + output.getvalue()
+    return Response(content=content, media_type='text/csv; charset=utf-8',
+                    headers={'Content-Disposition': f'attachment; filename="evazmelk-{suffix}-contacts.csv"',
+                             'X-Export-Count': str(len(contacts))})
+
+
+class WhatsAppConsentIn(BaseModel):
+    whatsapp_opt_in: bool
+    consent_evidence: str | None = Field(default=None, max_length=300)
+
+
+@crm.put('/contacts/{contact_id}/whatsapp-consent')
+def update_whatsapp_consent(contact_id: str, payload: WhatsAppConsentIn, user=manager):
+    if payload.whatsapp_opt_in and not (payload.consent_evidence or '').strip():
+        raise HTTPException(422, 'منبع رضایت واتساپ لازم است')
+    with pool.connection() as conn:
+        row = conn.execute('''UPDATE app.customer_contacts SET whatsapp_opt_in=%s,
+          whatsapp_consent_at=CASE WHEN %s THEN now() ELSE NULL END,
+          whatsapp_consent_source=CASE WHEN %s THEN %s ELSE NULL END WHERE id=%s RETURNING id''',
+          (payload.whatsapp_opt_in, payload.whatsapp_opt_in, payload.whatsapp_opt_in,
+           payload.consent_evidence, contact_id)).fetchone()
+        conn.commit()
+    if not row:
+        raise HTTPException(404, 'مخاطب پیدا نشد')
+    return {'whatsapp_opt_in': payload.whatsapp_opt_in}
+
 
 class ContactIn(BaseModel):
     phone:str
