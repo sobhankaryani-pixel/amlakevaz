@@ -489,3 +489,10 @@
 @media(max-width:700px){.site-header .header-contact-actions{gap:4px}.site-header .header-phone-link{font-size:0;gap:0;padding:4px}.site-header .header-phone-link svg{width:18px;height:18px}.site-header .header-social-link{width:27px;height:27px;flex-basis:27px}.site-header .header-account{font-size:10px;padding:8px 8px}.site-header .header-search-top{font-size:10px;padding:8px 9px}.hero-copy-float{padding:20px 19px;border-radius:17px}.hero-copy-float h1{font-size:clamp(23px,6vw,31px)}.hero-copy-float .hero-subtitle{font-size:17px}.hero-copy-float .hero-description{font-size:11px}}
 @media(max-width:390px){.site-header .header-tools{gap:3px}.site-header .header-contact-actions{gap:3px}.site-header .header-social-link{width:24px;height:24px;flex-basis:24px}.site-header .header-social-link svg{width:15px;height:15px}.site-header .header-phone-link svg{width:16px;height:16px}.site-header .header-account{font-size:9px;padding:7px 5px}.site-header .header-search-top{font-size:9px;padding:7px 6px}.hero-copy-float h1 .hero-title-line{white-space:normal}}
 
+
+
+/* Restored original homepage property carousel: real listings, horizontal RTL loop */
+.home-latest-listings{padding-top:24px;padding-bottom:26px}
+.home-latest-listings .carousel{margin-top:4px}
+.home-latest-listings .carousel-viewport{overflow:hidden;direction:rtl}
+.home-latest-listings .carousel-track{direction:rtl}
