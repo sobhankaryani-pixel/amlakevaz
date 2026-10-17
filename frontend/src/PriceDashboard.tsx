@@ -6,11 +6,22 @@ const API='https://api.evazmelk.ir';
 const fmt=(value:number)=>Math.round(value).toLocaleString('fa-IR');
 const names:Record<string,string>={land_residential:'زمین مسکونی',land_commercial:'زمین تجاری',house_new:'خانهٔ ویلایی نوساز',apartment:'آپارتمان',mehr:'مسکن مهر · قدیمی بدون تفکیک طبقه',mehr_upper:'مسکن مهر · طبقهٔ بالا',mehr_lower:'مسکن مهر · طبقهٔ پایین'};
 
+function changeLabel(points:Point[]){
+ const values=points.map(p=>Number(p.value_toman)).filter(v=>Number.isFinite(v));
+ if(values.length<2)return {label:'0٪',positive:false};
+ const prev=values[values.length-2];
+ const last=values[values.length-1];
+ if(!prev)return {label:'0٪',positive:false};
+ const change=Math.round(((last-prev)/prev)*100);
+ return {label:`${change>0?'+':''}${change.toLocaleString('fa-IR')}٪`,positive:change>0};
+}
+
 function Graph({name,points,color,unit,source}:{name:string;points:Point[];color:string;unit:string;source:string}){
  const values=points.map(p=>Number(p.value_toman));
+ const change=changeLabel(points);
  const low=Math.min(...values),high=Math.max(...values),span=high-low||1;
  const positions=points.map((p,i)=>({x:points.length===1?300:45+i*510/(points.length-1),y:175-(Number(p.value_toman)-low)*125/span}));
- return <article className="price-card"><h3>{name}</h3>{points.length===0?<p className="price-empty">برای این انتخاب هنوز {source==='sales'?'معاملهٔ معتبر':'برآورد ماهانه'} ثبت نشده است.</p>:<>
+ return <article className="price-card"><div className="price-card-top"><div className="price-card-heading"><h3>{name}</h3></div><div className={change.positive?'price-change up':'price-change down'}><span>درصد تغییرات:</span><b>{change.label}</b></div></div>{points.length===0?<p className="price-empty">برای این انتخاب هنوز {source==='sales'?'معاملهٔ معتبر':'برآورد ماهانه'} ثبت نشده است.</p>:<>
  <strong>{fmt(values[values.length-1])} <small>تومان {unit}</small></strong>
  <svg viewBox="0 0 600 210" className="price-graph" role="img" aria-label={`روند ${name}`}><line x1="30" y1="185" x2="580" y2="185" stroke="currentColor" opacity=".2"/>
  {positions.length>1&&<polyline points={positions.map(p=>`${p.x},${p.y}`).join(' ')} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>}
