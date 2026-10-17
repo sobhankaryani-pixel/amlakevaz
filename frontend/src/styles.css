@@ -496,3 +496,121 @@
 .home-latest-listings .carousel{margin-top:4px}
 .home-latest-listings .carousel-viewport{overflow:hidden;direction:rtl}
 .home-latest-listings .carousel-track{direction:rtl}
+
+
+/* Homepage chart layout repair: keep listings before full charts and prevent nested card overflow. */
+.home-full-price-charts{
+  width:100%;
+  max-width:1320px;
+  min-width:0;
+  margin:0 auto;
+  padding:22px 24px 42px;
+  scroll-margin-top:88px;
+  box-sizing:border-box;
+}
+.home-full-price-charts .price-dashboard{
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  max-width:none;
+  min-width:0;
+  padding:clamp(16px,2vw,26px);
+  border:1px solid var(--line);
+  border-radius:22px;
+  background:rgba(255,255,255,.58);
+  box-shadow:0 10px 28px rgba(18,49,76,.045);
+  box-sizing:border-box;
+}
+.home-full-price-charts .price-intro{min-width:0;margin:0 0 14px}
+.home-full-price-charts .price-intro h2{font-size:clamp(22px,2.3vw,29px);line-height:1.5;margin:0 0 5px;overflow-wrap:anywhere}
+.home-full-price-charts .price-intro p{font-size:13px;line-height:1.9;margin:0;overflow-wrap:anywhere}
+.home-full-price-charts .price-controls:not(.price-chart-controls){margin:12px 0 16px}
+.home-full-price-charts .price-cards{
+  display:grid;
+  width:100%;
+  min-width:0;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+  gap:14px;
+  margin:0;
+}
+.home-full-price-charts .price-cards>.price-chart-section,
+.home-full-price-charts .price-cards>.price-chart-section:last-child{
+  grid-column:auto;
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  min-width:0;
+  padding:13px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--paper);
+  box-shadow:0 5px 18px rgba(18,49,76,.035);
+  box-sizing:border-box;
+  overflow:hidden;
+}
+.home-full-price-charts .price-chart-controls{
+  display:flex;
+  flex:0 0 auto;
+  align-items:flex-end;
+  width:100%;
+  min-width:0;
+  gap:10px;
+  margin:0 0 10px;
+}
+.home-full-price-charts .price-chart-controls label{flex:1 1 0;min-width:0;font-size:11px}
+.home-full-price-charts .price-chart-controls select{display:block;width:100%;min-width:0;max-width:100%;padding:9px 8px;box-sizing:border-box}
+.home-full-price-charts .price-chart-section>.price-card{
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
+  width:100%;
+  min-width:0;
+  height:auto;
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  box-sizing:border-box;
+}
+.home-full-price-charts .price-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-width:0;margin-bottom:8px}
+.home-full-price-charts .price-card-heading{flex:1 1 150px;min-width:0}
+.home-full-price-charts .price-card-heading h3{font-size:14px;line-height:1.7;margin:0;overflow-wrap:anywhere}
+.home-full-price-charts .price-change{flex:0 0 auto;max-width:100%;gap:5px;white-space:nowrap}
+.home-full-price-charts .price-change span,.home-full-price-charts .price-change b{font-size:11px}
+.home-full-price-charts .price-card strong{font-size:clamp(18px,1.7vw,22px);line-height:1.6;overflow-wrap:anywhere}
+.home-full-price-charts .price-card strong small{display:inline;font-size:10px;line-height:1.7;white-space:normal}
+.home-full-price-charts .price-graph{display:block;width:100%;max-width:100%;height:clamp(110px,10vw,136px);margin:8px 0 0;overflow:visible}
+.home-full-price-charts .price-periods{display:flex;justify-content:space-between;gap:8px;min-width:0;font-size:10px;line-height:1.6;overflow-wrap:anywhere}
+.home-full-price-charts .price-empty{min-height:118px;margin:8px 0;overflow-wrap:anywhere}
+.home-full-price-charts .price-method{
+  position:relative;
+  display:block;
+  clear:both;
+  width:100%;
+  min-width:0;
+  margin:18px 0 0;
+  padding:13px 2px 0;
+  border-top:1px solid var(--line);
+  font-size:11px;
+  line-height:1.95;
+  overflow-wrap:anywhere;
+  box-sizing:border-box;
+}
+:root[data-theme=dark] .home-full-price-charts .price-dashboard{background:rgba(17,35,53,.78)}
+@media(max-width:1000px){
+  .home-full-price-charts .price-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .home-full-price-charts .price-card strong{font-size:20px}
+}
+@media(max-width:700px){
+  .home-full-price-charts{padding:14px 12px 28px}
+  .home-full-price-charts .price-dashboard{padding:15px 12px;border-radius:16px}
+  .home-full-price-charts .price-cards{grid-template-columns:minmax(0,1fr);gap:12px}
+  .home-full-price-charts .price-cards>.price-chart-section{padding:12px}
+  .home-full-price-charts .price-chart-controls label{flex:1 1 100%}
+  .home-full-price-charts .price-card-heading h3{font-size:14px}
+  .home-full-price-charts .price-graph{height:120px}
+  .home-full-price-charts .price-method{margin-top:14px;padding-top:11px;font-size:10px}
+}
