@@ -1,1 +1,30 @@
-<!doctype html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><meta name="theme-color" content="#f6f8fb"/><title>املاک خودمونی اوز | شاخص قیمت و آگهی ملک</title><link rel="icon" type="image/png" href="/brand/favicon.png"/><meta name="description" content="مرجع داده و تحلیل بازار املاک اوز"/></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+<!doctype html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><meta name="theme-color" content="#f6f8fb"/><title>املاک خودمونی اوز | شاخص قیمت و آگهی ملک</title><link rel="icon" type="image/webp" href="/brand/favicon.webp"/><link rel="preload" as="image" href="/visual/evaz-inspired-hero.webp" fetchpriority="high"/><meta name="description" content="مرجع داده و تحلیل بازار املاک اوز"/><script>
+(() => {
+  if (!('serviceWorker' in navigator)) return;
+  const reloadKey = 'evaz-range-sw-reloaded-once';
+  const register = async () => {
+    try {
+      await navigator.serviceWorker.register('/asset-range-sw.js', { scope: '/' });
+      await navigator.serviceWorker.ready;
+      if (navigator.serviceWorker.controller) {
+        try { sessionStorage.removeItem(reloadKey); } catch (_) {}
+        return;
+      }
+      let alreadyReloaded = false;
+      try { alreadyReloaded = sessionStorage.getItem(reloadKey) === '1'; } catch (_) {}
+      if (alreadyReloaded) return;
+      const reloadWhenControlled = () => {
+        if (!navigator.serviceWorker.controller) return;
+        try { sessionStorage.setItem(reloadKey, '1'); } catch (_) {}
+        location.reload();
+      };
+      navigator.serviceWorker.addEventListener('controllerchange', reloadWhenControlled, { once: true });
+      if (navigator.serviceWorker.controller) reloadWhenControlled();
+    } catch (_) {
+      // If service workers are unavailable, the site continues with normal requests.
+    }
+  };
+  register();
+})();
+</script>
+</head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>

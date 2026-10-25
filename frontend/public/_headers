@@ -1,2 +1,14 @@
 /*
-  Cache-Control: public, max-age=3600
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/brand/*
+  Cache-Control: public, max-age=14400
+
+/visual/*
+  Cache-Control: public, max-age=14400
+
+/homepage-promos/*
+  Cache-Control: public, max-age=14400

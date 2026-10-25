@@ -9,7 +9,7 @@ from .config import settings
 from .db import pool, open_pool, close_pool
 from .auth import require_roles, verify_password, create_token
 from .price_series import SEGMENTS, sale_series
-from .seller_auth import seller,require_seller
+from .seller_auth import seller,require_seller,normalize_phone
 from .crm import crm
 
 @asynccontextmanager
@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
     open_pool(); yield; close_pool()
 
 app = FastAPI(title="Evaz Property Index API", version="0.1.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=[x.strip() for x in settings.allowed_origins.split(",")], allow_credentials=True, allow_methods=["GET","POST","PUT","DELETE"], allow_headers=["Authorization","Content-Type"])
+app.add_middleware(CORSMiddleware, allow_origins=[x.strip() for x in settings.allowed_origins.split(",")], allow_credentials=True, allow_methods=["GET","POST","PUT","DELETE"], allow_headers=["Authorization","Content-Type"], expose_headers=["X-Export-Count"])
 
 public = APIRouter(prefix="/api/public", tags=["public"])
 admin = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -65,6 +65,56 @@ class SellerSubmissionIn(BaseModel):
         if self.kind == 'national' and (self.national_phase not in ('1','2','3','4','5') or not self.national_block or not self.national_block.isdecimal() or self.national_level not in ('بالا','پایین','نامشخص') or self.national_stage not in NATIONAL_STAGES):
             raise ValueError('فاز، بلوک، طبقه و مرحلهٔ ساخت مسکن ملی لازم است')
         return self
+
+class PublicContactSubscriptionIn(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    phone: str = Field(min_length=10, max_length=20, pattern=r'^\+?[0-9۰-۹٠-٩\s\-]{10,20}$')
+    sms_opt_in: bool = False
+    whatsapp_opt_in: bool = False
+    website: str = Field(default='', max_length=200)  # Honeypot; ordinary visitors never see it.
+
+    @model_validator(mode='after')
+    def require_channel_consent(self):
+        if not self.website and not (self.sms_opt_in or self.whatsapp_opt_in):
+            raise ValueError('حداقل یکی از راه‌های دریافت پیام را انتخاب کنید')
+        return self
+
+
+@public.post('/contact-subscriptions', status_code=201)
+def create_public_contact_subscription(payload: PublicContactSubscriptionIn):
+    # Bots filling the hidden field receive the same generic response without a database write.
+    if payload.website:
+        return {'message': 'درخواست شما ثبت شد. از همراهی شما سپاسگزاریم.'}
+    phone = normalize_phone(payload.phone)
+    name = payload.name.strip()
+    if len(name) < 2:
+        raise HTTPException(422, 'نام معتبر نیست')
+    sms_source = 'فرم عضویت عمومی سایت؛ رضایت صریح برای پیامک'
+    whatsapp_source = 'فرم عضویت عمومی سایت؛ رضایت صریح برای واتساپ'
+    with pool.connection() as conn:
+        try:
+            conn.execute('''INSERT INTO app.customer_contacts AS existing
+              (phone,name,source,marketing_opt_in,consent_at,consent_source,
+               whatsapp_opt_in,whatsapp_consent_at,whatsapp_consent_source)
+              VALUES (%s,%s,'website_form',%s,CASE WHEN %s THEN now() END,
+                CASE WHEN %s THEN %s END,%s,CASE WHEN %s THEN now() END,
+                CASE WHEN %s THEN %s END)
+              ON CONFLICT (phone) DO UPDATE SET
+                name=CASE WHEN btrim(existing.name)='' THEN EXCLUDED.name ELSE existing.name END,
+                marketing_opt_in=existing.marketing_opt_in OR EXCLUDED.marketing_opt_in,
+                consent_at=CASE WHEN EXCLUDED.marketing_opt_in THEN now() ELSE existing.consent_at END,
+                consent_source=CASE WHEN EXCLUDED.marketing_opt_in THEN EXCLUDED.consent_source ELSE existing.consent_source END,
+                whatsapp_opt_in=existing.whatsapp_opt_in OR EXCLUDED.whatsapp_opt_in,
+                whatsapp_consent_at=CASE WHEN EXCLUDED.whatsapp_opt_in THEN now() ELSE existing.whatsapp_consent_at END,
+                whatsapp_consent_source=CASE WHEN EXCLUDED.whatsapp_opt_in THEN EXCLUDED.whatsapp_consent_source ELSE existing.whatsapp_consent_source END''',
+              (phone, name, payload.sms_opt_in, payload.sms_opt_in, payload.sms_opt_in, sms_source,
+               payload.whatsapp_opt_in, payload.whatsapp_opt_in, payload.whatsapp_opt_in, whatsapp_source))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+    return {'message': 'درخواست شما ثبت شد. از همراهی شما سپاسگزاریم.'}
+
 
 @public.get('/submission-regions')
 def public_submission_regions():
@@ -570,5 +620,67 @@ def list_direct_properties(user=Depends(require_roles("owner","admin","data_entr
           ORDER BY p.created_at DESC LIMIT 100""").fetchall()
     return {"items":[dict(row) for row in rows]}
 
+
+
+class HomepagePromotionUpdate(BaseModel):
+    title: str = Field(min_length=2, max_length=100)
+    subtitle: str = Field(default="", max_length=220)
+    badge: str = Field(default="ویژه", max_length=40)
+    image_url: str = Field(min_length=1, max_length=600)
+    cta_text: str = Field(default="مشاهده آگهی‌ها", max_length=40)
+    target_page: str = "listings"
+    sort_order: int = Field(default=1, ge=1, le=20)
+    is_active: bool = True
+
+    @model_validator(mode="after")
+    def validate_promotion(self):
+        if self.target_page not in ("listings", "map", "index", "areas", "register", "home"):
+            raise ValueError("مقصد کارت معتبر نیست")
+        if not (self.image_url.startswith("/") or self.image_url.startswith("https://")):
+            raise ValueError("آدرس عکس باید مسیر محلی یا لینک HTTPS عمومی باشد")
+        if self.image_url.startswith("//"):
+            raise ValueError("آدرس عکس معتبر نیست")
+        return self
+
+
+def _promotion_dict(row):
+    return {
+        "id": row["id"], "slug": row["slug"], "title": row["title"],
+        "subtitle": row["subtitle"], "badge": row["badge"],
+        "image_url": row["image_url"], "cta_text": row["cta_text"],
+        "target_page": row["target_page"], "sort_order": row["sort_order"],
+        "is_active": row["is_active"],
+    }
+
+
+@public.get("/homepage-promotions")
+def list_public_homepage_promotions():
+    with pool.connection() as conn:
+        rows = conn.execute("""SELECT id,slug,title,subtitle,badge,image_url,cta_text,target_page,sort_order,is_active
+            FROM app.homepage_promotions WHERE is_active=true ORDER BY sort_order,id LIMIT 8""").fetchall()
+    return {"items": [_promotion_dict(row) for row in rows]}
+
+
+@admin.get("/homepage-promotions")
+def list_admin_homepage_promotions(user=Depends(require_roles("owner", "admin", "editor", "data_entry"))):
+    with pool.connection() as conn:
+        rows = conn.execute("""SELECT id,slug,title,subtitle,badge,image_url,cta_text,target_page,sort_order,is_active
+            FROM app.homepage_promotions ORDER BY sort_order,id""").fetchall()
+    return {"items": [_promotion_dict(row) for row in rows]}
+
+
+@admin.put("/homepage-promotions/{promotion_id}")
+def update_homepage_promotion(promotion_id: int, payload: HomepagePromotionUpdate,
+                              user=Depends(require_roles("owner", "admin", "editor", "data_entry"))):
+    with pool.connection() as conn:
+        row = conn.execute("""UPDATE app.homepage_promotions SET title=%s,subtitle=%s,badge=%s,image_url=%s,
+            cta_text=%s,target_page=%s,sort_order=%s,is_active=%s,updated_at=now()
+            WHERE id=%s RETURNING id,slug,title,subtitle,badge,image_url,cta_text,target_page,sort_order,is_active""",
+            (payload.title.strip(), payload.subtitle.strip(), payload.badge.strip(), payload.image_url.strip(),
+             payload.cta_text.strip(), payload.target_page, payload.sort_order, payload.is_active, promotion_id)).fetchone()
+        if not row:
+            raise HTTPException(404, "کارت تبلیغاتی پیدا نشد")
+        conn.commit()
+    return {"item": _promotion_dict(row), "message": "کارت صفحهٔ اصلی ذخیره شد."}
 
 app.include_router(public); app.include_router(admin); app.include_router(seller); app.include_router(crm)
