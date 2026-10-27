@@ -67,3 +67,20 @@
  .nav-links{order:3;flex-basis:100%;justify-content:center}
  .header-tools{margin-right:auto}
 }
+
+/* Reference proportions: visible emblem ~112x100 in a 120px header row. */
+@media(min-width:901px){
+ .header-inner{max-width:1760px;min-height:120px;gap:20px;padding-top:10px;padding-bottom:10px}
+ .brand-link{gap:14px}
+ .brand-link img{width:112px;height:100px;object-fit:contain;flex:none}
+ .brand-link>span{display:flex;align-items:baseline;gap:12px;white-space:nowrap}
+ .brand-link strong,.brand-link small{display:inline;font-size:clamp(27px,2.25vw,36px);font-weight:900;line-height:1.5}
+ .brand-link small{color:#b78942}
+ .nav-links{flex:1;min-width:0}
+ .nav-links button{padding-right:8px;padding-left:8px}
+}
+@media(min-width:901px) and (max-width:1500px){
+ .header-inner{flex-wrap:wrap}
+ .header-tools{margin-right:auto}
+ .nav-links{order:3;flex-basis:100%;justify-content:center}
+}

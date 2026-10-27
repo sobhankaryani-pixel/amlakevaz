@@ -324,3 +324,10 @@
  .unified-hero-image{display:block;width:100%;height:auto}
  .unified-hero .hero-image-note{position:absolute;bottom:8px;left:8px;margin:0;max-width:90%;font-size:10px}
 }
+@media(max-width:900px){
+ .brand-link{gap:10px;max-width:100%}
+ .brand-link img{width:76px;height:68px;object-fit:contain;flex:none}
+ .brand-link>span{display:flex;align-items:baseline;gap:7px;white-space:nowrap}
+ .brand-link strong,.brand-link small{display:inline;font-size:clamp(19px,5.3vw,28px);font-weight:900;line-height:1.5}
+ .brand-link small{color:#b78942}
+}
