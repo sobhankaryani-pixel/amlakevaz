@@ -360,11 +360,11 @@
  .mobile-site .map-property-photo{height:220px}
 }
 @media(max-width:900px){
- .mobile-site .index-section>.section-heading{align-items:flex-start;gap:16px;margin-bottom:25px}
- .mobile-site .index-section>.section-heading .section-kicker{font-size:23px;line-height:1.6}
- .mobile-site .index-section>.section-heading h2{font-size:28px;line-height:1.6}
- .mobile-site .index-section>.section-heading>.link-button{font-size:21px;line-height:1.7}
- .mobile-site .market-compact .market-filters label{font-size:21px;gap:10px}
+ .mobile-site .index-section>.section-heading{align-items:flex-start;gap:9px;margin-bottom:20px}
+ .mobile-site .index-section>.section-heading .section-kicker{font-size:13px;line-height:1.8}
+ .mobile-site .index-section>.section-heading h2{font-size:26px;line-height:1.6}
+ .mobile-site .index-section>.section-heading>.link-button{font-size:14px;line-height:1.8}
+ .mobile-site .market-compact .market-filters label{font-size:14px;gap:7px}
  .mobile-site .market-compact .market-filters select{font-size:16px}
  .mobile-site .market-growth>small{font-size:11px}
 }

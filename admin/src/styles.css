@@ -6,3 +6,6 @@ select,textarea{display:block;width:100%;margin-top:7px;border:1px solid #d9e1eb
 .location-picker h3{margin-top:0}.location-picker p{color:#667987}.location-map{width:100%;height:380px;border-radius:14px;margin:16px 0;overflow:hidden}.location-picker .fields{max-width:700px}
 .location-edit{margin-top:22px;border-top:1px solid #e8edf3;padding-top:18px}.location-edit .actions button{width:auto;margin:0}.location-edit .secondary{background:#e8f1ef;color:#0d6658}
 .kind-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px}.kind-grid .kind{width:100%;background:#f3f7f6;color:#24443f;border:1px solid #cadbd6}.kind-grid .kind.selected{background:#0d7c66;color:white;border-color:#0d7c66}
+.brand{align-items:center;gap:8px;font-size:17px;white-space:nowrap}.brand img{width:56px;height:54px;object-fit:contain;flex:none}.shell>aside{width:290px;flex:none}
+.admin-location-dot{background:none;border:0}.admin-location-dot>span{display:block;width:18px;height:18px;border-radius:50%;background:#c92c42;border:3px solid white;box-shadow:0 2px 8px #67112566}
+@media(max-width:760px){.shell>aside{width:100%}.brand{font-size:22px}.brand img{width:64px;height:60px}}

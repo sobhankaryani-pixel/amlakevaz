@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import pool, open_pool, close_pool
 from .auth import require_roles, verify_password, create_token
-from .price_series import SEGMENTS, sale_series
+from .price_series import SEGMENTS
 from .seller_auth import seller,require_seller,normalize_phone
 from .crm import crm
 
@@ -205,30 +205,22 @@ def login(payload: LoginIn):
 def public_indices(): return {"items": [], "message": "Published indices will appear here."}
 
 @public.get("/price-series")
-def public_price_series(source: str = "manual", region: str = "all"):
-    if source not in ("manual", "sales") or len(region) > 30:
+def public_price_series(region: str = "all"):
+    # One published index: the owner's monthly declared price only.
+    # Old clients may still send ?source=sales; it is ignored, never used.
+    if len(region) > 30:
         raise HTTPException(422, "فیلتر نامعتبر است")
     with pool.connection() as conn:
         regions = conn.execute("SELECT name,slug FROM app.regions WHERE is_public=true AND slug LIKE 'R-%' ORDER BY slug").fetchall()
         if region != 'all' and region not in {r['slug'] for r in regions}:
             raise HTTPException(422, "منطقه معتبر نیست")
-        if source == 'manual':
-            rows = conn.execute("""SELECT period,segment,region_key,value_toman FROM app.monthly_price_estimates
-                 WHERE region_key=%s ORDER BY period""", (region,)).fetchall()
-            series = {s: [] for s in SEGMENTS}
-            for r in rows:
-                if r['segment'] in series:
-                    series[r['segment']].append({'period': r['period'], 'value_toman': r['value_toman'], 'count': None})
-        else:
-            rows = conn.execute("""SELECT t.code,p.usage_type,p.house_condition,p.mehr_level,p.area_m2,p.building_area_m2,
-                    r.slug AS region_key,s.sale_date,s.sale_price_toman
-                    FROM app.property_sales s JOIN app.properties p ON p.id=s.property_id
-                    JOIN app.property_types t ON t.id=p.property_type_id
-                    LEFT JOIN app.regions r ON r.id=p.region_id
-                    WHERE p.status='فروخته شده'""").fetchall()
-            series = {s: [] for s in SEGMENTS}
-            series.update(sale_series(rows,region))
-    return {'regions': [dict(r) for r in regions], 'source': source, 'series': series}
+        rows = conn.execute("""SELECT period,segment,region_key,value_toman FROM app.monthly_price_estimates
+             WHERE region_key=%s ORDER BY period""", (region,)).fetchall()
+        series = {segment: [] for segment in SEGMENTS}
+        for row in rows:
+            if row['segment'] in series:
+                series[row['segment']].append({'period': row['period'], 'value_toman': row['value_toman'], 'count': None})
+    return {'regions': [dict(r) for r in regions], 'source': 'manual', 'label': 'قیمت اعلامی خودمونی', 'series': series}
 
 @public.get("/transactions")
 def public_transactions():
@@ -544,7 +536,8 @@ def sell_property(public_code: str, payload: SaleIn, user=Depends(require_roles(
               VALUES (%s,'sell','property',%s)""", (user['sub'],row['id']))
     return {'public_code': public_code, 'status': 'فروخته شده'}
 
-@admin.post('/monthly-estimates')
+@admin.post('/index-prices')
+@admin.post('/monthly-estimates', include_in_schema=False)
 def save_estimate(payload: EstimateIn, user=Depends(require_roles('owner','admin'))):
     if payload.segment not in SEGMENTS or payload.segment.startswith('land_') and payload.region_key == 'all':
         raise HTTPException(422, 'گروه قیمت یا منطقه معتبر نیست')
@@ -562,7 +555,8 @@ def save_estimate(payload: EstimateIn, user=Depends(require_roles('owner','admin
         conn.commit()
     return {'id': str(row['id'])}
 
-@admin.get('/monthly-estimates')
+@admin.get('/index-prices')
+@admin.get('/monthly-estimates', include_in_schema=False)
 def list_estimates(user=Depends(require_roles('owner','admin'))):
     with pool.connection() as conn:
         rows = conn.execute("""SELECT period,segment,region_key,value_toman FROM app.monthly_price_estimates
