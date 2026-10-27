@@ -103,3 +103,27 @@
  .desktop-site .home-map-intro{grid-template-columns:1fr 1fr}
  .desktop-site .home-map-copy{padding:12px}
 }
+
+/* Home market section follows the supplied reference layout. */
+@media(min-width:901px){
+ .desktop-site .index-section{width:calc(100% - 32px);max-width:1700px;padding:22px 36px 32px;margin:10px auto 0;border-radius:28px}
+ .desktop-site .index-section>.section-heading{display:flex;flex-direction:column;align-items:flex-start;gap:24px;margin-bottom:62px}
+ .desktop-site .index-section>.section-heading .section-kicker{font-size:40px;line-height:1.65;font-weight:800}
+ .desktop-site .index-section>.section-heading h2{font-size:44px;line-height:1.6;margin:12px 0 0;font-weight:900}
+ .desktop-site .index-section>.section-heading>.link-button{font-size:36px;line-height:1.7;font-weight:800;padding:4px 0}
+ .desktop-site .market-compact .market-grid{gap:22px}
+ .desktop-site .market-compact .market-filters{min-height:104px;margin-bottom:2px}
+ .desktop-site .market-compact .market-filters label{font-size:30px;font-weight:500;line-height:1.7;gap:18px;text-align:right}
+ .desktop-site .market-compact .market-filters select{font-size:14px;line-height:1.6;min-height:55px;padding:12px 18px;border-radius:13px;font-weight:400}
+ .desktop-site .market-compact .market-card{border-radius:23px;padding:25px}
+ .desktop-site .market-compact .market-card-top h3{font-size:16px}
+}
+@media(min-width:901px) and (max-width:1150px){
+ .desktop-site .index-section{padding-left:22px;padding-right:22px}
+ .desktop-site .index-section>.section-heading h2{font-size:36px}
+ .desktop-site .index-section>.section-heading .section-kicker{font-size:32px}
+ .desktop-site .index-section>.section-heading>.link-button{font-size:29px}
+ .desktop-site .market-compact .market-grid{gap:13px}
+ .desktop-site .market-compact .market-filters label{font-size:25px}
+ .desktop-site .market-compact .market-card{padding:16px}
+}
