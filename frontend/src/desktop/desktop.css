@@ -99,3 +99,7 @@
  .desktop-site .market-card-top{flex-wrap:wrap;min-height:74px;align-content:start}
  .desktop-site .market-change{margin-right:auto}
 }
+@media(min-width:901px){
+ .desktop-site .home-map-intro{grid-template-columns:1fr 1fr}
+ .desktop-site .home-map-copy{padding:12px}
+}

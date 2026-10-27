@@ -140,3 +140,17 @@
 .market-note{margin:20px 0 0;color:var(--muted);font-size:12px;line-height:2}
 :root[data-theme=dark] .market-change.up{background:#173d34;color:#8ae1b8}
 :root[data-theme=dark] .market-change.down{background:#482b32;color:#ffb0ac}
+
+/* Lightweight map invitation: the live map mounts only after activation. */
+.home-map-section{padding-top:48px;padding-bottom:24px}
+.home-map-intro{display:grid;align-items:center;gap:32px;border:1px solid var(--line);border-radius:24px;padding:26px;background:var(--paper);box-shadow:var(--shadow)}
+.home-map-copy h2{font-size:clamp(25px,2.6vw,34px);line-height:1.6;margin:10px 0}
+.home-map-copy p{font-size:15px;line-height:2;color:var(--muted);margin:0 0 24px;max-width:480px}
+.home-map-actions{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.home-map-open{display:flex;align-items:center;justify-content:center;gap:12px;border:0;border-radius:12px;padding:13px 20px;min-height:48px;background:#0752ac;color:white;font:inherit;font-weight:700}
+.home-map-open:hover{background:#073f86}.home-map-open span{font-size:23px;line-height:1}
+.home-map-preview{position:relative;margin:0;overflow:hidden;border-radius:16px;min-width:0;background:var(--soft)}
+.home-map-preview img{display:block;width:100%;height:290px;object-fit:cover}
+.home-map-preview figcaption{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,#122b45e8);color:#fff;font-size:12px;line-height:1.9;padding:28px 16px 13px}
+.home-map-live{margin-top:20px;border:1px solid var(--line);border-radius:22px;background:var(--paper);overflow:hidden;scroll-margin-top:180px}
+.home-map-live .map-page{padding:24px;max-width:none}

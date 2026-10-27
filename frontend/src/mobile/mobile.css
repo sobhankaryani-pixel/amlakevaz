@@ -340,3 +340,13 @@
  .mobile-site .market-value{font-size:26px}
  .mobile-site .market-change{font-size:13px}
 }
+@media(max-width:900px){
+ .mobile-site .home-map-section{padding-top:30px;padding-bottom:12px}
+ .mobile-site .home-map-intro{grid-template-columns:minmax(0,1fr);padding:18px;gap:20px;border-radius:20px}
+ .mobile-site .home-map-copy h2{font-size:25px}
+ .mobile-site .home-map-copy p{font-size:14px;margin-bottom:18px}
+ .mobile-site .home-map-preview img{height:220px}
+ .mobile-site .home-map-actions{align-items:stretch;flex-direction:column;gap:8px}
+ .mobile-site .home-map-open{width:100%;min-height:50px;font-size:16px}
+ .mobile-site .home-map-live .map-page{padding:16px 10px}
+}
