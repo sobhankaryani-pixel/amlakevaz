@@ -331,3 +331,12 @@
  .brand-link strong,.brand-link small{display:inline;font-size:clamp(19px,5.3vw,28px);font-weight:900;line-height:1.5}
  .brand-link small{color:#b78942}
 }
+@media(max-width:900px){
+ .mobile-site .market-grid{grid-template-columns:minmax(0,1fr);gap:22px}
+ .mobile-site .market-toolbar{align-items:stretch;flex-direction:column}
+ .mobile-site .market-toolbar select,.mobile-site .market-filters select{font-size:16px;min-height:48px}
+ .mobile-site .market-card{padding:20px 16px}
+ .mobile-site .market-card-top h3{font-size:16px}
+ .mobile-site .market-value{font-size:26px}
+ .mobile-site .market-change{font-size:13px}
+}

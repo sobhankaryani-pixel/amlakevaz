@@ -84,3 +84,18 @@
  .header-tools{margin-right:auto}
  .nav-links{order:3;flex-basis:100%;justify-content:center}
 }
+
+/* All three market charts stay on ONE desktop row, including 901px laptops. */
+@media(min-width:901px){
+ .desktop-site .market-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+ .desktop-site .market-grid>.market-chart-section{grid-column:auto;min-width:0}
+ .desktop-site .index-section{max-width:1360px;padding:30px;margin-left:auto;margin-right:auto}
+ .desktop-site .market-toolbar label{min-width:250px}
+}
+@media(min-width:901px) and (max-width:1150px){
+ .desktop-site .index-section{margin-left:16px;margin-right:16px;padding:22px}
+ .desktop-site .market-grid{gap:12px}
+ .desktop-site .market-card{padding:15px}
+ .desktop-site .market-card-top{flex-wrap:wrap;min-height:74px;align-content:start}
+ .desktop-site .market-change{margin-right:auto}
+}
