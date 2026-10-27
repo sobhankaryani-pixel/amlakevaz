@@ -53,3 +53,17 @@
   .header-tools{margin-right:auto}.brand-link strong{font-size:20px}
   .seller-invite,.index-section{margin-right:24px;margin-left:24px}
 }
+
+/* Header search now sits between account and property registration. */
+@media(min-width:901px){
+ .header-search{order:1;min-height:44px;padding:11px 15px;border:1px solid var(--line);border-radius:12px;color:var(--ink);background:var(--paper);font-size:14px;font-weight:800;white-space:nowrap}
+ .header-account{order:0}.header-register{order:2}
+ .home-hero.unified-hero{min-height:0;background:none;padding:0}
+ .unified-hero-image{display:block;width:100%;height:auto}
+ .unified-hero .hero-image-note{bottom:12px;left:20px}
+}
+@media(min-width:901px) and (max-width:1280px){
+ .header-inner{flex-wrap:wrap;gap:6px 16px;padding-top:8px;padding-bottom:8px}
+ .nav-links{order:3;flex-basis:100%;justify-content:center}
+ .header-tools{margin-right:auto}
+}

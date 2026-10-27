@@ -308,3 +308,19 @@
   .brand-link img{width:44px;height:48px}.brand-link strong{font-size:14px}
   .header-register{padding:10px 8px}.header-tools{gap:5px}
 }
+
+/* Separate mobile header: three clear actions plus the menu. */
+@media(max-width:900px){
+ .header-inner{flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
+ .header-tools{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 44px;gap:6px;margin:0}
+ .header-account,.header-search,.header-register{display:grid;place-items:center;order:0;margin:0;min-height:46px;padding:8px 4px;border:1px solid var(--line);border-radius:11px;font-size:13px;line-height:1.6;white-space:normal;text-align:center}
+ .header-search{color:var(--ink);background:var(--paper);font-weight:800;order:1}
+ .header-register{order:2}.menu-switch{order:3;width:44px;height:46px}
+ .hero-panel{background:linear-gradient(145deg,rgba(250,252,255,.92),rgba(241,248,249,.86));box-shadow:none;border:0!important}
+ .hero-panel .hero-description{margin-top:12px}.hero-inner{padding-top:28px;padding-bottom:28px}
+}
+@media(max-width:900px){
+ .home-hero.unified-hero{min-height:0;background:none;padding:0;position:relative}
+ .unified-hero-image{display:block;width:100%;height:auto}
+ .unified-hero .hero-image-note{position:absolute;bottom:8px;left:8px;margin:0;max-width:90%;font-size:10px}
+}
