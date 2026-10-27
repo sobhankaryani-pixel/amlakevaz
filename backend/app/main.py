@@ -352,13 +352,15 @@ def map_listings():
           p.latitude, p.longitude, l.asking_price_toman, p.usage_type,
           p.land_length_m, p.land_width_m, p.mehr_section, p.mehr_level,
           p.house_condition, p.bedrooms, p.floor_count, p.commercial_area_m2,
-          p.national_phase, p.national_block, p.national_level, p.national_stage
+          p.national_phase, p.national_block, p.national_level, p.national_stage,
+          p.cover_photo_url, p.general_area AS neighborhood, p.public_notes, p.build_year,
+          p.street_width, p.street_frontage_m, p.floor
           FROM app.listings l
           JOIN app.market_records m ON m.id=l.market_record_id
           JOIN app.properties p ON p.id=m.property_id
           JOIN app.property_types t ON t.id=p.property_type_id
           LEFT JOIN app.regions r ON r.id=p.region_id
-          WHERE l.is_public=true AND l.status='published'
+          WHERE l.is_public=true AND l.status='published' AND p.status='آگهی فروش'
           AND p.latitude IS NOT NULL AND p.longitude IS NOT NULL
           ORDER BY l.published_at DESC LIMIT 1000""").fetchall()
     return {"items":[dict(row) for row in rows]}

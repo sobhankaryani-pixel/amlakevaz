@@ -350,3 +350,12 @@
  .mobile-site .home-map-open{width:100%;min-height:50px;font-size:16px}
  .mobile-site .home-map-live .map-page{padding:16px 10px}
 }
+@media(max-width:900px){
+ .mobile-site .map-property-overlay{padding:12px;align-items:end}
+ .mobile-site .map-property-dialog{max-height:92vh;max-height:92dvh;border-radius:22px;padding-bottom:env(safe-area-inset-bottom)}
+ .mobile-site .map-property-body{padding:24px 18px}
+ .mobile-site .map-property-body h2{font-size:23px}
+ .mobile-site .map-property-price{font-size:24px}
+ .mobile-site .map-property-facts{grid-template-columns:minmax(0,1fr);margin:18px 0}
+ .mobile-site .map-property-photo{height:220px}
+}

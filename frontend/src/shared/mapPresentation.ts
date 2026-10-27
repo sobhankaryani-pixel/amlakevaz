@@ -1,0 +1,7 @@
+export type MapKind={property_code:string;property_type:string;category?:string};
+export function isLand(p:MapKind){return ['land','raw_land','commercial_land','residential_land','urban_garden'].includes(p.property_code)||/زمین|باغ/.test(p.property_type)}
+export function isHouse(p:MapKind){return ['villa','villa_house','apartment','mehr_housing','national_housing','house'].includes(p.property_code)||/خانه|ویلایی|آپارتمان|مسکن/.test(p.property_type)}
+export function shortPrice(value:number){const n=Number(value);if(!Number.isFinite(n)||n<=0)return 'قیمت نامشخص';return n>=1e9?`${(n/1e9).toLocaleString('fa-IR',{maximumFractionDigits:1})} میلیارد`:n>=1e6?`${(n/1e6).toLocaleString('fa-IR',{maximumFractionDigits:1})} میلیون`:`${n.toLocaleString('fa-IR')} تومان`}
+export function markerLabel(p:MapKind&{area_m2:number|null;asking_price_toman:number}){return isLand(p)?p.area_m2!=null&&Number(p.area_m2)>0?`${Number(p.area_m2).toLocaleString('fa-IR',{maximumFractionDigits:1})} متری`:'زمین':shortPrice(p.asking_price_toman)}
+export function markerTone(code:string){let hash=0;for(const c of code)hash=(hash*31+c.charCodeAt(0))>>>0;return hash%5}
+export function validLocation(p:{latitude:number|null;longitude:number|null}){return p.latitude!=null&&p.longitude!=null&&Number.isFinite(Number(p.latitude))&&Number.isFinite(Number(p.longitude))&&Math.abs(Number(p.latitude))<=90&&Math.abs(Number(p.longitude))<=180}
