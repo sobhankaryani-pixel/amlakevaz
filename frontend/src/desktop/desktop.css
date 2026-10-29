@@ -131,36 +131,42 @@
  .desktop-site .seller-invite{width:calc(100% - 48px);max-width:1272px;margin-left:auto;margin-right:auto}
 }
 
-/* Menu and account controls are separate groups, with a visible gap + divider. */
+/* Compact desktop header: brand, menu and actions always occupy ONE row. */
 @media(min-width:901px){
- .desktop-site .header-inner{display:grid;grid-template-columns:auto minmax(0,1fr) auto;max-width:1840px;min-height:132px;gap:24px;padding:18px 24px}
- .desktop-site .brand-link{gap:12px}
- .desktop-site .nav-links{position:static;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:8px;order:0;flex-basis:auto;padding:0;background:transparent;box-shadow:none}
- .desktop-site .nav-links button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-width:76px;height:76px;padding:10px 13px;border:1px solid #d4dfed;border-radius:14px;background:#f0f4f9;color:#17385c;box-shadow:0 2px 4px #17385c05;font-size:14px;font-weight:700;line-height:1.6}
- .desktop-site .nav-links button .header-icon{width:25px;height:25px}
- .desktop-site .nav-links button.selected,.desktop-site .nav-links button:hover{background:#103c76;color:#fff;border-color:#103c76;border-radius:14px;box-shadow:0 4px 12px #123b7720}
- .desktop-site .header-tools{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin:0;margin-inline-start:12px;padding-inline-start:28px;border-inline-start:1px solid #dbe2eb}
- .desktop-site .header-account,.desktop-site .header-search{height:54px;padding:11px 15px;border-radius:13px;font-size:14px;white-space:nowrap;font-weight:700}
+ .desktop-site .header-inner{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-auto-flow:column;max-width:1840px;min-height:108px;gap:clamp(8px,1vw,18px);padding:12px clamp(12px,1.25vw,24px);flex-wrap:nowrap}
+ .desktop-site .brand-link{gap:clamp(6px,.6vw,12px);min-width:0}
+ .desktop-site .brand-link img{width:clamp(52px,5.9vw,112px);height:clamp(48px,5.25vw,100px)}
+ .desktop-site .brand-link>span{gap:clamp(5px,.5vw,10px);white-space:nowrap}
+ .desktop-site .brand-link strong,.desktop-site .brand-link small{font-size:clamp(18px,1.85vw,36px);white-space:nowrap}
+ .desktop-site .nav-links{grid-column:auto;position:static;display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:center;gap:clamp(3px,.4vw,8px);order:0;flex-basis:auto;min-width:0;padding:0;border:0;background:transparent;box-shadow:none}
+ .desktop-site .nav-links button{display:flex;flex:0 1 auto;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:52px;height:clamp(52px,3.45vw,64px);padding:6px clamp(4px,.6vw,11px);border:1px solid #d4dfed;border-radius:12px;background:#f0f4f9;color:#17385c;box-shadow:0 2px 4px #17385c05;font-size:clamp(10px,.85vw,14px);font-weight:700;line-height:1.6;white-space:nowrap}
+ .desktop-site .nav-links button .header-icon{width:clamp(17px,1.2vw,22px);height:clamp(17px,1.2vw,22px)}
+ .desktop-site .nav-links button.selected,.desktop-site .nav-links button:hover{background:#103c76;color:#fff;border-color:#103c76;border-radius:12px;box-shadow:0 4px 12px #123b7720}
+ .desktop-site .header-tools{grid-column:auto;display:flex;flex-wrap:nowrap;gap:clamp(4px,.5vw,10px);align-items:center;justify-content:flex-end;justify-self:end;min-width:0;margin:0;margin-inline-start:clamp(4px,.4vw,8px);padding:0;padding-inline-start:clamp(10px,1vw,20px);border-inline-start:1px solid #dbe2eb}
+ .desktop-site .header-account,.desktop-site .header-search{height:44px;min-height:44px;padding:8px clamp(5px,.65vw,12px);gap:clamp(4px,.4vw,7px);border-radius:11px;font-size:clamp(11px,.8vw,14px);white-space:nowrap;font-weight:700}
  .desktop-site .header-account{background:#fff;border:1px solid #214f89;color:#183b68}
  .desktop-site .header-search{background:#e8f1ff;border-color:#b5cceb;color:#173e70}
- .desktop-site .header-register{height:62px;min-width:154px;padding:14px 22px;border-radius:15px;font-size:19px}
+ .desktop-site .header-register{height:50px;min-height:50px;min-width:0;padding:9px clamp(7px,.8vw,15px);gap:5px;border-radius:12px;font-size:clamp(12px,1vw,17px);white-space:nowrap}
+ .desktop-site .header-tools .header-icon{width:clamp(16px,1.1vw,21px);height:clamp(16px,1.1vw,21px)}
+ .desktop-site .theme-toggle{width:58px;min-width:58px;height:36px;padding:6px;gap:6px;border-radius:12px}
+ .desktop-site .theme-toggle .header-icon{width:16px;height:16px}
+ .desktop-site .theme-toggle-thumb{width:24px;height:26px;top:4px;inset-inline-start:4px;border-radius:8px}
+ .desktop-site .theme-toggle[aria-checked=true] .theme-toggle-thumb{transform:translateX(-24px)}
  .desktop-site .menu-switch{display:none}
 }
-@media(min-width:901px) and (max-width:1699px){
- .desktop-site .header-inner{grid-template-columns:auto 1fr;gap:16px 24px}
- .desktop-site .header-tools{justify-self:end}
- .desktop-site .nav-links{grid-column:1/-1;order:3;padding-top:14px;border-top:1px solid var(--line);justify-content:center}
- .desktop-site .nav-links button{min-width:110px;height:66px}
- .desktop-site .brand-link strong,.desktop-site .brand-link small{font-size:clamp(25px,2.25vw,34px)}
-}
 @media(min-width:901px) and (max-width:1100px){
- .desktop-site .brand-link img{width:86px;height:80px}
- .desktop-site .brand-link{gap:8px}
- .desktop-site .brand-link strong,.desktop-site .brand-link small{font-size:25px}
- .desktop-site .header-tools{gap:7px;padding-inline-start:18px;margin-inline-start:0}
- .desktop-site .header-account,.desktop-site .header-search{padding:10px;font-size:12px;gap:6px}
- .desktop-site .header-register{min-width:126px;padding:12px 14px;font-size:16px}
- .desktop-site .header-tools .header-icon{width:20px;height:20px}
+ .desktop-site .header-inner{min-height:84px;gap:6px;padding-left:10px;padding-right:10px}
+ .desktop-site .brand-link strong,.desktop-site .brand-link small{font-size:16px}
+ .desktop-site .brand-link img{width:48px;height:46px}
+ .desktop-site .nav-links{gap:3px}
+ .desktop-site .nav-links button{font-size:10px;padding-left:4px;padding-right:4px}
+ .desktop-site .header-tools{gap:4px;margin-inline-start:4px;padding-inline-start:10px}
+ .desktop-site .header-account,.desktop-site .header-search{font-size:11px;padding-left:5px;padding-right:5px}
+ .desktop-site .header-tools .header-icon{width:15px;height:15px}
+ .desktop-site .theme-toggle{width:52px;min-width:52px;padding:5px}
+ .desktop-site .theme-toggle .header-icon{width:14px;height:14px}
+ .desktop-site .theme-toggle-thumb{width:22px}
+ .desktop-site .theme-toggle[aria-checked=true] .theme-toggle-thumb{transform:translateX(-20px)}
 }
 :root[data-theme=dark] .desktop-site .nav-links button{background:#23354b;border-color:#405571;color:#dbe7f6}
 :root[data-theme=dark] .desktop-site .nav-links button.selected,:root[data-theme=dark] .desktop-site .nav-links button:hover{background:#365d91;border-color:#7498c4;color:#fff}
