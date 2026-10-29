@@ -181,7 +181,7 @@
 .map-property-contact{display:block;background:#971b32;color:#fff;text-align:center;border-radius:12px;padding:14px;min-height:48px;font-weight:700}
 :root[data-theme=dark] .map-property-price{color:#ff98ab}
 .red-property-map .map-error,.red-property-map .map-empty{z-index:1000;pointer-events:none}
-.home-map-preview.evaz-satellite-preview img{object-fit:contain;background:#e8e2d5}
+.home-map-preview.evaz-satellite-preview img{object-fit:cover;object-position:center}
 .market-growth{display:inline-flex;align-items:center;gap:7px;flex:none}
 .market-growth>small{font-size:10px;line-height:1.5;font-weight:500;color:var(--muted);white-space:nowrap}
 .market-card-top{flex-wrap:wrap}
