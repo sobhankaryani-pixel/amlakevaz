@@ -368,3 +368,32 @@
  .mobile-site .market-compact .market-filters select{font-size:16px}
  .mobile-site .market-growth>small{font-size:11px}
 }
+@media(max-width:900px){
+ .mobile-site .utility-manager{display:block;font-size:11px;border:0;padding:0;white-space:normal;max-width:180px}
+ .mobile-site .utility-phone{font-size:0;flex:1;justify-content:flex-end;min-height:35px}
+ .mobile-site .utility-phone b{font-size:12px}
+ .mobile-site .header-utility-inner{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;padding:8px 12px}
+ .mobile-site .utility-manager{grid-column:1/-1;max-width:none;font-size:12px}
+ .mobile-site .utility-socials{display:flex;gap:6px;margin:0;grid-column:2;grid-row:2}
+ .mobile-site .utility-phone{grid-column:1;grid-row:2;justify-content:flex-start}
+ .mobile-site .header-inner{position:relative}
+ .mobile-site .header-tools{border-top:1px solid var(--line);padding-top:12px;margin-top:6px;gap:7px}
+ .mobile-site .brand-link{max-width:calc(100% - 76px)}
+ .mobile-site .header-tools .theme-toggle{position:absolute;top:20px;left:12px;right:auto;display:flex;width:70px;height:42px;padding:8px 7px}
+ .mobile-site .header-account,.mobile-site .header-search,.mobile-site .header-register{flex-direction:column;gap:4px;font-size:12px;min-height:63px;padding:8px 3px}
+ .mobile-site .header-account{background:var(--paper);border-color:#7393bb;color:var(--ink)}
+ .mobile-site .header-search{background:#e8f1ff;border-color:#b5cceb;color:#173e70}
+ .mobile-site .header-register{font-size:14px}
+ .mobile-site .header-account .header-icon,.mobile-site .header-search .header-icon,.mobile-site .header-register .header-icon{width:21px;height:21px}
+ .mobile-site .menu-switch{height:63px}
+ .mobile-site .nav-links{gap:7px}
+ .mobile-site .nav-links button{display:flex;align-items:center;gap:12px;min-height:49px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink)}
+ .mobile-site .nav-links button.selected{background:#103c76;color:white;border-color:#103c76}
+}
+@media(max-width:380px){
+ .mobile-site .brand-link img{width:48px;height:48px}
+ .mobile-site .brand-link strong,.mobile-site .brand-link small{font-size:16px}
+ .mobile-site .brand-link{gap:6px}.mobile-site .brand-link>span{gap:5px}
+ .mobile-site .header-tools .theme-toggle{top:14px}
+}
+:root[data-theme=dark] .mobile-site .header-search{background:#2a4360;color:#edf5ff;border-color:#526f91}

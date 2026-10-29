@@ -186,3 +186,20 @@
 .market-growth>small{font-size:10px;line-height:1.5;font-weight:500;color:var(--muted);white-space:nowrap}
 .market-card-top{flex-wrap:wrap}
 .market-card-top .market-growth{margin-right:auto}
+
+/* Approved header: native SVG icons, restrained menu surfaces and gold primary CTA. */
+.header-icon{display:block;width:23px;height:23px;flex:none}
+.utility-manager{font-size:13px;font-weight:600;white-space:nowrap;line-height:1.8;padding-inline-start:18px;border-inline-start:1px solid #728197;color:#fff}
+.site .header-account,.site .header-search,.site .header-register{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.site .header-register{background:linear-gradient(120deg,#ffd567,#efab28);color:#123153;border:1px solid #e6a62b;box-shadow:0 6px 16px #bc7b1733;font-weight:900}
+.site .header-register:hover{background:linear-gradient(120deg,#ffdc7b,#eaa01c);box-shadow:0 8px 20px #bc7b1745}
+.site .header-register .header-icon{stroke-width:2.4;width:24px;height:24px}
+.site .theme-toggle{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;width:70px;height:42px;min-width:70px;flex:none;padding:8px 7px;border:1px solid #d7b976;border-radius:14px;background:#f3eddc;color:#7b642c;box-shadow:inset 0 1px 3px #7963310c;isolation:isolate}
+.site .theme-toggle .header-icon{z-index:1;width:19px;height:19px}
+.theme-toggle-thumb{position:absolute;inset-inline-start:4px;top:4px;width:31px;height:32px;background:#fff;border-radius:10px;box-shadow:0 2px 6px #0e2a4a1c;transition:transform .2s ease;z-index:0}
+.theme-toggle[aria-checked=true] .theme-toggle-thumb{transform:translateX(-30px);background:#334e70}
+.site .theme-toggle[aria-checked=true]{background:#122741;border-color:#637793;color:#ffd06b}
+.site .theme-toggle:hover{border-color:#b08a3e}
+:root[data-theme=dark] .utility-manager{color:#f0f4fc}
+.site .header-register:focus-visible,.site .theme-toggle:focus-visible,.site .nav-links button:focus-visible{outline:3px solid #5b9bea;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.theme-toggle-thumb{transition:none}}
