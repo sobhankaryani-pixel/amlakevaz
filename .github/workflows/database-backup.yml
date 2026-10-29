@@ -1,0 +1,44 @@
+name: Daily database backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 04:17 Asia/Tehran (00:47 UTC). Scheduled jobs can be delayed by GitHub.
+    - cron: '47 0 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evazmelk-database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    container: postgres:18-bookworm
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Install backup tools
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends python3 python3-venv ca-certificates
+          python3 -m venv /tmp/evaz-backup-venv
+          /tmp/evaz-backup-venv/bin/pip install --disable-pip-version-check -r backend/requirements-backup.txt
+      - name: Back up database only (no photos or videos)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          BACKUP_ENCRYPTION_PASSWORD: ${{ secrets.BACKUP_ENCRYPTION_PASSWORD }}
+          S3_ENDPOINT_URL: https://s3.ir-central1.arvanstorage.ir
+          S3_REGION: us-east-1
+          S3_BUCKET: evazmelk-media
+          BACKUP_S3_BUCKET: evazmelk-backups
+          BACKUP_KEEP: '7'
+          BACKUP_MAX_BYTES: '104857600'
+        run: /tmp/evaz-backup-venv/bin/python backend/scripts/cloud_backup.py backup

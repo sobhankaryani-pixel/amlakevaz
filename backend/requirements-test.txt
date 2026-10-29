@@ -2,3 +2,6 @@
 pytest>=8,<10
 httpx>=0.27,<0.29
 pglast>=7,<9
+
+-r requirements-backup.txt
+PyYAML==6.0.3
