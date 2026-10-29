@@ -1,8 +1,6 @@
 import {useEffect,useState} from 'react';
 import {validPoints,changeInfo,type Point} from './shared/marketData';
-type Region={name:string;slug:string};
-type Result={regions:Region[];series:Record<string,Point[]>};
-const API='https://api.evazmelk.ir';
+import {getPriceSeries,type PriceSeriesResult as Result} from './shared/priceSeries';
 const fmt=(value:number)=>Math.round(value).toLocaleString('fa-IR');
 export function Graph({name,points,color,unit,loading}:{name:string;points:Point[];color:string;unit:string;loading:boolean}){
  const data=validPoints(points),change=changeInfo(data),latest=data.at(-1);
@@ -26,9 +24,8 @@ export function Graph({name,points,color,unit,loading}:{name:string;points:Point
 }
 export default function PriceDashboard({compact=false,onViewDetails}:{compact?:boolean;onViewDetails?:()=>void}){
  const [region,setRegion]=useState(''),[usage,setUsage]=useState('land_residential'),[homeType,setHomeType]=useState('house_new'),[mehrType,setMehrType]=useState('mehr_upper');
- const [result,setResult]=useState<Result|null>(null),[error,setError]=useState(''),[refreshTick,setRefreshTick]=useState(0),[loading,setLoading]=useState(true);
- useEffect(()=>{const refresh=()=>setRefreshTick(v=>v+1);const onVisibility=()=>{if(document.visibilityState==='visible')refresh()};const timer=window.setInterval(refresh,60000);window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',onVisibility);return()=>{window.clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',onVisibility)}},[]);
- useEffect(()=>{let live=true;setError('');setLoading(true);const get=(slug:string)=>fetch(`${API}/api/public/price-series?region=${encodeURIComponent(slug)}`).then(async r=>{if(!r.ok)throw Error();return r.json() as Promise<Result>});Promise.all([get(region||'all'),get('all')]).then(([land,overall])=>{if(live){const regionList=land.regions?.length?land.regions:(overall.regions||[]);setResult({regions:regionList,series:{...overall.series,land_residential:land.series?.land_residential||[],land_commercial:land.series?.land_commercial||[]}});if(!region&&regionList.length){const preferred=regionList.find(r=>/ابتدای\s*بردسپی|بردسپی/.test(`${r.name} ${r.slug}`))||regionList[0];setRegion(preferred.slug)}}}).catch(()=>{if(live)setError('دریافت نمودارهای قیمت انجام نشد.')}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[region,refreshTick]);
+ const [result,setResult]=useState<Result|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true);
+ useEffect(()=>{let live=true;setError('');setLoading(true);Promise.all([getPriceSeries(region||'all'),getPriceSeries('all')]).then(([land,overall])=>{if(live){const regionList=land.regions?.length?land.regions:(overall.regions||[]);setResult({regions:regionList,series:{...overall.series,land_residential:land.series?.land_residential||[],land_commercial:land.series?.land_commercial||[]}});if(!region&&regionList.length){const preferred=regionList.find(r=>/ابتدای\s*بردسپی|بردسپی/.test(`${r.name} ${r.slug}`))||regionList[0];setRegion(preferred.slug)}}}).catch(()=>{if(live)setError('دریافت نمودارهای قیمت انجام نشد.')}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[region]);
  const regions=result?.regions||[];
  const landName=usage==='land_residential'?'زمین مسکونی':'زمین تجاری';
  return <div className={`price-dashboard market-dashboard ${compact?'market-compact':''}`} dir="rtl">
