@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /account
+Sitemap: https://evazmelk.ir/sitemap.xml

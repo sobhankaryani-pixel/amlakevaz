@@ -2,7 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 
 export const API='https://api.evazmelk.ir';
 export const contact='https://wa.me/989212745755';
-export type Page='home'|'listings'|'map'|'index'|'areas'|'register'|'account';
+export type Page='home'|'listings'|'map'|'index'|'areas'|'register'|'account'|'about'|'contact'|'property';
 export type Property={public_code:string;property_code:string;property_type:string;region:string|null;region_key:string|null;neighborhood:string|null;area_m2:number|null;building_area_m2:number|null;commercial_area_m2:number|null;bedrooms:number|null;mehr_section:string|null;mehr_level:string|null;usage_type:string|null;house_condition:string|null;floor_count:number|null;national_phase:string|null;national_block:string|null;national_level:string|null;national_stage:string|null;latitude:number|null;longitude:number|null;cover_photo_url:string|null;asking_price_toman:number;published_at:string|null};
 export const money=(n:number)=>n>=1e9?`${(n/1e9).toLocaleString('fa-IR',{maximumFractionDigits:1})} میلیارد تومان`:n>=1e6?`${(n/1e6).toLocaleString('fa-IR',{maximumFractionDigits:0})} میلیون تومان`:`${n.toLocaleString('fa-IR')} تومان`;
 export const propertyKinds=[{value:'all',label:'همهٔ املاک'},{value:'land',label:'زمین'},{value:'villa',label:'خانهٔ ویلایی'},{value:'apartment',label:'آپارتمان'},{value:'mehr',label:'مسکن مهر'},{value:'national',label:'مسکن ملی'},{value:'shop',label:'مغازه'},{value:'garden',label:'باغ شهری'}];

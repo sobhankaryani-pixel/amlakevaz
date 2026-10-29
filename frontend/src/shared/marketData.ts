@@ -1,4 +1,4 @@
-export type Point={period:string;value_toman:number;count:number|null};
+export type Point={updated_at?:string|null;period:string;value_toman:number;count:number|null};
 export function validPoints(points:Point[]):Point[]{
  return points.filter(p=>p.value_toman!=null&&Number.isFinite(Number(p.value_toman))&&Number(p.value_toman)>0).slice().sort((a,b)=>a.period.localeCompare(b.period));
 }

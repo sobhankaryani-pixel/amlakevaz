@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const source=readFileSync('functions/[[path]].js','utf8');const {onRequest}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const item={public_code:'EV/101',property_type:'خانه',region:'اوز',asking_price_toman:15555000000,public_notes:'<script>bad()</script>',updated_at:'2026-10-29T12:00:00Z',media:[{kind:'image',url:'https://api.evazmelk.ir/api/public/media/a.webp'}]};let status=200;
+globalThis.fetch=async url=>new Response(JSON.stringify(url.includes('sitemap-data')?{items:[item]}:{item}),{status});
+const context=path=>({request:new Request('https://evazmelk.ir'+path),env:{},next:async()=>new Response('<html><head><title>old</title><meta name="description" content="old"></head><body><div id="root"></div></body></html>',{headers:{'Content-Type':'text/html'}})});
+let r=await onRequest(context('/properties/EV%2F101'));let html=await r.text();assert.equal(r.status,200);assert.ok(html.includes('og:image'));assert.ok(html.includes('EV%2F101'));assert.ok(html.includes('application/ld+json'));assert.ok(!html.includes('<script>bad()'));assert.ok(html.includes('155550000000'));
+r=await onRequest(context('/sitemap.xml'));const xml=await r.text();assert.ok(xml.includes('/properties/EV%2F101'));assert.ok(xml.includes('<lastmod>2026-10-29'));
+status=404;r=await onRequest(context('/properties/missing'));assert.equal(r.status,404);assert.ok((await r.text()).includes('noindex'));
+status=500;r=await onRequest(context('/properties/failure'));assert.equal(r.status,503);r=await onRequest(context('/sitemap.xml'));assert.equal(r.status,503);
+console.log('PASS: server metadata, encoded share URLs, safe HTML, JSON-LD currency, sitemap dates, 404 and temporary-failure handling');

@@ -11,6 +11,9 @@ from .auth import require_roles, verify_password, create_token
 from .price_series import SEGMENTS
 from .seller_auth import seller,require_seller,normalize_phone
 from .crm import crm
+from .launch import launch,MediaItem,validate_media,limit_request
+from fastapi import Request
+from starlette.responses import JSONResponse
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -29,6 +32,7 @@ class SellerSubmissionIn(BaseModel):
     seller_name: str = Field(min_length=2, max_length=120)
     seller_phone: str = Field(min_length=10, max_length=20, pattern=r'^\+?[0-9۰-۹٠-٩\s\-]{10,20}$')
     kind: str
+    media: list[MediaItem] = Field(default_factory=list, max_length=14)
     neighborhood: str | None = Field(default=None, max_length=120)
     region_key: str | None = Field(default=None, max_length=30)
     area_m2: float | None = Field(default=None, gt=0)
@@ -81,7 +85,8 @@ class PublicContactSubscriptionIn(BaseModel):
 
 
 @public.post('/contact-subscriptions', status_code=201)
-def create_public_contact_subscription(payload: PublicContactSubscriptionIn):
+def create_public_contact_subscription(payload: PublicContactSubscriptionIn, request: Request):
+    limit_request(request,"subscriptions",10,3600)
     # Bots filling the hidden field receive the same generic response without a database write.
     if payload.website:
         return {'message': 'درخواست شما ثبت شد. از همراهی شما سپاسگزاریم.'}
@@ -123,15 +128,18 @@ def public_submission_regions():
     return {'items':[dict(r) for r in rows]}
 
 @seller.post('/property-submissions', status_code=201)
-def create_seller_submission(payload: SellerSubmissionIn, user=Depends(require_seller)):
+def create_seller_submission(payload: SellerSubmissionIn, request: Request, user=Depends(require_seller)):
+    limit_request(request,"seller-submission",10,3600,str(user["id"]))
     if payload.website:
         return {'message':'درخواست شما برای بررسی دریافت شد.'}
+    validate_media(payload.media,{**user,'role':'seller'},payload.kind in ('villa','apartment','mehr','national'))
     data=payload.model_dump(exclude={'seller_name','seller_phone','website'})
     with pool.connection() as conn:
         if payload.region_key and not conn.execute('SELECT 1 FROM app.regions WHERE slug=%s AND is_public=true AND slug LIKE %s', (payload.region_key,'R-%')).fetchone():
             raise HTTPException(422, 'منطقهٔ زمین معتبر نیست')
         row=conn.execute('''INSERT INTO app.property_submissions(seller_name,seller_phone,seller_id,kind,details)
           VALUES (%s,%s,%s,%s,%s) RETURNING id''', (payload.seller_name.strip(),user['phone'],user['id'],payload.kind,Jsonb(data))).fetchone()
+        conn.execute("INSERT INTO app.site_events(event,path) VALUES ('property_submit','/register')")
         conn.commit()
     return {'id':str(row['id']),'message':'درخواست شما ثبت شد. پس از بررسی و تأیید مدیر، آگهی در سایت منتشر می‌شود.'}
 
@@ -194,7 +202,9 @@ def health():
     return {"status": "ok", "service": "evaz-property-index-api", "database": "ok"}
 
 @app.post("/api/auth/login", tags=["auth"])
-def login(payload: LoginIn):
+def login(payload: LoginIn, request: Request):
+    limit_request(request,"admin-login-ip",40,900)
+    limit_request(request,"admin-login-account",10,900,payload.email.lower().strip())
     with pool.connection() as conn:
         user = conn.execute("SELECT id,email,password_hash,role FROM app.users WHERE email=%s AND is_active=true", (payload.email.lower().strip(),)).fetchone()
     if not user or not verify_password(payload.password, user["password_hash"]):
@@ -214,12 +224,12 @@ def public_price_series(region: str = "all"):
         regions = conn.execute("SELECT name,slug FROM app.regions WHERE is_public=true AND slug LIKE 'R-%' ORDER BY slug").fetchall()
         if region != 'all' and region not in {r['slug'] for r in regions}:
             raise HTTPException(422, "منطقه معتبر نیست")
-        rows = conn.execute("""SELECT period,segment,region_key,value_toman FROM app.monthly_price_estimates
+        rows = conn.execute("""SELECT period,segment,region_key,value_toman,updated_at FROM app.monthly_price_estimates
              WHERE region_key=%s ORDER BY period""", (region,)).fetchall()
         series = {segment: [] for segment in SEGMENTS}
         for row in rows:
             if row['segment'] in series:
-                series[row['segment']].append({'period': row['period'], 'value_toman': row['value_toman'], 'count': None})
+                series[row['segment']].append({'period': row['period'], 'value_toman': row['value_toman'], 'count': None,'updated_at':row['updated_at']})
     return {'regions': [dict(r) for r in regions], 'source': 'manual', 'label': 'قیمت اعلامی خودمونی', 'series': series}
 
 @public.get("/transactions")
@@ -304,6 +314,7 @@ class DirectPropertyIn(BaseModel):
     house_condition: str | None = None
     floor_count: int | None = Field(default=None, gt=0)
     cover_photo_url: str | None = Field(default=None, max_length=2048)
+    media: list[MediaItem] = Field(default_factory=list,max_length=14)
 
 def check_cover_photo(url: str | None):
     if url and (urlsplit(url).scheme != 'https' or not urlsplit(url).netloc or any(c.isspace() for c in url)):
@@ -326,7 +337,7 @@ def public_property_cards():
              r.name AS region,r.slug AS region_key,p.general_area AS neighborhood,p.area_m2,
              p.building_area_m2,p.commercial_area_m2,p.bedrooms,p.mehr_section,p.mehr_level,
              p.usage_type,p.house_condition,p.floor_count,p.national_phase,p.national_block,
-             p.national_level,p.national_stage,p.latitude,p.longitude,p.cover_photo_url,
+             p.national_level,p.national_stage,p.latitude,p.longitude,p.cover_photo_url,p.media,p.updated_at,
              l.asking_price_toman,l.published_at
              FROM app.listings l JOIN app.market_records m ON m.id=l.market_record_id
              JOIN app.properties p ON p.id=m.property_id
@@ -361,6 +372,9 @@ def map_listings():
 def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles("owner","admin","data_entry"))):
     check_cover_photo(payload.cover_photo_url)
     check_national(payload)
+    with pool.connection() as media_conn:
+        media_kind=media_conn.execute("SELECT code FROM app.property_types WHERE id=%s",(payload.property_type_id,)).fetchone()
+    validate_media(payload.media,user,bool(media_kind and media_kind["code"] in ("villa_house","villa","apartment","mehr_housing","national_housing")))
     if (payload.latitude is None) != (payload.longitude is None):
         raise HTTPException(422, "عرض و طول جغرافیایی باید با هم وارد شوند")
     if payload.status != "آگهی فروش":
@@ -396,6 +410,7 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
                    payload.build_year,payload.bedrooms,payload.registration_month,payload.latitude,payload.longitude,
                    payload.land_length_m,payload.land_width_m,payload.mehr_section,payload.mehr_level,
                    payload.house_condition,payload.floor_count,payload.cover_photo_url)).fetchone()
+                conn.execute('UPDATE app.properties SET media=%s,cover_photo_url=COALESCE(%s,cover_photo_url) WHERE id=%s',(Jsonb([x.model_dump() for x in payload.media]),next((x.url for x in payload.media if x.kind=='image'),None),row['id']))
                 record = conn.execute("""INSERT INTO app.market_records
                   (property_id,record_month,property_type_id,region_id,region_name_snapshot,status,is_public)
                   VALUES (%s,CURRENT_DATE,%s,%s,%s,'verified',true) RETURNING id""",
@@ -417,6 +432,9 @@ def update_direct_property(public_code: str, payload: DirectPropertyIn,
                            user=Depends(require_roles('owner','admin','data_entry'))):
     check_cover_photo(payload.cover_photo_url)
     check_national(payload)
+    with pool.connection() as media_conn:
+        media_kind=media_conn.execute("SELECT code FROM app.property_types WHERE id=%s",(payload.property_type_id,)).fetchone()
+    validate_media(payload.media,user,bool(media_kind and media_kind["code"] in ("villa_house","villa","apartment","mehr_housing","national_housing")))
     if payload.public_code != public_code:
         raise HTTPException(422, 'کد ملک را نمی‌توان تغییر داد')
     if payload.status != 'آگهی فروش' or not payload.asking_price_toman:
@@ -459,6 +477,7 @@ def update_direct_property(public_code: str, payload: DirectPropertyIn,
                  payload.build_year,payload.bedrooms,payload.registration_month,payload.latitude,payload.longitude,
                  payload.land_length_m,payload.land_width_m,payload.mehr_section,payload.mehr_level,
                  payload.house_condition,payload.floor_count,payload.cover_photo_url,row['id']))
+            conn.execute('UPDATE app.properties SET media=%s,cover_photo_url=COALESCE(%s,cover_photo_url) WHERE id=%s',(Jsonb([x.model_dump() for x in payload.media]),next((x.url for x in payload.media if x.kind=='image'),None),row['id']))
             conn.execute('''UPDATE app.market_records SET property_type_id=%s,region_id=%s,region_name_snapshot=%s
                 WHERE property_id=%s''', (payload.property_type_id,payload.region_id,region['name'],row['id']))
             if listing['asking_price_toman'] != payload.asking_price_toman:
@@ -559,7 +578,7 @@ def save_estimate(payload: EstimateIn, user=Depends(require_roles('owner','admin
 @admin.get('/monthly-estimates', include_in_schema=False)
 def list_estimates(user=Depends(require_roles('owner','admin'))):
     with pool.connection() as conn:
-        rows = conn.execute("""SELECT period,segment,region_key,value_toman FROM app.monthly_price_estimates
+        rows = conn.execute("""SELECT period,segment,region_key,value_toman,updated_at FROM app.monthly_price_estimates
               ORDER BY period DESC,segment,region_key LIMIT 200""").fetchall()
     return {'items': [dict(r) for r in rows]}
 
@@ -604,7 +623,7 @@ def list_direct_properties(user=Depends(require_roles("owner","admin","data_entr
           p.private_address AS address,p.public_notes AS notes,p.street_width,p.street_frontage_m,
           p.mehr_block,p.floor AS mehr_floor,p.mehr_unit,p.national_phase,p.national_block,p.national_level,p.national_stage,
           p.national_notes,p.build_year,p.bedrooms,p.land_length_m,p.land_width_m,p.mehr_section,
-          p.mehr_level,p.house_condition,p.floor_count,p.cover_photo_url,p.latitude,p.longitude,
+          p.mehr_level,p.house_condition,p.floor_count,p.cover_photo_url,p.media,p.updated_at,p.latitude,p.longitude,
           t.name AS property_type,t.code AS property_type_code,r.name AS region,
           l.asking_price_toman,s.sale_date,s.sale_price_toman
           FROM app.properties p JOIN app.property_types t ON t.id=p.property_type_id
@@ -680,3 +699,32 @@ def update_homepage_promotion(promotion_id: int, payload: HomepagePromotionUpdat
     return {"item": _promotion_dict(row), "message": "کارت صفحهٔ اصلی ذخیره شد."}
 
 app.include_router(public); app.include_router(admin); app.include_router(seller); app.include_router(crm)
+
+app.include_router(launch)
+
+@app.middleware('http')
+async def launch_monitor(request: Request, call_next):
+    if request.method in ('POST','PUT','DELETE'):
+        origin=request.headers.get('origin')
+        allowed={x.strip() for x in settings.allowed_origins.split(',')}|{'https://admin.evazmelk.ir'}
+        if origin and origin not in allowed:return JSONResponse({'detail':'مبدأ درخواست مجاز نیست'},status_code=403)
+    try:
+        response=await call_next(request)
+        if response.status_code>=500:
+            try:
+                with pool.connection() as conn:
+                    conn.execute('INSERT INTO app.site_errors(kind,path) VALUES (%s,%s)',(f'http_{response.status_code}',safe_error_path(request)));conn.commit()
+            except Exception:pass
+        return response
+    except Exception as error:
+        import logging
+        logging.getLogger('evaz.errors').error('Unhandled %s at %s',type(error).__name__,safe_error_path(request))
+        try:
+            with pool.connection() as conn:
+                conn.execute('INSERT INTO app.site_errors(kind,path) VALUES (%s,%s)',(type(error).__name__[:100],safe_error_path(request)));conn.commit()
+        except Exception:pass
+        return JSONResponse({'detail':'خطای موقت سرور؛ دوباره تلاش کنید.'},status_code=500)
+
+def safe_error_path(request):
+    route=request.scope.get('route')
+    return getattr(route,'path','/unknown')[:250]

@@ -5,3 +5,6 @@ import "./styles.css";
 document.documentElement.lang = "fa";
 document.documentElement.dir = "rtl";
 createRoot(document.getElementById("root")!).render(<React.StrictMode><App /></React.StrictMode>);
+
+import {startAnalytics} from './shared/analytics';
+startAnalytics();
