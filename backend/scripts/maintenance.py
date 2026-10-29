@@ -34,6 +34,8 @@ def sha256(path):
 
 
 def backup():
+    if os.getenv('MEDIA_STORAGE','local').strip().lower()!='local':
+        raise RuntimeError('This backup command supports local media only. Configure off-host database and S3 media backups before scheduling it.')
     folder=Path(os.getenv('BACKUP_DIR','./data/backups')).resolve();folder.mkdir(parents=True,exist_ok=True,mode=0o700)
     media=Path(os.environ['MEDIA_DIR']).resolve()
     if not media.is_dir():raise RuntimeError('MEDIA_DIR must exist on a persistent disk')
@@ -71,6 +73,8 @@ def verify(path:Path,temp:Path):
 
 def restore(path:Path,confirm:str):
     if confirm!='RESTORE-EVAZMELK':raise RuntimeError('Pass --confirm RESTORE-EVAZMELK after stopping writes and making a fresh backup')
+    if os.getenv('MEDIA_STORAGE','local').strip().lower()!='local':
+        raise RuntimeError('Cloud media restore requires a separate S3 recovery procedure; this local restore was not run.')
     media=Path(os.environ['MEDIA_DIR']).resolve()
     with tempfile.TemporaryDirectory() as tmp:
         temp=Path(tmp);verify(path,temp)

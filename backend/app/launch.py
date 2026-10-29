@@ -3,9 +3,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
 from typing import Literal
-import hashlib,hmac,os,re
+import hashlib,hmac,os,re,logging,tempfile
 from fastapi import APIRouter,Depends,HTTPException,Request,UploadFile,File
-from fastapi.responses import FileResponse,Response
+from fastapi.responses import FileResponse,Response,StreamingResponse
 from pydantic import BaseModel,Field
 from psycopg.types.json import Jsonb
 from PIL import Image,ImageOps,UnidentifiedImageError
@@ -13,6 +13,7 @@ from starlette.concurrency import run_in_threadpool
 from .auth import require_roles
 from .db import pool
 from .config import settings
+from . import media_storage
 from .seller_auth import require_seller,normalize_phone
 
 launch=APIRouter()
@@ -82,17 +83,21 @@ def normalize_image(path):
         raise HTTPException(422,'عکس سالم و معتبر نیست؛ عکس دیگری انتخاب کنید') from error
 
 async def store_upload(file:UploadFile,request:Request,user:dict):
-    if not os.getenv('MEDIA_DIR'):
-        await file.close()
-        raise HTTPException(503,'فضای نگهداری دائمی عکس و فیلم هنوز تنظیم نشده است')
-    limit_request(request,'media',40,3600,str(user.get('sub') or user.get('id')))
-    first=await file.read(256)
-    ext,kind,mime=file_kind(first)
-    maximum=8*1024*1024 if kind=='image' else 50*1024*1024
-    MEDIA_ROOT.mkdir(parents=True,exist_ok=True)
-    media_id=uuid4();filename=f'{media_id}.{ext}';path=MEDIA_ROOT/filename
-    size=len(first)
+    temporary=None;path=None;cloud_attempted=False;filename=None
     try:
+        if not media_storage.configured():
+            raise HTTPException(503,'فضای نگهداری دائمی عکس و فیلم هنوز تنظیم نشده است')
+        limit_request(request,'media',40,3600,str(user.get('sub') or user.get('id')))
+        first=await file.read(256)
+        ext,kind,mime=file_kind(first)
+        maximum=8*1024*1024 if kind=='image' else 50*1024*1024
+        if media_storage.mode()=='s3':
+            temporary=tempfile.TemporaryDirectory(prefix='evaz-upload-')
+            root=Path(temporary.name)
+        else:
+            root=MEDIA_ROOT;root.mkdir(parents=True,exist_ok=True)
+        media_id=uuid4();filename=f'{media_id}.{ext}';path=root/filename
+        size=len(first)
         with path.open('xb') as out:
             out.write(first)
             while chunk:=await file.read(1024*1024):
@@ -100,13 +105,22 @@ async def store_upload(file:UploadFile,request:Request,user:dict):
                 if size>maximum:raise HTTPException(413,'حداکثر حجم عکس ۸ و فیلم ۵۰ مگابایت است')
                 out.write(chunk)
         if kind=='image':
-            path=await run_in_threadpool(normalize_image,path);filename=path.name;size=path.stat().st_size
+            path=await run_in_threadpool(normalize_image,path);filename=path.name;size=path.stat().st_size;mime='image/webp'
+        if media_storage.mode()=='s3':
+            cloud_attempted=True
+            await run_in_threadpool(media_storage.put_file,path,filename,mime)
         with pool.connection() as conn:
             conn.execute('INSERT INTO app.uploaded_media(id,owner_id,owner_role,filename,kind,size_bytes) VALUES (%s,%s,%s,%s,%s,%s)',
               (media_id,user.get('sub') or user['id'],user.get('role','seller'),filename,kind,size));conn.commit()
     except Exception:
-        path.unlink(missing_ok=True);raise
-    finally:await file.close()
+        if cloud_attempted:
+            try:await run_in_threadpool(media_storage.delete_file,filename)
+            except Exception:logging.getLogger('evaz.media').warning('Cloud upload rollback cleanup failed')
+        if path:path.unlink(missing_ok=True)
+        raise
+    finally:
+        await file.close()
+        if temporary:temporary.cleanup()
     return {'url':MEDIA_BASE+'/'+filename,'kind':kind}
 
 @launch.post('/api/seller/media')
@@ -117,13 +131,54 @@ async def seller_upload(request:Request,file:UploadFile=File(...),user=Depends(r
 async def admin_upload(request:Request,file:UploadFile=File(...),user=Depends(require_roles('owner','admin','data_entry'))):
     return await store_upload(file,request,user)
 
-@launch.get('/api/public/media/{filename}')
-def media_file(filename:str):
+@launch.api_route('/api/public/media/{filename}',methods=['GET','HEAD'])
+def media_file(filename:str,request:Request):
     if not re.fullmatch(r'[0-9a-f-]{36}\.(jpg|png|webp|mp4|webm)',filename):raise HTTPException(404)
+    mime={'.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.mp4':'video/mp4','.webm':'video/webm'}[Path(filename).suffix]
+    headers={'Cache-Control':'public,max-age=31536000,immutable','X-Content-Type-Options':'nosniff','Accept-Ranges':'bytes'}
+    if media_storage.mode()=='s3':
+        # SDK signs the request server-side. No public bucket, expiring URL or browser CORS setup needed.
+        byte_range=request.headers.get('range')
+        if byte_range and not re.fullmatch(r'bytes=(?:[0-9]+-[0-9]*|-[0-9]+)',byte_range):
+            raise HTTPException(416,'بازهٔ درخواستی فایل معتبر نیست')
+        result=media_storage.get_file(filename,byte_range,request.method=='HEAD')
+        headers['Content-Length']=str(result['ContentLength'])
+        if result.get('ContentRange'):headers['Content-Range']=result['ContentRange']
+        status=206 if result.get('ContentRange') else 200
+        if request.method=='HEAD':return Response(status_code=status,media_type=mime,headers=headers)
+        body=result['Body']
+        def chunks():
+            try:
+                while chunk:=body.read(256*1024):yield chunk
+            finally:body.close()
+        return StreamingResponse(chunks(),status_code=status,media_type=mime,headers=headers)
+    if media_storage.mode()!='local':raise HTTPException(503,'نوع فضای نگهداری فایل معتبر نیست')
     path=MEDIA_ROOT/filename
     if not path.is_file():raise HTTPException(404,'فایل پیدا نشد')
-    mime={'.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.mp4':'video/mp4','.webm':'video/webm'}[path.suffix]
-    return FileResponse(path,media_type=mime,headers={'Cache-Control':'public,max-age=31536000,immutable','X-Content-Type-Options':'nosniff'})
+    return FileResponse(path,media_type=mime,headers=headers)
+
+@launch.post('/api/admin/media/test')
+def test_media_storage(request:Request,user=manager):
+    limit_request(request,'media-test',6,3600,str(user.get('sub') or user.get('id')))
+    if media_storage.mode()!='s3':raise HTTPException(422,'ابتدا MEDIA_STORAGE را روی s3 تنظیم کنید')
+    client,bucket=media_storage.connection()
+    key='connection-tests/'+str(uuid4())+'.txt'
+    payload=b'evazmelk-storage-check'
+    error=None
+    try:
+        client.put_object(Bucket=bucket,Key=key,Body=payload,ContentType='text/plain')
+        result=client.get_object(Bucket=bucket,Key=key)
+        try:
+            if result['Body'].read()!=payload:raise HTTPException(503,'محتوای فایل آزمایشی تأیید نشد')
+        finally:result['Body'].close()
+    except media_storage.STORAGE_ERRORS as exc:error=media_storage.storage_error(exc)
+    except HTTPException as exc:error=exc
+    finally:
+        try:client.delete_object(Bucket=bucket,Key=key)
+        except media_storage.STORAGE_ERRORS:
+            if error is None:error=HTTPException(503,'پاک‌کردن فایل آزمایشی ممکن نشد؛ دسترسی حذف فایل در آروان را بررسی کنید')
+    if error:raise error
+    return {'ok':True,'message':'اتصال آروان تأیید شد؛ نوشتن، خواندن و حذف فایل آزمایشی موفق بود.'}
 
 # Deliberately excludes private_address, seller phones, internal notes and exact unit identifiers.
 PUBLIC_SELECT='''SELECT p.public_code,t.code AS property_code,t.name AS property_type,
@@ -239,7 +294,7 @@ def operations(user=manager):
         backups=conn.execute('SELECT * FROM app.backup_runs ORDER BY created_at DESC LIMIT 10').fetchall()
         errors=conn.execute('SELECT kind,path,count(*) AS count,max(created_at) AS last_seen FROM app.site_errors WHERE created_at>now()-interval \'7 days\' GROUP BY kind,path ORDER BY last_seen DESC LIMIT 30').fetchall()
         blocked=conn.execute('SELECT count(*) AS count FROM app.request_limits WHERE expires_at>now() AND hits>10').fetchone()['count']
-    return {'backups':[dict(r) for r in backups],'errors':[dict(r) for r in errors],'media_directory_configured':bool(os.getenv('MEDIA_DIR')),'recent_busy_limit_buckets':blocked}
+    return {'backups':[dict(r) for r in backups],'errors':[dict(r) for r in errors],'media_directory_configured':bool(os.getenv('MEDIA_DIR')),'media_storage':media_storage.mode(),'media_storage_configured':media_storage.configured(),'recent_busy_limit_buckets':blocked}
 
 @launch.get('/api/public/search')
 def search_properties(kind:str='all',regions:str='',min_price:int=1000000000,max_price:int=100000000000,min_area:int=50,max_area:int=1000,sort:str='newest',offset:int=0):

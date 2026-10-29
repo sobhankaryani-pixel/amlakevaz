@@ -50,6 +50,7 @@ class DB:
   return Cursor([])
 @pytest.fixture
 def env(monkeypatch,tmp_path):
+ monkeypatch.setenv('MEDIA_STORAGE','local')
  db=DB();monkeypatch.setenv('MEDIA_DIR',str(tmp_path/'media'));monkeypatch.setattr(launch,'pool',db);monkeypatch.setattr(main,'pool',db);monkeypatch.setattr(launch,'MEDIA_ROOT',tmp_path/'media');main.app.dependency_overrides.clear()
  yield db,TestClient(main.app,raise_server_exceptions=False)
  main.app.dependency_overrides.clear()
@@ -139,3 +140,100 @@ def test_admin_create_and_edit_store_gallery_in_same_transaction(env):
  assert c.put('/api/admin/properties/EV-101/direct',json=payload).status_code==200
  assert any('UPDATE app.properties SET media=' in sql for sql,_ in db.calls)
  assert any('listing_price_history' in sql for sql,_ in db.calls)
+
+
+class S3Fake:
+ def __init__(self):self.objects={};self.closed=[];self.fail_put=False;self.fail_delete=False;self.calls=[]
+ def put_object(self,**kw):
+  from botocore.exceptions import ClientError
+  self.calls.append(('put',kw['Key'],kw.get('ContentType')))
+  if self.fail_put:raise ClientError({'Error':{'Code':'AccessDenied','Message':'secret-do-not-show'}},'PutObject')
+  body=kw['Body'];self.objects[kw['Key']]=body.read() if hasattr(body,'read') else body
+ def delete_object(self,**kw):
+  from botocore.exceptions import ClientError
+  if self.fail_delete:raise ClientError({'Error':{'Code':'AccessDenied'}},'DeleteObject')
+  self.calls.append(('delete',kw['Key']));self.objects.pop(kw['Key'],None)
+ def get_object(self,**kw):
+  from botocore.exceptions import ClientError
+  if kw['Key'] not in self.objects:raise ClientError({'Error':{'Code':'NoSuchKey'}},'GetObject')
+  payload=self.objects[kw['Key']];size=len(payload);result={'ContentLength':size}
+  if kw.get('Range'):
+   start,end=kw['Range'][6:].split('-');start=int(start);end=int(end) if end else size-1
+   payload=payload[start:end+1];result.update(ContentRange=f'bytes {start}-{end}/{size}',ContentLength=len(payload))
+  body=io.BytesIO(payload);self.closed.append(body);result['Body']=body;return result
+ def head_object(self,**kw):
+  result=self.get_object(**kw);result.pop('Body').close();return result
+
+
+@pytest.fixture
+def cloud(env,monkeypatch,tmp_path):
+ from backend.app import media_storage
+ monkeypatch.setenv('MEDIA_STORAGE','s3');monkeypatch.delenv('MEDIA_DIR',raising=False)
+ for key,value in {'S3_ENDPOINT_URL':'https://s3.ir-central1.arvanstorage.ir','S3_BUCKET':'evazmelk-media','S3_ACCESS_KEY_ID':'offline-access','S3_SECRET_ACCESS_KEY':'offline-secret'}.items():monkeypatch.setenv(key,value)
+ fake=S3Fake();monkeypatch.setattr(media_storage,'_client',lambda *args:fake)
+ temp=tmp_path/'temporary';temp.mkdir();monkeypatch.setattr(launch.tempfile,'tempdir',str(temp))
+ return env,fake,temp
+
+
+def test_s3_image_video_upload_stream_and_ranges(cloud):
+ (db,c),fake,temp=cloud;admin()
+ photo=io.BytesIO();Image.new('RGB',(8,8),'blue').save(photo,format='JPEG')
+ data=c.post('/api/admin/media',files={'file':('photo.jpg',photo.getvalue(),'image/jpeg')}).json()
+ name=data['url'].split('/')[-1]
+ assert name.endswith('.webp') and fake.calls[0][2]=='image/webp'
+ assert not list(temp.iterdir()) and not launch.MEDIA_ROOT.exists()
+ assert name in db.media
+ r=c.get('/api/public/media/'+name);assert r.status_code==200 and r.content==fake.objects[name]
+ assert r.headers['content-type']=='image/webp' and fake.closed[-1].closed
+ # API URLs stay stable across restarts; there is no dependency on local upload files.
+ assert c.head('/api/public/media/'+name).headers['content-length']==str(len(fake.objects[name]))
+ video=b'\x00\x00\x00\x18ftypisom'+b'video-payload'*5
+ main.app.dependency_overrides[require_seller]=lambda:{'id':USER['sub']}
+ data=c.post('/api/seller/media',files={'file':('house.mp4',video,'video/mp4')}).json();name=data['url'].split('/')[-1]
+ assert data['kind']=='video' and fake.objects[name]==video
+ r=c.get('/api/public/media/'+name,headers={'Range':'bytes=4-11'})
+ assert r.status_code==206 and r.content==video[4:12] and r.headers['content-range']==f'bytes 4-11/{len(video)}'
+ assert c.get('/api/public/media/'+name,headers={'Range':'bytes=0-1,3-4'}).status_code==416
+ assert c.get('/api/public/media/'+str(uuid4())+'.webp').status_code==404
+
+
+def test_s3_failures_leave_no_local_files_or_db_rows(cloud,monkeypatch):
+ (db,c),fake,temp=cloud;admin();fake.fail_put=True
+ photo=io.BytesIO();Image.new('RGB',(4,4)).save(photo,format='PNG')
+ r=c.post('/api/admin/media',files={'file':('a.png',photo.getvalue(),'image/png')})
+ assert r.status_code==503 and 'secret-do-not-show' not in r.text
+ assert not db.media and not list(temp.iterdir())
+ fake.fail_put=False
+ original=db.execute
+ def fail_insert(sql,params=()):
+  if 'INSERT INTO app.uploaded_media' in sql:raise RuntimeError('database unavailable')
+  return original(sql,params)
+ monkeypatch.setattr(db,'execute',fail_insert)
+ assert c.post('/api/admin/media',files={'file':('a.png',photo.getvalue(),'image/png')}).status_code==500
+ assert not fake.objects and not list(temp.iterdir())
+
+
+def test_s3_test_connection_checks_permissions_and_hides_secrets(cloud):
+ (_,c),fake,_=cloud
+ assert c.post('/api/admin/media/test').status_code==401
+ admin();assert c.post('/api/admin/media/test').json()['ok'] is True
+ assert not fake.objects and fake.closed[-1].closed
+ fake.fail_delete=True
+ assert c.post('/api/admin/media/test').status_code==503
+
+
+def test_s3_missing_configuration_does_not_fall_back_to_ephemeral_disk(cloud,monkeypatch):
+ (_,c),fake,temp=cloud;admin();monkeypatch.delenv('S3_SECRET_ACCESS_KEY')
+ assert c.post('/api/admin/media',files={'file':('a.png',b'x','image/png')}).status_code==503
+ assert c.post('/api/admin/media/test').status_code==503
+ assert c.get('/api/admin/operations').json()['media_storage_configured'] is False
+ assert not fake.objects and not list(temp.iterdir())
+
+
+def test_real_s3_client_uses_https_sigv4_path_style_and_bounded_retries(monkeypatch):
+ from backend.app import media_storage
+ client=media_storage._client('https://s3.ir-central1.arvanstorage.ir','offline-access','offline-secret','us-east-1')
+ assert client.meta.config.signature_version=='s3v4'
+ assert client.meta.config.s3['addressing_style']=='path'
+ assert client.meta.config.retries['total_max_attempts']==3
+ client.close();media_storage._client.cache_clear()
