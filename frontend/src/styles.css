@@ -3,4 +3,4 @@
 @import './desktop/desktop.css';
 @import './mobile/mobile.css';
 
-.seller-page .page-heading .account-admin-entry{float:left;display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border:1px solid #bdcbdc;border-radius:10px;text-decoration:none;color:var(--text,#173957);background:var(--card,#fff);font-size:13px;font-weight:600;line-height:1.6;margin:0 16px 12px 0}.seller-page .page-heading .account-admin-entry:hover{border-color:#b88a3f}.seller-page .page-heading .account-admin-entry:focus-visible{outline:2px solid #b88a3f;outline-offset:3px}@media(max-width:600px){.seller-page .page-heading .account-admin-entry{float:none;display:flex;width:max-content;margin:0 auto 20px 0}}
+@import './shared/account-login.css';
