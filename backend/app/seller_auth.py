@@ -6,7 +6,7 @@ from fastapi import APIRouter,Cookie,Depends,HTTPException,Request,Response
 from pydantic import BaseModel,Field
 from .db import pool
 from .config import settings
-from .sms_gateway import send_sms,SmsUnavailable,configured
+from .sms_gateway import send_login_code,SmsUnavailable,otp_configured as configured
 
 seller=APIRouter(prefix='/api/seller',tags=['seller'])
 COOKIE='evaz_seller_session'
@@ -59,7 +59,7 @@ def request_code(payload:PhoneIn,request:Request):
             row=conn.execute('''INSERT INTO app.seller_otp_codes(phone,ip_hash,code_hash,expires_at)
               VALUES (%s,%s,%s,now()+interval '5 minutes') RETURNING id''',
               (phone,ip,digest(phone+':'+code))).fetchone()
-            try: send_sms(phone,f'کد ورود خودمونی: {code}\nاعتبار: ۵ دقیقه')
+            try: send_login_code(phone,code)
             except SmsUnavailable as exc: raise HTTPException(503,str(exc)) from exc
     return {'message':'کد ورود برای شما ارسال شد. اعتبار آن ۵ دقیقه است.'}
 
