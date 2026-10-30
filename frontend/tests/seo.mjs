@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const source=readFileSync('functions/[[path]].js','utf8');const {onRequest}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {onRequest}=await import('../functions/[[path]].js');
 const item={public_code:'EV/101',property_type:'خانه',region:'اوز',asking_price_toman:15555000000,public_notes:'<script>bad()</script>',updated_at:'2026-10-29T12:00:00Z',media:[{kind:'image',url:'https://api.evazmelk.ir/api/public/media/a.webp'}]};let status=200;
 globalThis.fetch=async url=>new Response(JSON.stringify(url.includes('sitemap-data')?{items:[item]}:{item}),{status});
 const context=path=>({request:new Request('https://evazmelk.ir'+path),env:{},next:async()=>new Response('<html><head><title>old</title><meta name="description" content="old"></head><body><div id="root"></div></body></html>',{headers:{'Content-Type':'text/html'}})});

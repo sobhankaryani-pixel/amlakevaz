@@ -1,0 +1,16 @@
+export type SeoMetadata={title:string;description:string;url:string;image:string;robots:string;structured:Record<string,unknown>|null};
+export type SeoProperty={public_code:string;property_type:string;asking_price_toman:number;neighborhood?:string|null;region?:string|null;cover_photo_url?:string|null;media?:{kind:string;url:string}[];updated_at?:string|null;published_at?:string|null};
+export const SITE:string;
+export const DEFAULT_IMAGE:string;
+export const PAGES:Record<string,[string,string]>;
+export function escapeHtml(value:unknown):string;
+export function propertyPath(code:string):string;
+export function canonicalPath(path:string):string;
+export function pageMetadata(path:string):SeoMetadata;
+export function propertyMetadata(item:SeoProperty):SeoMetadata;
+export function propertyFailureMetadata(path:string,status?:number):SeoMetadata;
+export function isoDate(value?:string|null):string|undefined;
+export function metadataTags(metadata:SeoMetadata):[string,string,string][];
+export function structuredText(data:unknown):string;
+export function metadataHtml(metadata:SeoMetadata):string;
+export function injectMetadata(html:string,metadata:SeoMetadata):string;

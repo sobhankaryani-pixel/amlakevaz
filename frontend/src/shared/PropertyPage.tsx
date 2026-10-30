@@ -1,3 +1,5 @@
+import {applyMetadata} from './seo';
+import {canonicalPath,pageMetadata,propertyMetadata,propertyFailureMetadata} from './seoMetadata.js';
 import {fetchWithTimeout as fetch} from './http';
 import {useEffect,useState} from 'react';
 import {API,contact,type Property} from './propertyUI';
@@ -22,8 +24,13 @@ export function PropertyContent({item}:{item:PropertyDetail}){
  <div className="property-actions"><a href="tel:09212745755" data-property-code={item.public_code}>تماس با مشاور</a><a href={`${contact}?text=${encodeURIComponent(`سلام، دربارهٔ ملک با کد ${item.public_code} سؤال دارم. ${location.origin+propertyPath(item.public_code)}`)}`} data-property-code={item.public_code} target="_blank" rel="noopener noreferrer">گفتگو در واتساپ</a><button type="button" onClick={()=>void share()}>اشتراک‌گذاری آگهی</button>{item.latitude!=null&&item.longitude!=null&&<button type="button" onClick={()=>{track('map_open',{},item.public_code);navigate('map',item.public_code)}}>دیدن این ملک روی نقشه</button>}</div>{notice&&<p role="status" className="share-notice">{notice}</p>}</article>
 }
 export default function PropertyPage({code}:{code:string}){
+ const [resolvedCode,setResolvedCode]=useState(''),[errorStatus,setErrorStatus]=useState(0);
  const [item,setItem]=useState<PropertyDetail|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[retry,setRetry]=useState(0);
- useEffect(()=>{let live=true;setLoading(true);setError('');setItem(null);fetch(API+'/api/public/property-detail?code='+encodeURIComponent(code)).then(async r=>{const d=await r.json();if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:'دریافت آگهی انجام نشد');return d.item}).then(d=>{if(live){setItem(d);track('property_view',{},code)}}).catch(e=>{if(live)setError(e.message)}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[code,retry]);
- useEffect(()=>{if(!item)return;const old=document.title;document.title=`${item.property_type} در ${item.neighborhood||item.region||'اوز'} | کد ${item.public_code} | املاک خودمونی`;return()=>{document.title=old}},[item]);
+ useEffect(()=>{let live=true;setLoading(true);setError('');setItem(null);fetch(API+'/api/public/property-detail?code='+encodeURIComponent(code)).then(async r=>{const d=await r.json();if(!r.ok)throw Object.assign(Error(typeof d.detail==='string'?d.detail:'دریافت آگهی انجام نشد'),{status:r.status});return d.item}).then(d=>{if(live){setItem(d);setResolvedCode(code);track('property_view',{},code)}}).catch(e=>{if(live){setError(e.message);setErrorStatus(e.status||503);setResolvedCode(code)}}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[code,retry]);
+ useEffect(()=>{
+  if(canonicalPath(window.location.pathname)!==propertyPath(code))return;
+  const metadata=!loading&&resolvedCode===code?(error?propertyFailureMetadata(propertyPath(code),errorStatus):item?propertyMetadata(item):pageMetadata(propertyPath(code))):pageMetadata(propertyPath(code));
+  applyMetadata(metadata);
+ },[code,item,error,errorStatus,loading,resolvedCode]);
  return <section className="content-section property-page"><button className="link-button" onClick={()=>navigate('listings')}>همهٔ آگهی‌ها ←</button>{loading?<p role="status" className="state-message">در حال دریافت مشخصات ملک…</p>:error?<div role="alert" className="state-message"><p>{error}</p><button onClick={()=>setRetry(x=>x+1)}>تلاش مجدد</button><a href="tel:09212745755">تماس با مشاور</a></div>:item&&<PropertyContent key={code} item={item}/>}</section>
 }
