@@ -6,16 +6,16 @@ import type {SellerUser} from './SellerAccount';
 import {draftKey,readDraft,writeDraft} from './shared/sellerFlow';
 
 const API='https://api.evazmelk.ir';
-type Kind='land'|'villa'|'apartment'|'mehr'|'national';
+type Kind='land'|'villa'|'apartment'|'mehr'|'national'|'shop'|'garden';
 const kinds:{value:Kind;label:string}[]=[
  {value:'land',label:'زمین'},{value:'villa',label:'خانهٔ ویلایی'},
  {value:'apartment',label:'آپارتمان'},{value:'mehr',label:'مسکن مهر'},
- {value:'national',label:'مسکن ملی'}
+ {value:'national',label:'مسکن ملی'},{value:'garden',label:'باغ شهری'},{value:'shop',label:'مغازه'}
 ];
 const stages=['مرحله سقف اول','مرحله سقف دوم','اتمام اسکلت کامل','اسکلت + تأسیسات کامل','تأسیسات + نما','کامل‌شده'];
-const empty={seller_name:'',seller_phone:'',kind:'land' as Kind,region_key:'',neighborhood:'',area_m2:'',building_area_m2:'',land_length_m:'',land_width_m:'',usage_type:'',house_condition:'',bedrooms:'',floor_count:'',build_year:'',mehr_section:'',mehr_level:'',national_phase:'',national_block:'',national_level:'',national_stage:'',asking_price_toman:'',extra_details:'',website:''};
+const empty={seller_name:'',seller_phone:'',kind:'land' as Kind,region_key:'',neighborhood:'',area_m2:'',commercial_area_m2:'',street_frontage_m:'',building_area_m2:'',land_length_m:'',land_width_m:'',usage_type:'',house_condition:'',bedrooms:'',floor_count:'',build_year:'',mehr_section:'',mehr_level:'',national_phase:'',national_block:'',national_level:'',national_stage:'',asking_price_toman:'',extra_details:'',website:''};
 type Form=typeof empty;
-const numbers=['area_m2','building_area_m2','land_length_m','land_width_m','bedrooms','floor_count','build_year','asking_price_toman'];
+const numbers=['commercial_area_m2','street_frontage_m','area_m2','building_area_m2','land_length_m','land_width_m','bedrooms','floor_count','build_year','asking_price_toman'];
 
 export default function SellerRegistration({user,onLogin}:{user:SellerUser|null;onLogin:()=>void}){
  if(!user)return <section className="content-section seller-page"><div className="page-heading"><span className="section-kicker">برای فروشندگان اوز</span><h1>ثبت ملک برای فروش</h1><p>برای ثبت ملک، ابتدا با شمارهٔ موبایل وارد شوید.</p></div><button className="seller-submit" onClick={onLogin}>ورود یا ثبت‌نام با موبایل</button></section>;
@@ -44,7 +44,7 @@ function RegistrationForm({user}:{user:SellerUser}){
   try{
    if(!user)throw Error('ابتدا با شمارهٔ موبایل وارد شوید.');
    const payload:Record<string,unknown>={...form,seller_phone:user.phone,media:visibleMedia};
-   const kindFields:Record<Kind,string[]>={land:['area_m2','land_length_m','land_width_m','usage_type'],villa:['house_condition','area_m2','building_area_m2','bedrooms','floor_count','build_year'],apartment:['building_area_m2','bedrooms','floor_count','build_year'],mehr:['building_area_m2','mehr_section','mehr_level'],national:['building_area_m2','national_phase','national_block','national_level','national_stage']};
+   const kindFields:Record<Kind,string[]>={garden:['area_m2','land_length_m','land_width_m'],shop:['commercial_area_m2','street_frontage_m'],land:['area_m2','land_length_m','land_width_m','usage_type'],villa:['house_condition','area_m2','building_area_m2','bedrooms','floor_count','build_year'],apartment:['building_area_m2','bedrooms','floor_count','build_year'],mehr:['building_area_m2','mehr_section','mehr_level'],national:['building_area_m2','national_phase','national_block','national_level','national_stage']};
    const specificFields=new Set(Object.values(kindFields).flat());
    for(const key of specificFields)if(!kindFields[form.kind].includes(key))payload[key]='';
    for(const key of numbers)payload[key]=payload[key]===''?null:Number(payload[key]);
@@ -65,6 +65,8 @@ function RegistrationForm({user}:{user:SellerUser}){
    {form.kind==='apartment'&&<>{input('building_area_m2','زیربنا (مترمربع)',true,true)}{input('bedrooms','تعداد خواب',false,true)}{input('floor_count','تعداد طبقات',false,true)}{input('build_year','سال ساخت (شمسی)',false,true)}</>}
    {form.kind==='mehr'&&<>{input('building_area_m2','زیربنا (مترمربع)',true,true)}{select('mehr_section','بخش مسکن مهر',['محلی','فرهنگیان'],true)}{select('mehr_level','موقعیت طبقه',['بالا','پایین'],true)}</>}
    {form.kind==='national'&&<>{input('building_area_m2','زیربنا (مترمربع)',true,true)}{select('national_phase','فاز مسکن ملی',['1','2','3','4','5'],true)}<label>شمارهٔ بلوک<input required type="text" inputMode="numeric" pattern="[0-9۰-۹٠-٩]+" value={form.national_block} onChange={e=>set('national_block',e.target.value)}/></label>{select('national_level','موقعیت طبقه',['بالا','پایین','نامشخص'],true)}{select('national_stage','مرحلهٔ ساخت',stages,true)}</>}
+   {form.kind==='garden'&&<>{input('area_m2','متراژ باغ شهری (مترمربع)',true,true)}{input('land_length_m','طول باغ (متر)',false,true)}{input('land_width_m','عرض باغ (متر)',false,true)}</>}
+   {form.kind==='shop'&&<>{input('commercial_area_m2','متراژ مغازه (مترمربع)',true,true)}{input('street_frontage_m','بر مغازه (متر)',false,true)}</>}
    {form.kind!=='land'&&<label>منطقه<select value={form.region_key} onChange={e=>set('region_key',e.target.value)}><option value="">کل اوز / نامشخص</option>{regions.map(r=><option value={r.slug} key={r.slug}>{r.name}</option>)}</select></label>}
    {input('neighborhood','محله یا محدوده')}{input('asking_price_toman','قیمت پیشنهادی (تومان)',true,true)}
    <label className="full">توضیحات تکمیلی<textarea maxLength={2000} value={form.extra_details} onChange={e=>set('extra_details',e.target.value)} placeholder="مشخصات تکمیلی ملک را بنویسید"/></label>

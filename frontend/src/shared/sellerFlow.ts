@@ -20,7 +20,7 @@ export function readDraft<T extends Record<string,string>>(storage:Pick<Storage,
  const fallback={form:{...defaults},media:[] as MediaItem[],restored:false};
  try{
   const data=JSON.parse(storage.getItem(key)||'null');
-  if(!data||data.version!==1||typeof data.savedAt!=='number'||data.savedAt>now+60000||now-data.savedAt>DRAFT_TTL||!data.form||!['land','villa','apartment','mehr','national'].includes(data.form.kind))return fallback;
+  if(!data||data.version!==1||typeof data.savedAt!=='number'||data.savedAt>now+60000||now-data.savedAt>DRAFT_TTL||!data.form||!['land','villa','apartment','mehr','national','shop','garden'].includes(data.form.kind))return fallback;
   const form={...defaults};
   for(const name of Object.keys(defaults))if(typeof data.form[name]==='string'&&name!=='website')(form as Record<string,string>)[name]=data.form[name];
   const media:MediaItem[]=Array.isArray(data.media)?data.media.filter((x:MediaItem)=>x&&['image','video'].includes(x.kind)&&typeof x.url==='string'&&/^https:\/\/api\.evazmelk\.ir\/api\/public\/media\//.test(x.url)).slice(0,14):[];

@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 import json
 from psycopg.types.json import Jsonb
 from urllib.parse import urlsplit
-from fastapi import FastAPI, APIRouter, Depends, HTTPException
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, model_validator
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
@@ -52,6 +52,8 @@ class SellerSubmissionIn(BaseModel):
     building_area_m2: float | None = Field(default=None, gt=0)
     land_length_m: float | None = Field(default=None, gt=0)
     land_width_m: float | None = Field(default=None, gt=0)
+    commercial_area_m2: float | None = Field(default=None, gt=0)
+    street_frontage_m: float | None = Field(default=None, gt=0)
     usage_type: str | None = None
     house_condition: str | None = None
     bedrooms: int | None = Field(default=None, ge=0)
@@ -69,7 +71,7 @@ class SellerSubmissionIn(BaseModel):
 
     @model_validator(mode='after')
     def check_kind(self):
-        if self.kind not in ('land','villa','apartment','mehr','national'):
+        if self.kind not in ('land','villa','apartment','mehr','national','shop','garden'):
             raise ValueError('نوع ملک معتبر نیست')
         if self.kind == 'land' and (not self.region_key or not self.area_m2 or self.usage_type not in ('مسکونی','تجاری')):
             raise ValueError('منطقه، متراژ و کاربری زمین لازم است')
@@ -81,6 +83,10 @@ class SellerSubmissionIn(BaseModel):
             raise ValueError('بخش و طبقهٔ مسکن مهر لازم است')
         if self.kind == 'national' and (self.national_phase not in ('1','2','3','4','5') or not self.national_block or not self.national_block.isdecimal() or self.national_level not in ('بالا','پایین','نامشخص') or self.national_stage not in NATIONAL_STAGES):
             raise ValueError('فاز، بلوک، طبقه و مرحلهٔ ساخت مسکن ملی لازم است')
+        if self.kind == 'garden' and not self.area_m2:
+            raise ValueError('متراژ باغ شهری لازم است')
+        if self.kind == 'shop' and not self.commercial_area_m2:
+            raise ValueError('متراژ مغازه لازم است')
         return self
 
 class PublicContactSubscriptionIn(BaseModel):
@@ -648,8 +654,11 @@ def save_price_range(payload: PriceRangeIn, user=Depends(require_roles("owner","
     return {"id":str(row['id'])}
 
 @admin.get("/properties/direct")
-def list_direct_properties(user=Depends(require_roles("owner","admin","data_entry","analyst","editor","viewer"))):
+def list_direct_properties(offset:int=Query(default=0,ge=0,le=2000000000),limit:int=Query(default=50,ge=1,le=100),code:str=Query(default='',max_length=80),user=Depends(require_roles("owner","admin","data_entry","analyst","editor","viewer"))):
+    code=code.translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩','01234567890123456789')).strip()
+    # Literal substring matching: %, _ and SQL text are never treated as patterns.
     with pool.connection() as conn:
+        total=conn.execute('SELECT count(*) AS total FROM app.properties p WHERE strpos(lower(p.public_code),lower(%s))>0',(code,)).fetchone()['total']
         rows=conn.execute("""SELECT p.public_code,p.property_type_id,p.region_id,p.status,p.registration_month,
           p.area_m2,p.building_area_m2,p.commercial_area_m2,p.usage_type,p.general_area AS neighborhood,
           p.private_address AS address,p.public_notes AS notes,p.street_width,p.street_frontage_m,
@@ -664,8 +673,9 @@ def list_direct_properties(user=Depends(require_roles("owner","admin","data_entr
             JOIN app.market_records m ON m.id=l.market_record_id WHERE m.property_id=p.id
             ORDER BY l.published_at DESC NULLS LAST LIMIT 1) l ON true
           LEFT JOIN app.property_sales s ON s.property_id=p.id
-          ORDER BY p.created_at DESC LIMIT 100""").fetchall()
-    return {"items":[dict(row) for row in rows]}
+          WHERE strpos(lower(p.public_code),lower(%s))>0
+          ORDER BY p.created_at DESC,p.id DESC LIMIT %s OFFSET %s""",(code,limit,offset)).fetchall()
+    return {"items":[dict(row) for row in rows],"total":total,"offset":offset,"limit":limit}
 
 
 
