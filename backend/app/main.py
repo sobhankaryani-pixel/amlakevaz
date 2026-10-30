@@ -209,7 +209,7 @@ def login(payload: LoginIn, request: Request):
         user = conn.execute("SELECT id,email,password_hash,role FROM app.users WHERE email=%s AND is_active=true", (payload.email.lower().strip(),)).fetchone()
     if not user or not verify_password(payload.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    return {"access_token": create_token(str(user["id"]), user["role"]), "token_type": "bearer", "role": user["role"]}
+    return {"access_token": create_token(str(user["id"]), user["role"], user["password_hash"]), "token_type": "bearer", "role": user["role"]}
 
 @public.get("/indices")
 def public_indices(): return {"items": [], "message": "Published indices will appear here."}
