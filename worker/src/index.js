@@ -3,6 +3,7 @@ function corsFor(request) {
   const origin = request.headers.get("Origin");
   return {
     "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://evazmelk.ir",
+    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Authorization,Content-Type,Range",
     "Access-Control-Max-Age": "86400",
