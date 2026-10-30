@@ -18,3 +18,20 @@
 @media(max-width:900px){.account-login-scene{aspect-ratio:941/1672;min-height:650px;padding:24px 18px 165px}.account-login-background img{object-fit:fill}.account-login-card{width:min(390px,100%);padding:24px 22px;border-radius:20px}.account-login-emblem{width:88px;height:78px;margin-bottom:15px}.account-login-card h1{font-size:29px}.account-login-intro{font-size:13px;margin-bottom:22px}.account-login-card label{font-size:14px}.account-login-card form{gap:12px}.account-login-card .account-login-primary{font-size:16px;min-height:53px}.account-login-card .account-agency-entry{font-size:13px;min-height:39px}.account-phone-field input,.account-login-card .account-code-field{font-size:16px;height:51px}}
 @media(max-width:360px){.account-login-scene{min-height:620px;padding:20px 14px 150px}.account-login-card{padding:20px 18px}.account-login-card h1{font-size:26px}.account-login-emblem{width:76px;height:68px;margin-bottom:12px}.account-login-intro{margin-bottom:18px}}
 @media(prefers-reduced-motion:reduce){.account-login-spinner{animation:none}}
+
+/* Compact desktop composition: approximately 80% of the original login size. */
+@media(min-width:901px){
+ .account-login-scene{width:80%;margin-inline:auto;min-height:624px;aspect-ratio:1664/941;padding:clamp(28px,3vw,48px) 24px 150px}
+ .account-login-card{width:352px;padding:24px;border-radius:19px}
+ .account-login-emblem{width:88px;height:78px;margin-bottom:16px}
+ .account-login-card h1{font-size:30px;margin-bottom:8px}
+ .account-login-intro{font-size:13px;margin-bottom:22px}
+ .account-login-card form{gap:11px}
+ .account-login-card label{font-size:13px}
+ .account-phone-field input,.account-login-card .account-code-field{height:44px;font-size:16px;padding-top:9px;padding-bottom:9px}
+ .account-phone-field svg{width:18px;height:18px}
+ .account-login-card .account-login-primary{min-height:46px;padding:9px 11px;font-size:14px;margin-top:5px}
+ .account-login-arrow{font-size:20px}
+ .account-login-card .account-agency-entry{min-height:35px;padding:6px 12px;font-size:12px}
+ .account-code-actions{gap:6px}.account-login-card .account-link{font-size:11px;padding:6px 8px}
+}
