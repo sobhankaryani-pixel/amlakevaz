@@ -21,7 +21,7 @@
 
 /* Compact desktop composition: approximately 80% of the original login size. */
 @media(min-width:901px){
- .account-login-scene{width:80%;margin-inline:auto;min-height:624px;aspect-ratio:1664/941;padding:clamp(28px,3vw,48px) 24px 150px}
+ .account-login-scene{width:100%;margin-inline:auto;min-height:624px;aspect-ratio:2080/941;padding:clamp(28px,3vw,48px) 24px 150px}
  .account-login-card{width:352px;padding:24px;border-radius:19px}
  .account-login-emblem{width:88px;height:78px;margin-bottom:16px}
  .account-login-card h1{font-size:30px;margin-bottom:8px}
