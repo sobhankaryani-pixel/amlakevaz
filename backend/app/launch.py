@@ -10,6 +10,7 @@ from pydantic import BaseModel,Field
 from psycopg.types.json import Jsonb
 from PIL import Image,ImageOps,UnidentifiedImageError
 from starlette.concurrency import run_in_threadpool
+from .attribution import clean_attribution, record_conversion, CAMPAIGN_REPORT_SQL
 from .auth import require_roles
 from .db import pool
 from .config import settings
@@ -212,6 +213,7 @@ def sitemap_data():
     return {'items':[dict(r) for r in rows]}
 
 class ContactIn(BaseModel):
+    analytics:dict|None=None
     name:str=Field(min_length=2,max_length=120)
     phone:str=Field(min_length=10,max_length=20)
     description:str=Field(default='',max_length=3000)
@@ -225,7 +227,7 @@ def contact_request(payload:ContactIn,request:Request):
     phone=normalize_phone(payload.phone)
     with pool.connection() as conn:
         conn.execute('INSERT INTO app.contact_requests(name,phone,description) VALUES (%s,%s,%s)',(payload.name.strip(),phone,payload.description.strip()))
-        conn.execute("INSERT INTO app.site_events(event,path) VALUES ('contact_submit','/contact')")
+        record_conversion(conn,'contact_submit','/contact',payload.analytics)
         conn.commit()
     return {'message':'پیام شما ثبت شد؛ در ساعت پاسخ‌گویی با شما تماس می‌گیریم.'}
 
@@ -252,11 +254,12 @@ class EventIn(BaseModel):
 
 def clean_details(details:dict):
     result={}
-    for key in ('kind','regions','min_price','max_price','min_area','max_area','results','depth','seconds','source','medium','campaign','referrer','device','sort','error_kind'):
+    for key in ('kind','regions','min_price','max_price','min_area','max_area','results','depth','seconds','device','sort','error_kind'):
         value=details.get(key)
         if isinstance(value,(int,float)) and abs(value)<1e15:result[key]=value
         elif isinstance(value,str):result[key]=value[:120]
         elif key=='regions' and isinstance(value,list):result[key]=[str(x)[:30] for x in value[:30]]
+    result.update(clean_attribution(details))
     return result
 
 @launch.post('/api/public/events',status_code=202)
@@ -282,7 +285,7 @@ def analytics(days:int=7,user=manager):
         daily=conn.execute(f"SELECT (created_at AT TIME ZONE 'Asia/Tehran')::date AS day,count(*) FILTER(WHERE event='page_view') AS views,count(DISTINCT session_id) AS sessions FROM app.site_events WHERE {cutoff} GROUP BY day ORDER BY day",(days,)).fetchall()
         properties=conn.execute(f"SELECT property_code,count(*) FILTER(WHERE event='property_view') AS views,count(*) FILTER(WHERE event IN ('phone_click','whatsapp_click')) AS contacts FROM app.site_events WHERE {cutoff} AND property_code IS NOT NULL GROUP BY property_code ORDER BY views DESC LIMIT 30",(days,)).fetchall()
         searches=conn.execute(f"SELECT details,count(*) AS count FROM app.site_events WHERE {cutoff} AND event IN ('search_filter','search_empty') GROUP BY details ORDER BY count DESC LIMIT 20",(days,)).fetchall()
-        sources=conn.execute(f"SELECT details->>'source' AS source,details->>'campaign' AS campaign,details->>'referrer' AS referrer,count(DISTINCT session_id) FILTER(WHERE event='page_view') AS sessions,count(*) FILTER(WHERE event IN ('phone_click','whatsapp_click')) AS contacts FROM app.site_events WHERE {cutoff} AND event IN ('page_view','phone_click','whatsapp_click') GROUP BY 1,2,3 ORDER BY sessions DESC LIMIT 20",(days,)).fetchall()
+        sources=conn.execute(CAMPAIGN_REPORT_SQL,(days,)).fetchall()
         pages=conn.execute(f"SELECT path,count(*) FILTER(WHERE event='page_view') AS views,avg((details->>'seconds')::numeric) FILTER(WHERE event='engaged_time' AND jsonb_typeof(details->'seconds')='number') AS seconds,count(*) FILTER(WHERE event='scroll_depth' AND details->>'depth'='100') AS completed_scrolls FROM app.site_events WHERE {cutoff} GROUP BY path ORDER BY views DESC LIMIT 30",(days,)).fetchall()
         devices=conn.execute(f"SELECT details->>'device' AS device,count(DISTINCT session_id) AS sessions FROM app.site_events WHERE {cutoff} AND event='page_view' GROUP BY 1",(days,)).fetchall()
         engagement=conn.execute(f"SELECT avg((details->>'seconds')::numeric) AS average_seconds FROM app.site_events WHERE {cutoff} AND event='engaged_time' AND jsonb_typeof(details->'seconds')='number'",(days,)).fetchone()

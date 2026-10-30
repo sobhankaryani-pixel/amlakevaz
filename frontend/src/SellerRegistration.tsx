@@ -1,3 +1,4 @@
+import {getAnalyticsContext} from './shared/analytics';
 import {fetchWithTimeout as fetch} from './shared/http';
 import MediaUploader,{type MediaItem} from './shared/MediaUploader';
 import {useEffect,useState,type FormEvent} from 'react';
@@ -47,7 +48,7 @@ function RegistrationForm({user}:{user:SellerUser}){
    const specificFields=new Set(Object.values(kindFields).flat());
    for(const key of specificFields)if(!kindFields[form.kind].includes(key))payload[key]='';
    for(const key of numbers)payload[key]=payload[key]===''?null:Number(payload[key]);
-   const r=await fetch(`${API}/api/seller/property-submissions`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+   const r=await fetch(`${API}/api/seller/property-submissions`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,analytics:getAnalyticsContext()})});
    const d=await r.json();if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:'مشخصات واردشده را بررسی کنید.');
    setSuccess(d.message);setRestored(false);setMedia([]);setForm({...empty,seller_name:user.name,seller_phone:user.phone});
   }catch(e){setError(e instanceof Error?e.message:'ارسال درخواست انجام نشد. دوباره تلاش کنید.')}finally{setBusy(false)}

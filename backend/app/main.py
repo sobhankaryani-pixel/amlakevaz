@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import pool, open_pool, close_pool
 from .auth import require_roles, verify_password, create_token
+from .attribution import record_conversion
 from .admin_accounts import admin_accounts
 from .price_series import SEGMENTS
 from .seller_auth import seller,require_seller,normalize_phone
@@ -30,6 +31,7 @@ admin = APIRouter(prefix="/api/admin", tags=["admin"])
 NATIONAL_STAGES = ('مرحله سقف اول','مرحله سقف دوم','اتمام اسکلت کامل','اسکلت + تأسیسات کامل','تأسیسات + نما','کامل‌شده')
 
 class SellerSubmissionIn(BaseModel):
+    analytics:dict|None=None
     seller_name: str = Field(min_length=2, max_length=120)
     seller_phone: str = Field(min_length=10, max_length=20, pattern=r'^\+?[0-9۰-۹٠-٩\s\-]{10,20}$')
     kind: str
@@ -134,13 +136,13 @@ def create_seller_submission(payload: SellerSubmissionIn, request: Request, user
     if payload.website:
         return {'message':'درخواست شما برای بررسی دریافت شد.'}
     validate_media(payload.media,{**user,'role':'seller'},payload.kind in ('villa','apartment','mehr','national'))
-    data=payload.model_dump(exclude={'seller_name','seller_phone','website'})
+    data=payload.model_dump(exclude={'seller_name','seller_phone','website','analytics'})
     with pool.connection() as conn:
         if payload.region_key and not conn.execute('SELECT 1 FROM app.regions WHERE slug=%s AND is_public=true AND slug LIKE %s', (payload.region_key,'R-%')).fetchone():
             raise HTTPException(422, 'منطقهٔ زمین معتبر نیست')
         row=conn.execute('''INSERT INTO app.property_submissions(seller_name,seller_phone,seller_id,kind,details)
           VALUES (%s,%s,%s,%s,%s) RETURNING id''', (payload.seller_name.strip(),user['phone'],user['id'],payload.kind,Jsonb(data))).fetchone()
-        conn.execute("INSERT INTO app.site_events(event,path) VALUES ('property_submit','/register')")
+        record_conversion(conn,'property_submit','/register',payload.analytics)
         conn.commit()
     return {'id':str(row['id']),'message':'درخواست شما ثبت شد. پس از بررسی و تأیید مدیر، آگهی در سایت منتشر می‌شود.'}
 
