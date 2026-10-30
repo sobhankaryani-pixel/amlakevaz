@@ -15,17 +15,19 @@ ROLES = {"owner", "admin", "data_entry", "analyst", "editor", "viewer"}
 
 def hash_password(value: str) -> str: return password_hash.hash(value)
 def verify_password(value: str, hashed: str) -> bool: return password_hash.verify(value, hashed)
-def _session_stamp(user_id: str, stored_password_hash: str) -> str:
+def _session_stamp(user_id: str, stored_password_hash: str, session_version: int = 0) -> str:
     # A keyed fingerprint binds sessions to the current password without exposing
     # its hash in a readable JWT. A password reset invalidates existing tokens.
     message = f"admin-session-v1\0{user_id}\0{stored_password_hash}".encode()
+    if session_version:
+        message += f"\0{session_version}".encode()
     return hmac.new(settings.jwt_secret.encode(), message, hashlib.sha256).hexdigest()
 
-def create_token(user_id: str, role: str, stored_password_hash: str) -> str:
+def create_token(user_id: str, role: str, stored_password_hash: str, session_version: int = 0) -> str:
     if role not in ROLES or not stored_password_hash:
         raise ValueError("Invalid administrator account")
     user_id = str(UUID(user_id))
-    return jwt.encode({"sub": user_id, "role": role, "session_stamp": _session_stamp(user_id, stored_password_hash),
+    return jwt.encode({"sub": user_id, "role": role, "session_stamp": _session_stamp(user_id, stored_password_hash, session_version),
                        "exp": datetime.now(timezone.utc)+timedelta(hours=8)}, settings.jwt_secret, algorithm="HS256")
 
 def current_user(credentials=Depends(bearer)) -> dict:
@@ -42,9 +44,9 @@ def current_user(credentials=Depends(bearer)) -> dict:
     # Do not cache this lookup: revocations and role changes take effect on the
     # next request after the database change commits, including across workers.
     with pool.connection() as conn:
-        user = conn.execute("SELECT id,role,is_active,password_hash FROM app.users WHERE id=%s", (user_id,)).fetchone()
+        user = conn.execute("SELECT id,role,is_active,password_hash,session_version FROM app.users WHERE id=%s", (user_id,)).fetchone()
     if (not user or not user["is_active"] or user["role"] not in ROLES
-            or not hmac.compare_digest(stamp, _session_stamp(user_id, user["password_hash"]))):
+            or not hmac.compare_digest(stamp, _session_stamp(user_id, user["password_hash"], user.get("session_version", 0)))):
         raise HTTPException(status_code=401, detail="Session revoked; please sign in again")
     # Authorization uses the current database role, never the role in the token.
     return {"sub": user_id, "role": user["role"], "exp": claims["exp"]}

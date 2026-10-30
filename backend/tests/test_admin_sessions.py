@@ -85,6 +85,15 @@ def test_password_reset_revokes_old_token_and_accepts_new_login(session):
     assert client.get('/me', headers=headers(fresh)).status_code == 200
 
 
+def test_session_version_prevents_disabled_session_revival(session):
+    user, db, conn, client, token = session
+    user['session_version'] = 1
+    user['is_active'] = True
+    assert client.get('/me', headers=headers(token)).status_code == 401
+    fresh = auth.create_token(user['id'], user['role'], user['password_hash'], 1)
+    assert client.get('/me', headers=headers(fresh)).status_code == 200
+
+
 def test_invalid_tokens_rejected_before_database_access(session):
     user, db, conn, client, token = session
     claims = jwt.decode(token, auth.settings.jwt_secret, algorithms=['HS256'])

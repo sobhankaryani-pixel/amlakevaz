@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import pool, open_pool, close_pool
 from .auth import require_roles, verify_password, create_token
+from .admin_accounts import admin_accounts
 from .price_series import SEGMENTS
 from .seller_auth import seller,require_seller,normalize_phone
 from .crm import crm
@@ -192,8 +193,15 @@ class TransactionIn(BaseModel):
     price_per_m2_toman: int | None = Field(default=None, gt=0)
 
 class LoginIn(BaseModel):
-    email: str
-    password: str = Field(min_length=8)
+    username: str | None = Field(default=None, min_length=3, max_length=254)
+    email: str | None = Field(default=None, min_length=3, max_length=254)
+    password: str = Field(min_length=8, max_length=128)
+
+    @model_validator(mode='after')
+    def login_identifier(self):
+        if not (self.username or self.email or '').strip():
+            raise ValueError('نام کاربری را وارد کنید.')
+        return self
 
 @app.get("/health", tags=["system"])
 def health():
@@ -204,12 +212,17 @@ def health():
 @app.post("/api/auth/login", tags=["auth"])
 def login(payload: LoginIn, request: Request):
     limit_request(request,"admin-login-ip",40,900)
-    limit_request(request,"admin-login-account",10,900,payload.email.lower().strip())
+    identifier = (payload.username or payload.email).lower().strip()
+    limit_request(request,"admin-login-account",10,900,identifier)
     with pool.connection() as conn:
-        user = conn.execute("SELECT id,email,password_hash,role FROM app.users WHERE email=%s AND is_active=true", (payload.email.lower().strip(),)).fetchone()
+        # Email remains a compatibility path for existing owners until they set
+        # a username. New accounts need no email address.
+        user = conn.execute("""SELECT id,email,password_hash,role,session_version FROM app.users
+            WHERE is_active=true AND (lower(username)=%s OR (username IS NULL AND lower(email)=%s))""",
+            (identifier,identifier)).fetchone()
     if not user or not verify_password(payload.password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    return {"access_token": create_token(str(user["id"]), user["role"], user["password_hash"]), "token_type": "bearer", "role": user["role"]}
+        raise HTTPException(status_code=401, detail="نام کاربری یا رمز عبور نادرست است.")
+    return {"access_token": create_token(str(user["id"]), user["role"], user["password_hash"], user.get('session_version',0)), "token_type": "bearer", "role": user["role"]}
 
 @public.get("/indices")
 def public_indices(): return {"items": [], "message": "Published indices will appear here."}
@@ -701,6 +714,7 @@ def update_homepage_promotion(promotion_id: int, payload: HomepagePromotionUpdat
 app.include_router(public); app.include_router(admin); app.include_router(seller); app.include_router(crm)
 
 app.include_router(launch)
+app.include_router(admin_accounts)
 
 @app.middleware('http')
 async def launch_monitor(request: Request, call_next):
