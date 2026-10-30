@@ -1,0 +1,7 @@
+.media-uploader .media-upload-grid{grid-template-columns:repeat(auto-fill,minmax(160px,220px));align-items:start}
+.media-uploader .media-upload-grid figure{min-width:0}
+.media-uploader .media-upload-grid img,.media-uploader .media-upload-grid video{display:block;width:100%;height:180px;object-fit:contain;background:#eef1f5}
+.media-uploader .media-upload-grid figure>a{display:block}
+.media-uploader .media-upload-grid figcaption{display:flex;gap:6px;flex-wrap:wrap}
+.media-uploader .media-upload-grid button{width:auto;flex:1;min-width:0;margin:0;font-size:12px;padding:8px}
+@media(max-width:540px){.media-uploader .media-upload-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.media-uploader .media-upload-grid img,.media-uploader .media-upload-grid video{height:150px}}

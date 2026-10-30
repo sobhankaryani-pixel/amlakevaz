@@ -11,6 +11,8 @@ from .auth import require_roles, verify_password, create_token
 from .attribution import record_conversion
 from .admin_accounts import admin_accounts
 from .media_cleanup import media_cleanup
+from .property_codes import property_codes,allocate_code,creation_code,finish_reservation
+from uuid import UUID
 from psycopg.errors import CheckViolation
 from .price_series import SEGMENTS
 from .seller_auth import seller,require_seller,normalize_phone
@@ -184,7 +186,7 @@ def decide_seller_submission(submission_id: str, payload: SubmissionDecision,
     return {'status':payload.status}
 
 class PropertyIn(BaseModel):
-    public_code: str = Field(min_length=2, max_length=80)
+    public_code: str | None = Field(default=None, min_length=1, max_length=80)
     property_type_id: str
     area_m2: float | None = Field(default=None, gt=0)
     building_area_m2: float | None = Field(default=None, gt=0)
@@ -271,7 +273,7 @@ def public_listings():
 def create_property(payload: PropertyIn, user=Depends(require_roles("owner","admin","data_entry"))):
     with pool.connection() as conn:
         try:
-            row = conn.execute("INSERT INTO app.properties(public_code,property_type_id,area_m2,building_area_m2,floor,build_year) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id,public_code", (payload.public_code,payload.property_type_id,payload.area_m2,payload.building_area_m2,payload.floor,payload.build_year)).fetchone()
+            row = conn.execute("INSERT INTO app.properties(public_code,property_type_id,area_m2,building_area_m2,floor,build_year) VALUES (%s,%s,%s,%s,%s,%s) RETURNING id,public_code", (allocate_code(conn),payload.property_type_id,payload.area_m2,payload.building_area_m2,payload.floor,payload.build_year)).fetchone()
             conn.commit()
         except Exception as exc:
             conn.rollback(); raise HTTPException(400, "Property could not be created") from exc
@@ -300,7 +302,8 @@ def create_transaction(payload: TransactionIn, user=Depends(require_roles("owner
 def admin_me(user=Depends(require_roles("owner","admin","data_entry","analyst","editor","viewer"))): return user
 
 class DirectPropertyIn(BaseModel):
-    public_code: str = Field(min_length=2, max_length=80)
+    code_reservation_id: UUID | None = None
+    public_code: str | None = Field(default=None, min_length=1, max_length=80)
     property_type_id: str
     region_id: str
     neighborhood: str | None = None
@@ -407,6 +410,8 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
     try:
         with pool.connection() as conn:
             with conn.transaction():
+                assigned_code,reservation,previous=creation_code(conn,payload,user)
+                if previous:return previous
                 kind = conn.execute("SELECT id FROM app.property_types WHERE id=%s", (payload.property_type_id,)).fetchone()
                 region = conn.execute("SELECT id,name FROM app.regions WHERE id=%s", (payload.region_id,)).fetchone()
                 if not kind or not region:
@@ -425,7 +430,7 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
                    land_length_m,land_width_m,mehr_section,mehr_level,house_condition,floor_count,cover_photo_url)
                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                    RETURNING id,public_code""",
-                  (payload.public_code.strip(),payload.property_type_id,payload.region_id,
+                  (assigned_code,payload.property_type_id,payload.region_id,
                    payload.neighborhood,payload.address,payload.area_m2,payload.building_area_m2,
                    payload.commercial_area_m2,payload.usage_type,payload.status,payload.notes,
                    payload.street_width,payload.street_frontage_m,payload.mehr_block,payload.mehr_floor,
@@ -442,9 +447,13 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
                   VALUES (%s,%s,'published',true,now())""",(record['id'],payload.asking_price_toman))
                 conn.execute("INSERT INTO app.audit_logs(user_id,action,entity_type,entity_id) VALUES (%s,'create','property',%s)",
                              (user['sub'],row['id']))
+                finish_reservation(conn,reservation,row['id'])
         return {"id":str(row['id']),"public_code":row['public_code'],"status":payload.status}
     except HTTPException:
         raise
+    except CheckViolation as exc:
+        if exc.diag.constraint_name=='media_cleanup_reference_guard':raise
+        raise HTTPException(400,'ثبت ملک انجام نشد؛ اطلاعات را بررسی کنید') from exc
     except Exception as exc:
         if getattr(exc, 'sqlstate', None) == '23505':
             raise HTTPException(409, "این کد ملک قبلاً ثبت شده است") from exc
@@ -458,7 +467,7 @@ def update_direct_property(public_code: str, payload: DirectPropertyIn,
     with pool.connection() as media_conn:
         media_kind=media_conn.execute("SELECT code FROM app.property_types WHERE id=%s",(payload.property_type_id,)).fetchone()
     validate_media(payload.media,user,bool(media_kind and media_kind["code"] in ("villa_house","villa","apartment","mehr_housing","national_housing")))
-    if payload.public_code != public_code:
+    if payload.public_code is not None and payload.public_code != public_code:
         raise HTTPException(422, 'کد ملک را نمی‌توان تغییر داد')
     if payload.status != 'آگهی فروش' or not payload.asking_price_toman:
         raise HTTPException(422, 'قیمت پیشنهادی آگهی معتبر نیست')
@@ -726,6 +735,7 @@ app.include_router(public); app.include_router(admin); app.include_router(seller
 app.include_router(launch)
 app.include_router(admin_accounts)
 app.include_router(media_cleanup)
+app.include_router(property_codes)
 
 @app.middleware('http')
 async def launch_monitor(request: Request, call_next):
