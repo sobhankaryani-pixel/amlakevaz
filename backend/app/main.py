@@ -10,6 +10,8 @@ from .db import pool, open_pool, close_pool
 from .auth import require_roles, verify_password, create_token
 from .attribution import record_conversion
 from .admin_accounts import admin_accounts
+from .media_cleanup import media_cleanup
+from psycopg.errors import CheckViolation
 from .price_series import SEGMENTS
 from .seller_auth import seller,require_seller,normalize_phone
 from .crm import crm
@@ -23,6 +25,12 @@ async def lifespan(app: FastAPI):
     open_pool(); yield; close_pool()
 
 app = FastAPI(title="Evaz Property Index API", version="0.1.0", lifespan=lifespan)
+
+@app.exception_handler(CheckViolation)
+async def media_reference_conflict(request,exc):
+    if exc.diag.constraint_name=='media_cleanup_reference_guard':
+        return JSONResponse(status_code=409,content={'detail':'یکی از فایل‌ها در حال حذف است یا قبلاً حذف شده؛ فایل را دوباره بارگذاری کنید.'})
+    return JSONResponse(status_code=500,content={'detail':'ذخیرهٔ اطلاعات انجام نشد؛ ورودی‌ها را بررسی کنید.'})
 app.add_middleware(CORSMiddleware, allow_origins=[x.strip() for x in settings.allowed_origins.split(",")], allow_credentials=True, allow_methods=["GET","POST","PUT","DELETE"], allow_headers=["Authorization","Content-Type"], expose_headers=["X-Export-Count"])
 
 public = APIRouter(prefix="/api/public", tags=["public"])
@@ -717,6 +725,7 @@ app.include_router(public); app.include_router(admin); app.include_router(seller
 
 app.include_router(launch)
 app.include_router(admin_accounts)
+app.include_router(media_cleanup)
 
 @app.middleware('http')
 async def launch_monitor(request: Request, call_next):

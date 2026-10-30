@@ -69,7 +69,7 @@ function RegistrationForm({user}:{user:SellerUser}){
    {input('neighborhood','محله یا محدوده')}{input('asking_price_toman','قیمت پیشنهادی (تومان)',true,true)}
    <label className="full">توضیحات تکمیلی<textarea maxLength={2000} value={form.extra_details} onChange={e=>set('extra_details',e.target.value)} placeholder="مشخصات تکمیلی ملک را بنویسید"/></label>
   </div></div>
-  <div className="seller-step"><MediaUploader items={visibleMedia} onChange={items=>setMedia(previous=>allowVideo?items:[...items,...previous.filter(item=>item.kind==='video')])} allowVideo={allowVideo} onBusy={setUploading}/></div>
+  <div className="seller-step"><MediaUploader items={visibleMedia} draftItems={media} onChange={items=>setMedia(previous=>allowVideo?items:[...items,...previous.filter(item=>item.kind==='video')])} allowVideo={allowVideo} onBusy={setUploading}/></div>
   <div className="seller-step"><h2>۳. اطلاعات فروشنده</h2><div className="seller-fields">{input('seller_name','نام فروشنده',true)}<label>شمارهٔ تأییدشده<input readOnly dir="ltr" value={user.phone}/></label></div><label className="seller-honeypot" aria-hidden="true">وب‌سایت<input tabIndex={-1} autoComplete="off" value={form.website} onChange={e=>set('website',e.target.value)}/></label><p className="seller-privacy">شمارهٔ شما تنها در پنل مدیریت دیده می‌شود. پس از تأیید، آگهی منتشر می‌شود و هنگام پیدا شدن خریدار با شما تماس می‌گیریم.</p></div>
   {error&&<p className="seller-error" role="alert">{error}</p>}{success&&<p className="seller-success" role="status">{success}</p>}
   <button className="seller-submit" disabled={busy||uploading} type="submit">{busy?'در حال ارسال…':'ارسال درخواست ثبت ملک'}</button>

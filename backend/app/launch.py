@@ -53,8 +53,9 @@ def validate_media(items:list[MediaItem],user:dict,house:bool=True):
         for item in items:
             if not item.url.startswith(MEDIA_BASE+'/'):raise HTTPException(422,'فایل را از بخش بارگذاری انتخاب کنید')
             filename=item.url.removeprefix(MEDIA_BASE+'/')
-            row=conn.execute('SELECT owner_id,owner_role,kind FROM app.uploaded_media WHERE filename=%s',(filename,)).fetchone()
+            row=conn.execute('SELECT owner_id,owner_role,kind,cleanup_state FROM app.uploaded_media WHERE filename=%s',(filename,)).fetchone()
             if not row or row['kind']!=item.kind:raise HTTPException(422,'فایل بارگذاری‌شده معتبر نیست')
+            if row.get('cleanup_state','active')!='active':raise HTTPException(409,'فایل در حال حذف است یا قبلاً حذف شده؛ دوباره بارگذاری کنید.')
             if user.get('role')=='seller' and (str(row['owner_id'])!=str(user['id']) or row['owner_role']!='seller'):
                 raise HTTPException(403,'فایل متعلق به حساب شما نیست')
 

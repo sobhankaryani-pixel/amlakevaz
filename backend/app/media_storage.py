@@ -91,6 +91,22 @@ def delete_file(filename):
     client.delete_object(Bucket=bucket, Key=filename)
 
 
+@lru_cache(maxsize=1)
+def _cleanup_client(endpoint, access, secret, region):
+    # A single owner-reviewed delete must fit the UI deadline. Ambiguous failures
+    # keep the DB reservation and are retried explicitly using the same key.
+    return boto3.client('s3', endpoint_url=endpoint, aws_access_key_id=access,
+                        aws_secret_access_key=secret, region_name=region,
+                        config=Config(signature_version='s3v4',s3={'addressing_style':'path'},
+                                      connect_timeout=5,read_timeout=15,
+                                      retries={'mode':'standard','total_max_attempts':1}))
+
+
+def delete_for_cleanup(filename):
+    endpoint,bucket,access,secret,region=configuration()
+    _cleanup_client(endpoint,access,secret,region).delete_object(Bucket=bucket,Key=filename)
+
+
 def get_file(filename, byte_range=None, head=False):
     client, bucket = connection()
     params = {'Bucket': bucket, 'Key': filename}
