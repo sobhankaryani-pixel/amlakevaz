@@ -1,3 +1,4 @@
+import {fetchWithTimeout as fetch} from './http';
 import {useEffect,useState,type FormEvent} from 'react';
 type Account={id:string;username:string|null;email:string|null;role:string;is_active:boolean;created_at:string};
 const roles=[['admin','ادمین — مدیریت املاک و گزارش‌ها'],['data_entry','ثبت اطلاعات — ثبت و ویرایش املاک'],['editor','ویرایشگر — مدیریت محتوای مجاز'],['analyst','تحلیل‌گر — مشاهده اطلاعات'],['viewer','مشاهده‌گر — بدون ویرایش']];

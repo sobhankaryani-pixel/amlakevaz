@@ -1,3 +1,4 @@
+import {fetchWithTimeout as fetch} from './http';
 import { useEffect, useState } from 'react';
 import './HomepagePromotions.css';
 

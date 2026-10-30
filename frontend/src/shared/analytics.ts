@@ -1,3 +1,4 @@
+import {fetchWithTimeout as fetch} from './http';
 const API='https://api.evazmelk.ir';
 let memoryId:string|undefined;
 function session(){

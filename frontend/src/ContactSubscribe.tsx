@@ -1,3 +1,4 @@
+import {fetchWithTimeout as fetch} from './shared/http';
 import { useState, type FormEvent } from 'react';
 
 const API = 'https://api.evazmelk.ir';

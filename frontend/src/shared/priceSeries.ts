@@ -1,3 +1,4 @@
+import {fetchWithTimeout as fetch} from './http';
 import type {Point} from './marketData';
 
 type Region={name:string;slug:string};

@@ -1,3 +1,4 @@
+import {fetchWithTimeout as fetch} from './http';
 import {useEffect,useState} from 'react';
 import {API,ListingCard,contact,type Property} from './propertyUI';
 import {track} from './analytics';

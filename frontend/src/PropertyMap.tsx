@@ -1,3 +1,4 @@
+import {fetchWithTimeout as fetch} from './shared/http';
 import {useEffect,useRef,useState} from 'react';
 import {navigate} from './shared/navigation';
 import type {Property} from './shared/propertyUI';
@@ -7,13 +8,27 @@ const KEY=import.meta.env.VITE_NESHAN_MAP_KEY as string|undefined;
 const EVaz={lat:27.7600,lng:54.0073};
 type Listing={public_code:string;property_code:string;property_type:string;category:string;region:string|null;area_m2:number|null;building_area_m2:number|null;latitude:number;longitude:number;asking_price_toman:number;usage_type:string|null;land_length_m:number|null;land_width_m:number|null;mehr_section:string|null;mehr_level:string|null;house_condition:string|null;bedrooms:number|null;floor_count:number|null;commercial_area_m2:number|null;national_phase:string|null;national_block:string|null;national_level:string|null;national_stage:string|null;cover_photo_url?:string|null;neighborhood?:string|null;public_notes?:string|null;build_year?:number|null;street_width?:number|null;street_frontage_m?:number|null;floor?:number|null};
 declare global {interface Window {L:any;__evazNeshanPromise?:Promise<any>}}
-function loadNeshan(){if(window.L?.Map)return Promise.resolve(window.L);if(window.__evazNeshanPromise)return window.__evazNeshanPromise;const base='https://static.neshan.org/sdk/leaflet/v1.9.4/neshan-sdk/v1.0.8/';window.__evazNeshanPromise=new Promise((resolve,reject)=>{if(!document.querySelector('link[data-evaz-neshan]')){const css=document.createElement('link');css.rel='stylesheet';css.href=base+'index.css';css.dataset.evazNeshan='';document.head.appendChild(css)}const script=document.createElement('script');script.src=base+'index.js';script.async=true;script.onload=()=>window.L?.Map?resolve(window.L):reject(Error('نقشهٔ نشان بارگذاری نشد.'));script.onerror=()=>reject(Error('ارتباط با نقشهٔ نشان برقرار نشد.'));document.head.appendChild(script)}).catch(e=>{window.__evazNeshanPromise=undefined;throw e});return window.__evazNeshanPromise}
+function loadNeshan(){
+ if(window.L?.Map)return Promise.resolve(window.L);
+ if(window.__evazNeshanPromise)return window.__evazNeshanPromise;
+ const base='https://static.neshan.org/sdk/leaflet/v1.9.4/neshan-sdk/v1.0.8/';
+ window.__evazNeshanPromise=new Promise((resolve,reject)=>{
+  if(!document.querySelector('link[data-evaz-neshan]')){const css=document.createElement('link');css.rel='stylesheet';css.href=base+'index.css';css.dataset.evazNeshan='';document.head.appendChild(css)}
+  const script=document.createElement('script');script.src=base+'index.js';script.async=true;
+  const finish=(error?:Error)=>{clearTimeout(timer);script.onload=null;script.onerror=null;if(error){script.remove();reject(error)}else resolve(window.L)};
+  const timer=setTimeout(()=>finish(Error('بارگذاری نقشه بیش از حد طول کشید؛ دوباره تلاش کنید.')),30000);
+  script.onload=()=>finish(window.L?.Map?undefined:Error('نقشهٔ نشان بارگذاری نشد.'));
+  script.onerror=()=>finish(Error('ارتباط با نقشهٔ نشان برقرار نشد.'));
+  document.head.appendChild(script);
+ }).catch(e=>{window.__evazNeshanPromise=undefined;throw e});
+ return window.__evazNeshanPromise;
+}
 
 const fmt=(n:number)=>Number(n).toLocaleString('fa-IR');
 export default function PropertyMap({focusCode='',onOpen}:{focusCode?:string;onOpen?:(item:Property)=>void}){
  const host=useRef<HTMLDivElement>(null),mapRef=useRef<any>(null),markers=useRef<any[]>([]);
  const [items,setItems]=useState<Listing[]>([]),[filter,setFilter]=useState('همه'),[retry,setRetry]=useState(0),[dataError,setDataError]=useState(''),[mapError,setMapError]=useState(''),[loading,setLoading]=useState(true),[ready,setReady]=useState(false);
- useEffect(()=>{let active=true;let controller:AbortController|undefined;const refresh=()=>{controller?.abort();controller=new AbortController();fetch(API+'/api/public/map-listings',{signal:controller.signal}).then(async r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{if(active){setItems((d.items||[]).filter(validLocation));setDataError('')}}).catch(e=>{if(active&&e.name!=='AbortError')setDataError('دریافت آگهی‌ها انجام نشد؛ دوباره تلاش کنید.')}).finally(()=>{if(active)setLoading(false)})};setLoading(true);refresh();return()=>{active=false;controller?.abort()}},[retry]);
+ useEffect(()=>{let active=true;let controller:AbortController|undefined;const refresh=()=>{controller?.abort();controller=new AbortController();fetch(API+'/api/public/map-listings',{signal:controller.signal}).then(async r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{if(active){setItems((d.items||[]).filter(validLocation));setDataError('')}}).catch(e=>{if(active&&e.name!=='AbortError')setDataError(e instanceof Error&&e.message?e.message:'دریافت آگهی‌ها انجام نشد؛ دوباره تلاش کنید.')}).finally(()=>{if(active)setLoading(false)})};setLoading(true);refresh();return()=>{active=false;controller?.abort()}},[retry]);
  useEffect(()=>{if(!KEY){setMapError('کلید نقشهٔ نشان برای سایت تنظیم نشده است.');return}let active=true;loadNeshan().then(L=>{if(!active||!host.current)return;mapRef.current=new L.Map(host.current,{key:KEY,maptype:'dreamy',center:[EVaz.lat,EVaz.lng],zoom:14});setReady(true)}).catch(e=>{if(active)setMapError(e.message)});return()=>{active=false;markers.current.forEach(m=>m.remove());markers.current=[];mapRef.current?.remove();mapRef.current=null}},[]);
  const shown=items.filter(p=>filter==='همه'||(filter==='زمین'?isLand(p):isHouse(p)));
  useEffect(()=>{if(!ready||!mapRef.current)return;const L=window.L;markers.current.forEach(m=>m.remove());markers.current=[];

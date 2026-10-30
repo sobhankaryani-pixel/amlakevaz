@@ -1,3 +1,4 @@
+import {fetchWithTimeout as fetch} from './http';
 import AdminLogin from './AdminLogin';
 import AdminAccounts from './AdminAccounts';
 import MediaUploader,{type MediaItem} from './MediaUploader';

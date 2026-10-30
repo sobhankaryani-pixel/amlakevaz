@@ -1,3 +1,4 @@
+import {fetchWithTimeout as fetch} from './shared/http';
 import MediaUploader,{type MediaItem} from './shared/MediaUploader';
 import {useEffect,useState,type FormEvent} from 'react';
 import type {SellerUser} from './SellerAccount';

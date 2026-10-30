@@ -1,3 +1,4 @@
+import {fetchWithTimeout as fetch} from './http';
 import {useEffect,useState} from 'react';
 import {API,kindOf,type Page,type Property} from './propertyUI';
 import {type SellerUser} from '../SellerAccount';
@@ -16,7 +17,7 @@ export function useSiteState(){
  useEffect(()=>{fetch(`${API}/api/seller/me`,{credentials:'include'}).then(r=>r.ok?r.json():null).then(d=>setSellerUser(d?.user||null)).catch(()=>{})},[]);
  useEffect(()=>{if(page==='property')return;const titles:Partial<Record<Page,string>>={home:'املاک خودمونی اوز | شاخص قیمت و آگهی ملک',listings:'جستجوی ملک در اوز',map:'املاک روی نقشهٔ اوز',index:'شاخص قیمت املاک اوز',areas:'مناطق اوز',about:'دربارهٔ املاک خودمونی',contact:'تماس با املاک خودمونی',account:'حساب کاربری',register:'ثبت ملک برای فروش'};document.title=titles[page]||'املاک خودمونی اوز'},[page]);
  useEffect(()=>{document.documentElement.dataset.theme=dark?'dark':'light'},[dark]);
- useEffect(()=>{let live=true;setLoading(true);setError('');fetch(`${API}/api/public/property-cards`).then(async r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{if(live)setItems(d.items||[])}).catch(()=>{if(live)setError('دریافت آگهی‌ها انجام نشد. کمی بعد دوباره امتحان کنید.')}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[reload]);
+ useEffect(()=>{let live=true;setLoading(true);setError('');fetch(`${API}/api/public/property-cards`).then(async r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{if(live)setItems(d.items||[])}).catch(e=>{if(live)setError(e instanceof Error&&e.message?e.message:'دریافت آگهی‌ها انجام نشد. کمی بعد دوباره امتحان کنید.')}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[reload]);
  const regions=[...new Map(items.filter(p=>p.region_key).map(p=>[p.region_key,{slug:p.region_key!,name:p.region||p.region_key!}])).values()];
  const matching=items.filter(p=>(kind==='all'||kindOf(p)===kind)&&(region==='all'||p.region_key===region)&&(!query.trim()||`${p.region||''} ${p.neighborhood||''} ${p.property_type} ${p.public_code}`.toLocaleLowerCase('fa-IR').includes(query.trim().toLocaleLowerCase('fa-IR'))));
  const go=(next:Page)=>{navigate(next);setMenu(false)};

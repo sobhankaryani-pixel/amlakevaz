@@ -1,3 +1,4 @@
+import {fetchWithTimeout as fetch,UPLOAD_TIMEOUT_MS} from './http';
 import {useRef,useState} from 'react';
 export type MediaItem={url:string;kind:'image'|'video'};
 export default function MediaUploader({items,onChange,allowVideo,token,onBusy}:{items:MediaItem[];onChange:(items:MediaItem[])=>void;allowVideo:boolean;token?:string;onBusy?:(busy:boolean)=>void}){
@@ -10,7 +11,7 @@ export default function MediaUploader({items,onChange,allowVideo,token,onBusy}:{
    if(file.size>(video?50:8)*1024*1024)throw Error('حداکثر حجم عکس ۸ و فیلم ۵۰ مگابایت است.');
    if(next.filter(x=>x.kind===(video?'video':'image')).length>=(video?2:12))throw Error('حداکثر ۱۲ عکس و ۲ فیلم مجاز است.');
    const form=new FormData();form.append('file',file);
-   const response=await fetch('https://api.evazmelk.ir/api/'+(token?'admin':'seller')+'/media',{method:'POST',credentials:token?'omit':'include',headers:token?{Authorization:'Bearer '+token}:{},body:form});
+   const response=await fetch('https://api.evazmelk.ir/api/'+(token?'admin':'seller')+'/media',{method:'POST',credentials:token?'omit':'include',headers:token?{Authorization:'Bearer '+token}:{},body:form,timeoutMs:UPLOAD_TIMEOUT_MS});
    const data=await response.json();if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:'بارگذاری فایل انجام نشد.');
    next=[...next,{url:data.url,kind:data.kind}];onChange(next);
   }}catch(e){setError(e instanceof Error?e.message:'خطای بارگذاری')}finally{setBusy(false);onBusy?.(false);if(input.current)input.current.value=''}
