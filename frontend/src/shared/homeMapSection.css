@@ -1,0 +1,2 @@
+.site .home-map-intro.home-map-intro-open{grid-template-columns:minmax(0,1fr)}
+.site .home-map-actions>.home-map-live{flex:0 0 100%;width:100%;min-width:0;margin:4px 0 0;align-self:stretch}
