@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>پیش‌نمایش موبایل | املاک خودمونی اوز</title>
+  <link rel="stylesheet" href="/mobile-preview.css">
+  <script type="module" src="/mobile-preview.js"></script>
+</head>
+<body>
+  <header class="preview-toolbar">
+    <div class="preview-title"><strong>پیش‌نمایش موبایل</strong><span>املاک خودمونی اوز</span></div>
+    <label>اندازهٔ صفحه
+      <select id="device">
+        <option value="390x844">۳۹۰ × ۸۴۴ — معمولی</option>
+        <option value="360x800">۳۶۰ × ۸۰۰ — کوچک</option>
+        <option value="430x932">۴۳۰ × ۹۳۲ — بزرگ</option>
+      </select>
+    </label>
+    <label>رفتن به صفحه
+      <select id="page">
+        <option value="/">خانه</option><option value="/search">جستجوی ملک</option>
+        <option value="/map">نقشه</option><option value="/index">شاخص قیمت</option>
+        <option value="/areas">مناطق</option><option value="/account">ورود و حساب کاربری</option>
+        <option value="/register">ثبت ملک</option><option value="/about">دربارهٔ ما</option>
+        <option value="/contact">تماس با ما</option>
+      </select>
+    </label>
+    <label class="fit-control"><input id="fit" type="checkbox" checked> جا شدن در صفحهٔ لپ‌تاپ</label>
+    <button id="reload" type="button">بارگذاری دوباره</button>
+    <button id="copy" class="primary" type="button">کپی لینک این نما</button>
+  </header>
+  <main>
+    <p class="preview-hint">داخل قاب اسکرول کن و بین صفحات برو. این نما اندازهٔ موبایل را شبیه‌سازی می‌کند؛ آزمون گوشی واقعی جداست.</p>
+    <div id="stage" class="preview-stage">
+      <div id="slot" class="preview-slot">
+        <div id="phone" class="preview-phone">
+          <iframe id="site" title="نسخهٔ موبایل سایت املاک خودمونی اوز" referrerpolicy="same-origin"></iframe>
+        </div>
+      </div>
+    </div>
+    <footer class="preview-footer"><span id="dimensions"></span><span id="status" role="status" aria-live="polite">در حال باز کردن سایت…</span></footer>
+    <noscript>برای نمایش نسخهٔ موبایل، جاوااسکریپت مرورگر باید فعال باشد.</noscript>
+  </main>
+</body>
+</html>
