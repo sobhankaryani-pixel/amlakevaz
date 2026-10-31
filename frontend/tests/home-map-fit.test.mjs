@@ -8,7 +8,7 @@ test('home map fits viewport, scrolls once after lazy load, restores preview and
  try{
   const entry=join(folder,'entry.tsx');await writeFile(entry,"export {default as Home} from '../src/shared/HomeMapSection';export {act,createElement} from 'react';export {createRoot} from 'react-dom/client';");
   await build({root,configFile:false,plugins:[react(),{name:'mock-map',enforce:'pre',load(id){if(id.endsWith('/src/PropertyMap.tsx'))return "export default function Map(){return <div className='map-page'>نقشه</div>}"}}],logLevel:'silent',build:{lib:{entry,formats:['es'],fileName:()=> 'test.mjs'},outDir:folder,emptyOutDir:false,rollupOptions:{external:['react','react/jsx-runtime','react/jsx-dev-runtime','react-dom/client']}}});
-  dom=new JSDOM('<div class="site"><header class="site-header"><div class="header-tools"></div></header><div id="root"></div><nav class="mobile-bottom-nav"></nav></div>',{url:'https://evazmelk.ir'});
+  process.env.NODE_ENV='test';dom=new JSDOM('<div class="site"><header class="site-header"><div class="header-tools"></div></header><div id="root"></div><nav class="mobile-bottom-nav"></nav></div>',{url:'https://evazmelk.ir'});
   for(const k of ['window','document','HTMLElement','MutationObserver'])put(k,dom.window[k]);put('IS_REACT_ACT_ENVIRONMENT',true);put('innerHeight',800);put('scrollY',300);put('matchMedia',q=>({matches:!q.includes('reduced-motion')}));
   let scrolls=[];window.scrollTo=o=>scrolls.push(o);put('requestAnimationFrame',f=>setTimeout(f,0));put('cancelAnimationFrame',clearTimeout);
   dom.window.HTMLElement.prototype.scrollIntoView=function(){};
