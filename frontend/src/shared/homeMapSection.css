@@ -1,2 +1,15 @@
 .site .home-map-intro.home-map-intro-open{grid-template-columns:minmax(0,1fr)}
-.site .home-map-actions>.home-map-live{flex:0 0 100%;width:100%;min-width:0;margin:4px 0 0;align-self:stretch}
+.site .home-map-actions>.home-map-live{flex:0 0 auto;width:100%;min-width:0;margin:4px 0 0;align-self:stretch;height:var(--home-map-fit-height,70svh);display:flex;flex-direction:column;overflow:hidden}
+.site .home-map-live-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;background:#edf3f7;border-bottom:1px solid #d6e1eb;flex-shrink:0}
+.site .home-map-live-bar strong{font-size:14px;color:#12344e}
+.site .home-map-live-bar .home-map-close{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 14px;border:1px solid #e0b9b6;border-radius:10px;background:#fff1ee;color:#9d3028;font-size:13px;font-weight:700;cursor:pointer}
+.site .home-map-close span{font-size:24px;line-height:1}
+.site .home-map-close:focus-visible{outline:3px solid #bd8723;outline-offset:2px}
+.site .home-map-live .map-page{flex:1;width:100%;margin:0;min-height:0;padding:10px;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:6px}
+.site .home-map-live .map-toolbar{margin:0;gap:6px}
+.site .home-map-live .map-toolbar h2{display:none}
+.site .home-map-live .map-toolbar p{margin:0;font-size:12px}
+.site .home-map-live .map-filters button{min-height:36px;padding:6px 12px;font-size:12px}
+.site .home-map-live .map-wrap{min-height:0;height:100%}
+.site .home-map-live .property-map{height:100%;min-height:0}
+.site .home-map-live .map-count{margin:0;font-size:11px}
