@@ -397,3 +397,7 @@
  .mobile-site .header-tools .theme-toggle{top:14px}
 }
 :root[data-theme=dark] .mobile-site .header-search{background:#2a4360;color:#edf5ff;border-color:#526f91}
+/* Let the utility/brand rows scroll away; pin only the action row. */
+@media(max-width:900px){
+ .mobile-site .site-header{top:calc(-1 * var(--mobile-header-hidden,0px))}
+}

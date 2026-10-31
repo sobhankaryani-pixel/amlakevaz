@@ -1,0 +1,4 @@
+.site-toast-region{position:fixed;top:max(18px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:10000;max-width:calc(100vw - 28px);pointer-events:none;direction:rtl}
+.site-success-toast{display:flex;align-items:center;gap:10px;width:max-content;max-width:100%;padding:14px 18px;border-radius:16px;background:#176248;color:#fff;box-shadow:0 10px 30px #102e3e30;font-size:15px;line-height:1.8;pointer-events:auto}
+.site-success-toast>span{display:grid;place-items:center;flex-shrink:0;width:27px;height:27px;border-radius:50%;background:#ffffff24}
+.site-success-toast button{flex-shrink:0;width:30px;min-height:30px;margin:0;padding:0;border:0;background:transparent;color:#fff;font-size:24px;line-height:1;cursor:pointer}
