@@ -1,0 +1,72 @@
+/* Compact mobile spacing; retain full-size typography for editable inputs. */
+@media(max-width:900px){
+ .mobile-site{padding-bottom:calc(68px + env(safe-area-inset-bottom))}
+ .mobile-site :where(form,label,input,select,textarea,.seller-step,.content-section,.account-login-card){min-width:0;max-width:100%}
+ .mobile-site input:not([type=checkbox]):not([type=radio]),.mobile-site select,.mobile-site textarea{box-sizing:border-box;width:100%;min-width:0;max-width:100%;font-size:16px}
+ .mobile-site .header-utility-inner{min-height:50px;padding:4px 10px;gap:0 8px}
+ .mobile-site .utility-manager{font-size:10px}.mobile-site .utility-phone{min-height:26px}.mobile-site .utility-phone b{font-size:11px}
+ .mobile-site .utility-socials .header-social,.mobile-site .utility-socials .header-social img{width:26px;height:26px}
+ .mobile-site .header-inner{padding:6px 10px;min-height:68px;gap:4px}
+ .mobile-site .brand-link{gap:5px;max-width:calc(100% - 62px)}
+ .mobile-site .brand-link img{width:48px;height:44px}.mobile-site .brand-link>span{gap:4px}
+ .mobile-site .brand-link strong,.mobile-site .brand-link small{font-size:clamp(16px,4.5vw,21px)}
+ .mobile-site .header-tools{gap:5px;padding-top:7px;margin-top:3px;grid-template-columns:repeat(3,minmax(0,1fr)) 36px}
+ .mobile-site .header-account,.mobile-site .header-search,.mobile-site .header-register{min-height:48px;padding:5px 2px;gap:2px;font-size:10px;border-radius:10px}
+ .mobile-site .header-register{font-size:12px}.mobile-site .menu-switch{width:36px;height:48px;font-size:22px}
+ .mobile-site .header-tools .header-icon{width:18px;height:18px}
+ .mobile-site .header-tools .theme-toggle{top:8px;left:10px;width:58px;height:34px;padding:6px}
+ .mobile-site:not([data-page=home]) .header-utility,.mobile-site:not([data-page=home]) .header-tools,.mobile-site:not([data-page=home]) .nav-links{display:none}
+ .mobile-site:not([data-page=home]) .site-header{position:static;top:auto;box-shadow:0 1px 0 var(--line)}
+ .mobile-site:not([data-page=home]) .header-inner{min-height:54px;padding:5px 12px;justify-content:center}
+ .mobile-site:not([data-page=home]) .brand-link{max-width:100%}.mobile-site:not([data-page=home]) .brand-link img{width:40px;height:38px}
+ .mobile-site:not([data-page=home]) .brand-link strong,.mobile-site:not([data-page=home]) .brand-link small{font-size:18px}
+ .mobile-site .unified-hero-image{height:clamp(290px,92vw,390px);object-fit:cover;object-position:center top}
+ .mobile-site .content-section{padding:20px 12px}.mobile-site .section-heading{gap:4px;margin-bottom:12px}
+ .mobile-site .section-heading h2,.mobile-site .page-heading h1{font-size:21px;line-height:1.6;margin:4px 0}
+ .mobile-site .section-heading p,.mobile-site .page-heading p{font-size:12px;line-height:1.85;margin:4px 0}
+ .mobile-site .section-kicker{font-size:11px}.mobile-site .link-button{font-size:12px;min-height:36px;padding:5px 0}
+ .mobile-site .featured .featured-badge{padding:5px 10px;font-size:11px}
+ .mobile-site .carousel-viewport{padding-bottom:12px;margin-bottom:-12px;touch-action:pan-y pinch-zoom}
+ .mobile-site .carousel .listing-card{border-radius:11px;box-shadow:0 3px 12px #17324d0b}
+ .mobile-site .carousel .listing-image{height:clamp(72px,22vw,118px);min-height:0}
+ .mobile-site .carousel .listing-tag{top:5px;right:4px;padding:2px 5px;font-size:9px;max-width:95%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .mobile-site .carousel .listing-image-empty{font-size:9px;line-height:1.5;padding:5px}.mobile-site .carousel .listing-image-empty span{font-size:32px}
+ .mobile-site .carousel .listing-body{padding:8px 6px}.mobile-site .carousel .listing-code{font-size:9px}
+ .mobile-site .carousel .listing-body h3{font-size:11px;line-height:1.7;margin:4px 0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:37px}
+ .mobile-site .carousel .listing-body strong{font-size:12px;line-height:1.65}
+ .mobile-site .carousel .listing-body p{font-size:10px;line-height:1.8;margin:5px 0 7px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:0}
+ .mobile-site .carousel .listing-location{font-size:9px;line-height:1.7;padding-top:5px;overflow-wrap:anywhere}.mobile-site .carousel .listing-location span{font-size:13px;margin-left:2px}
+ .mobile-site .carousel .slide-arrow{width:34px;height:36px;top:40px;font-size:26px;line-height:1;opacity:.95}.mobile-site .carousel .slide-next{left:0}.mobile-site .carousel .slide-prev{right:0}
+ .mobile-site .seller-invite{width:calc(100% - 24px);margin:12px;border-radius:16px;padding:16px;gap:12px}
+ .mobile-site .seller-invite h2{font-size:19px;line-height:1.65;margin:4px 0}.mobile-site .seller-invite p{font-size:12px;line-height:1.9}
+ .mobile-site .seller-invite>button{min-height:42px;padding:9px 14px;margin-top:10px;font-size:13px}
+ .mobile-site .index-section{margin:10px 12px;padding:16px 12px;width:calc(100% - 24px);border-radius:16px}
+ .mobile-site .index-section>.section-heading{margin-bottom:10px;gap:4px}.mobile-site .index-section>.section-heading h2{font-size:21px}
+ .mobile-site .market-grid{gap:12px}.mobile-site .market-chart-section{gap:7px}.mobile-site .market-filters label{font-size:12px}
+ .mobile-site .market-toolbar select,.mobile-site .market-filters select{min-height:42px;padding:7px 10px}
+ .mobile-site .market-card.price-card{padding:12px;border-radius:13px}.mobile-site .market-card-top{min-height:30px;gap:5px}
+ .mobile-site .market-card-top h3{font-size:13px}.mobile-site .market-growth>small{font-size:10px}.mobile-site .market-change{font-size:11px}
+ .mobile-site .market-value{font-size:22px;line-height:1.6;margin-top:5px}.mobile-site .market-value>span{font-size:10px;line-height:1.6}
+ .mobile-site .market-graph{height:82px;aspect-ratio:auto;margin-top:6px}.mobile-site .market-periods,.mobile-site .market-comparison,.mobile-site .market-method{font-size:10px;line-height:1.6}
+ .mobile-site .market-comparison{margin:4px 0;padding-top:5px}.mobile-site .market-empty{padding:14px 8px;font-size:12px}
+ .mobile-site .home-map-section{padding:20px 12px 10px}.mobile-site .home-map-intro{padding:14px;gap:12px;border-radius:16px}
+ .mobile-site .home-map-copy h2{font-size:21px}.mobile-site .home-map-copy p{font-size:12px;margin-bottom:10px;line-height:1.9}
+ .mobile-site .home-map-preview img{height:145px}.mobile-site .home-map-preview figcaption{font-size:10px}
+ .mobile-site .home-map-open{min-height:42px;font-size:13px}.mobile-site .home-map-actions{gap:4px}
+ .mobile-site .map-page{padding:18px 12px}.mobile-site .map-toolbar{gap:10px;margin-bottom:12px}
+ .mobile-site .map-toolbar h2{font-size:21px}.mobile-site .map-toolbar p,.mobile-site .map-count{font-size:12px}
+ .mobile-site .map-filters button{min-height:40px;font-size:12px;padding:7px 9px}
+ .mobile-site .map-wrap{min-height:300px}.mobile-site .property-map{height:clamp(300px,48svh,410px);min-height:300px}
+ .mobile-site .service-grid button{padding:14px 12px}.mobile-site .service-grid button>span{width:36px;height:36px;font-size:23px}
+ .mobile-site .service-grid h3{font-size:15px;margin:8px 0 4px}.mobile-site .service-grid p,.mobile-site .service-grid b{font-size:12px}
+ .mobile-site .seller-step{padding:16px 12px;border-radius:14px}.mobile-site .seller-step h2{font-size:18px;margin-bottom:10px}
+ .mobile-site .seller-fields{gap:10px}.mobile-site .seller-fields input,.mobile-site .seller-fields select,.mobile-site .auth-panel input:not([type=checkbox]){min-height:44px;padding:9px 10px}
+ .mobile-site .seller-kinds button{min-height:44px;padding:7px;font-size:12px}.mobile-site .seller-submit{padding:10px 14px;min-height:44px;font-size:14px;white-space:normal}
+ .mobile-site .contact-banner{margin:16px 12px;padding:18px 14px;border-radius:16px}.mobile-site .contact-banner h2{font-size:21px}.mobile-site .contact-banner p{font-size:12px}
+ .mobile-site .contact-banner>a{min-height:42px;padding:9px 12px;font-size:13px}
+ .mobile-site .site-footer{padding:24px 12px 16px}.mobile-site .footer-columns{gap:14px 12px}
+ .mobile-site .footer-about img{width:74px;height:70px}.mobile-site .footer-about p{font-size:12px}
+ .mobile-site .footer-columns h3{font-size:14px}.mobile-site .footer-bottom{margin-top:16px;padding-top:12px;font-size:11px}
+ .mobile-site .mobile-bottom-nav{padding-top:4px;padding-bottom:calc(4px + env(safe-area-inset-bottom))}
+ .mobile-site .mobile-bottom-nav button{min-height:48px;gap:3px;padding:4px 1px}.mobile-site .mobile-bottom-nav button svg{width:21px;height:21px}.mobile-site .mobile-bottom-nav button span{font-size:10px}
+}
