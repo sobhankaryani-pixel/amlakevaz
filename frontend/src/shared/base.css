@@ -217,3 +217,8 @@
 .evaz-map-pin.focused-property .evaz-map-balloon{outline:3px solid #e8b04c;box-shadow:0 0 0 6px #fff9,0 6px 20px #0004}.evaz-map-pin.focused-property .evaz-map-dot{box-shadow:0 0 0 7px #e8b04c88}.map-error button{display:block;margin:12px auto}
 @media(max-width:900px){.property-full,.info-page>article,.search-controls{padding:18px;border-radius:18px}.property-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.property-actions{display:grid;grid-template-columns:1fr 1fr}.property-actions a,.property-actions button{font-size:14px;padding:12px 10px}.search-controls{grid-template-columns:1fr;gap:18px}.search-sort{align-items:stretch;flex-direction:column}.search-sort label{min-width:0}.info-page h2{font-size:21px}.contact-request-form input,.contact-request-form textarea{font-size:16px}.property-date span{display:block}.media-upload-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.property-actions{grid-template-columns:1fr}.property-facts{grid-template-columns:1fr 1fr}.property-full h1,.info-page h1{font-size:24px}.search-kinds button{padding:10px;font-size:14px}}
+
+/* Keep the theme thumb inside the track at every responsive size. */
+.site .theme-toggle{overflow:hidden}
+.site .theme-toggle .theme-toggle-thumb{top:4px;bottom:auto;inset-inline-start:4px;width:calc(50% - 4px);height:calc(100% - 8px);box-sizing:border-box}
+.site .theme-toggle[aria-checked=true] .theme-toggle-thumb{transform:translateX(-100%)}
