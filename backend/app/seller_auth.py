@@ -3,7 +3,8 @@ from datetime import datetime,timedelta,timezone
 import hashlib,hmac,os,secrets
 import jwt
 from fastapi import APIRouter,Cookie,Depends,HTTPException,Request,Response
-from pydantic import BaseModel,Field
+from typing import Literal
+from pydantic import BaseModel,Field,field_validator
 from .db import pool
 from .config import settings
 from .sms_gateway import send_login_code,SmsUnavailable,otp_configured as configured
@@ -30,7 +31,7 @@ def require_seller(session:str|None=Cookie(default=None,alias=COOKIE)):
     if claims.get('role')!='seller' or not claims.get('sid'):
         raise HTTPException(401,'نشست معتبر نیست')
     with pool.connection() as conn:
-        row=conn.execute('''SELECT c.id,c.phone,c.name,c.marketing_opt_in FROM app.seller_sessions s
+        row=conn.execute('''SELECT c.id,c.phone,c.name,c.marketing_opt_in,c.residence_city FROM app.seller_sessions s
           JOIN app.customer_contacts c ON c.id=s.contact_id
           WHERE s.id=%s AND c.id=%s AND s.revoked_at IS NULL AND s.expires_at>now()
           AND c.is_active=true AND c.account_enabled=true''',(claims['sid'],claims['sub'])).fetchone()
@@ -82,7 +83,7 @@ def verify_code(payload:VerifyIn,response:Response):
                     contact=conn.execute('''INSERT INTO app.customer_contacts(phone,source,account_enabled,last_login_at)
                       VALUES (%s,'signup',true,now()) ON CONFLICT(phone) DO UPDATE SET
                       account_enabled=true,last_login_at=now()
-                      RETURNING id,phone,name,marketing_opt_in''',(phone,)).fetchone()
+                      RETURNING id,phone,name,marketing_opt_in,residence_city''',(phone,)).fetchone()
                     session=conn.execute('''INSERT INTO app.seller_sessions(contact_id,expires_at)
                       VALUES (%s,now()+interval '30 days') RETURNING id''',(contact['id'],)).fetchone()
                     session_id=str(session['id']);verified=True
@@ -98,15 +99,23 @@ def me(user=Depends(require_seller)):
 class ProfileIn(BaseModel):
     name:str=Field(min_length=2,max_length=120)
     marketing_opt_in:bool=False
+    residence_city:Literal['اوز','کهنه','کهنه جدید','قلات','اسلام آباد','گلار','کوره','بیدشهر','هود','هیرم','فیشور','محلچه','گراش','لار']|None=None
+
+    @field_validator('name')
+    @classmethod
+    def trimmed_name(cls,value):
+        value=value.strip()
+        if len(value)<2: raise ValueError('نام و نام خانوادگی معتبر نیست')
+        return value
 
 @seller.put('/me')
 def update_me(payload:ProfileIn,user=Depends(require_seller)):
     with pool.connection() as conn:
-        row=conn.execute('''UPDATE app.customer_contacts SET name=%s,marketing_opt_in=%s,
+        row=conn.execute('''UPDATE app.customer_contacts SET name=%s,residence_city=COALESCE(%s,residence_city),marketing_opt_in=%s,
           consent_at=CASE WHEN %s THEN COALESCE(consent_at,now()) ELSE NULL END,
           consent_source=CASE WHEN %s THEN 'seller_profile' ELSE NULL END
-          WHERE id=%s RETURNING id,phone,name,marketing_opt_in''',
-          (payload.name.strip(),payload.marketing_opt_in,payload.marketing_opt_in,payload.marketing_opt_in,user['id'])).fetchone()
+          WHERE id=%s RETURNING id,phone,name,marketing_opt_in,residence_city''',
+          (payload.name.strip(),payload.residence_city,payload.marketing_opt_in,payload.marketing_opt_in,payload.marketing_opt_in,user['id'])).fetchone()
         conn.commit()
     return {'user':dict(row)}
 

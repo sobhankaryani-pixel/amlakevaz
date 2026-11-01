@@ -1,0 +1,10 @@
+.sell-invitation{position:fixed;inset:0;margin:auto;width:min(360px,calc(100vw - 32px));max-height:calc(100dvh - 40px);overflow:auto;padding:24px 20px;border:1px solid var(--line);border-radius:20px;background:var(--paper);color:var(--ink);box-shadow:0 18px 70px #102b4a40;font-family:inherit}
+.sell-invitation::backdrop{background:#102b4a66;backdrop-filter:blur(3px)}
+.sell-invitation-icon{display:grid;place-items:center;width:46px;height:46px;margin:0 auto 12px;border-radius:14px;background:#fff0c3;color:#93640b;font-size:30px}
+.sell-invitation h2{font-size:19px;line-height:1.9;text-align:center;margin:0 0 20px}
+.sell-invitation-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sell-invitation-actions button{min-width:0;min-height:46px;padding:10px 8px;border-radius:11px;font:inherit;font-weight:800;font-size:14px;cursor:pointer}
+.sell-invitation-register{background:linear-gradient(120deg,#ffd567,#efab28);color:#123153;border:1px solid #e6a62b;box-shadow:0 5px 14px #bc7b1725}
+.sell-invitation-dismiss{background:#fff;color:#18334e;border:1px solid #d5dde7}
+.sell-invitation-actions button:focus-visible{outline:3px solid #3984e7;outline-offset:3px}
+.seller-page .seller-residence{width:100%;min-width:0;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:16px}

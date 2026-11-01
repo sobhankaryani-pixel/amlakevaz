@@ -3,6 +3,7 @@ import DesktopView from './desktop/DesktopView';
 import MobileView from './mobile/MobileView';
 import {useSiteState} from './shared/useSiteState';
 import SiteToast from './shared/SiteToast';
+import SellInvitation from './shared/SellInvitation';
 
 // Keep this boundary aligned with the CSS entry point (900px).
 const mobileQuery=window.matchMedia('(max-width: 900px)');
@@ -13,5 +14,5 @@ const subscribe=(notify:()=>void)=>{
 export default function App(){
  const state=useSiteState();
  const mobile=useSyncExternalStore(subscribe,()=>mobileQuery.matches);
- return <><SiteToast/>{mobile?<MobileView {...state}/>:<DesktopView {...state}/>}</>;
+ return <><SiteToast/><SellInvitation page={state.page} userId={state.sellerUser?.id}/>{mobile?<MobileView {...state}/>:<DesktopView {...state}/>}</>;
 }

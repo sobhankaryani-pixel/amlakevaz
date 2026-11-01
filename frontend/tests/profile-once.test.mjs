@@ -7,24 +7,24 @@ test('profile is saved once; success toast survives home redirect; returning OTP
  const saved=new Map();let dom,instance;
  const put=(name,value)=>{saved.set(name,Object.getOwnPropertyDescriptor(globalThis,name));Object.defineProperty(globalThis,name,{value,configurable:true,writable:true})};
  try{
-  const entry=join(folder,'entry.tsx');await writeFile(entry,"export {default as Account} from '../src/SellerAccount';export {default as Toast} from '../src/shared/SiteToast';export {act,createElement,useState,useEffect} from 'react';export {createRoot} from 'react-dom/client';");
-  await build({root,configFile:false,plugins:[react()],logLevel:'silent',build:{lib:{entry,cssFileName:'test',formats:['es'],fileName:()=> 'test.mjs'},outDir:folder,emptyOutDir:false,rollupOptions:{external:['react','react/jsx-runtime','react-dom/client']}}});
+  const entry=join(folder,'entry.tsx');await writeFile(entry,"export {default as Account} from '../src/SellerAccount';export {default as Toast} from '../src/shared/SiteToast';export {default as Invitation,inviteAfterProfile} from '../src/shared/SellInvitation';export {act,createElement,useState,useEffect} from 'react';export {createRoot} from 'react-dom/client';");
+  await build({root,configFile:false,plugins:[react()],logLevel:'silent',build:{lib:{entry,cssFileName:'test',formats:['es'],fileName:()=> 'test.mjs'},outDir:folder,emptyOutDir:false,rollupOptions:{external:['react','react/jsx-runtime','react/jsx-dev-runtime','react-dom/client']}}});
   process.env.NODE_ENV='test';dom=new JSDOM('<div id="root"></div>',{url:'https://evazmelk.ir/account',pretendToBeVisual:true});
   for(const key of ['window','document','Element','HTMLElement','localStorage','sessionStorage','navigator','location','CustomEvent','Event'])put(key,dom.window[key]);
-  put('IS_REACT_ACT_ENVIRONMENT',true);window.scrollTo=()=>{};
+  put('IS_REACT_ACT_ENVIRONMENT',true);window.scrollTo=()=>{};window.HTMLDialogElement.prototype.showModal=function(){this.open=true};window.HTMLDialogElement.prototype.close=function(){this.open=false};
   let fail=true,puts=0;const bodies=[];const oldUser={id:'profile-test',phone:'09120000000',name:'',marketing_opt_in:true};
   put('fetch',async(url,options={})=>{
    let data={items:[]},status=200;
-   if(options.method==='PUT'){puts++;const body=JSON.parse(options.body);bodies.push(body);status=fail?503:200;data=fail?{detail:'خطای آزمایشی'}:{user:{...oldUser,name:body.name}}}
+   if(options.method==='PUT'){puts++;const body=JSON.parse(options.body);bodies.push(body);status=fail?503:200;data=fail?{detail:'خطای آزمایشی'}:{user:{...oldUser,name:body.name,residence_city:body.residence_city}}}
    if(url.endsWith('/request-code'))data={message:'کد آزمایشی'};
-   if(url.endsWith('/verify-code'))data={user:{...oldUser,name:'کاربر آزمایشی'}};
+   if(url.endsWith('/verify-code'))data={user:{...oldUser,name:'کاربر آزمایشی',residence_city:'اوز'}};
    return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
   });
-  const {Account,Toast,act,createElement:h,useState,useEffect,createRoot}=await import(pathToFileURL(join(folder,'test.mjs')));
+  const {Account,Toast,Invitation,inviteAfterProfile,act,createElement:h,useState,useEffect,createRoot}=await import(pathToFileURL(join(folder,'test.mjs')));
   function Harness({initial}){
    const [user,setUser]=useState(initial),[path,setPath]=useState(location.pathname);
    useEffect(()=>{const update=()=>setPath(location.pathname);window.addEventListener('evaz:navigate',update);return()=>window.removeEventListener('evaz:navigate',update)},[]);
-   return h('div',null,h(Toast),path==='/'?h('h1',null,'صفحهٔ اصلی'):h(Account,{user,onUser:setUser,onRegister:()=>{}}));
+   return h('div',null,h(Toast),h(Invitation,{page:path==='/'?'home':'account',userId:user?.id}),path==='/'?h('h1',null,'صفحهٔ اصلی'):h(Account,{user,onUser:setUser,onRegister:()=>{}}));
   }
   const settle=()=>new Promise(r=>setTimeout(r,30));
   const mount=async initial=>{instance=createRoot(document.querySelector('#root'));await act(async()=>{instance.render(h(Harness,{initial}));await settle()})};
@@ -33,12 +33,12 @@ test('profile is saved once; success toast survives home redirect; returning OTP
   const submit=async()=>{await act(async()=>{document.querySelector('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));await settle()})};
   await mount(oldUser);assert.equal(document.querySelectorAll('form input').length,1);assert.equal(document.querySelectorAll('input[type=checkbox]').length,0);
   await fill('input[autocomplete=name]','   ');await submit();assert.equal(puts,0);assert.equal(location.pathname,'/account');
-  await fill('input[autocomplete=name]','  کاربر آزمایشی  ');await submit();assert.equal(puts,1);assert.equal(location.pathname,'/account');assert.match(document.body.textContent,/خطای آزمایشی/);assert.equal(document.querySelector('.site-success-toast'),null);
-  fail=false;await submit();assert.equal(puts,2);assert.deepEqual(bodies[1],{name:'کاربر آزمایشی',marketing_opt_in:true});assert.match(document.querySelector('.site-success-toast').textContent,/مشخصات با موفقیت ذخیره شد/);assert.ok(document.querySelector('button[type=submit],button.seller-submit').disabled);
+  await fill('input[autocomplete=name]','  کاربر آزمایشی  ');await submit();assert.equal(puts,0);assert.match(document.body.textContent,/محل سکونت خود را انتخاب کنید/);await act(async()=>{const select=document.querySelector('select');assert.equal(select.options.length,15);select.value='اوز';select.dispatchEvent(new Event('change',{bubbles:true}))});await submit();assert.equal(puts,1);assert.equal(location.pathname,'/account');assert.match(document.body.textContent,/خطای آزمایشی/);assert.equal(document.querySelector('.site-success-toast'),null);
+  fail=false;await submit();assert.equal(puts,2);assert.deepEqual(bodies[1],{name:'کاربر آزمایشی',residence_city:'اوز',marketing_opt_in:true});assert.match(document.querySelector('.site-success-toast').textContent,/مشخصات با موفقیت ذخیره شد/);assert.ok(document.querySelector('button[type=submit],button.seller-submit').disabled);
   await submit();assert.equal(puts,2);
-  await act(async()=>{await new Promise(r=>setTimeout(r,1000))});assert.equal(location.pathname,'/');assert.match(document.querySelector('h1').textContent,/صفحهٔ اصلی/);assert.ok(document.querySelector('.site-success-toast'));
-  await unmount();window.history.replaceState(null,'','/account');await mount({...oldUser,name:'کاربر آزمایشی'});assert.equal(document.querySelector('input[autocomplete=name]'),null);assert.match(document.body.textContent,/درخواست‌های من/);
-  await unmount();await mount(null);await fill('#seller-login-phone','09120000000');await submit();await fill('#seller-login-code','123456');await submit();assert.equal(location.pathname,'/');assert.equal(document.querySelector('input[autocomplete=name]'),null);
+  await act(async()=>{await new Promise(r=>setTimeout(r,1000))});assert.equal(location.pathname,'/');assert.match(document.querySelector('h1').textContent,/صفحهٔ اصلی/);assert.ok(document.querySelector('.site-success-toast'));assert.equal(document.querySelector('dialog').open,true);await act(async()=>document.querySelector('.sell-invitation-dismiss').click());assert.equal(document.querySelector('dialog').open,false);await act(async()=>window.dispatchEvent(new Event('evaz:navigate')));assert.equal(document.querySelector('dialog').open,false);
+  await unmount();window.history.replaceState(null,'','/account');await mount({...oldUser,name:'کاربر آزمایشی',residence_city:'اوز'});assert.equal(document.querySelector('input[autocomplete=name]'),null);assert.match(document.body.textContent,/درخواست‌های من/);
+  await unmount();await mount(null);await fill('#seller-login-phone','09120000000');await submit();await fill('#seller-login-code','123456');await submit();assert.equal(location.pathname,'/');assert.equal(document.querySelector('input[autocomplete=name]'),null);assert.equal(document.querySelector('dialog').open,false);await act(async()=>inviteAfterProfile(oldUser.id));assert.equal(document.querySelector('dialog').open,true);await act(async()=>document.querySelector('.sell-invitation-register').click());assert.equal(location.pathname,'/register');assert.equal(document.querySelector('dialog').open,false);
  }finally{
   if(instance)await (await import('react')).act(async()=>instance.unmount());dom?.window.close();for(const [name,value]of saved){if(value)Object.defineProperty(globalThis,name,value);else delete globalThis[name]}await rm(folder,{recursive:true,force:true});
  }

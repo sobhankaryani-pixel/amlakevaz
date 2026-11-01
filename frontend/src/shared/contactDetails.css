@@ -1,0 +1,14 @@
+.contact-team{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:18px 0}
+.contact-person{padding:22px;border:1px solid var(--line);border-top:4px solid #e5ad35;border-radius:16px;background:var(--paper);box-shadow:0 6px 22px #102b4a0a;min-width:0}
+.site .contact-person h3{font-size:24px;font-weight:900;line-height:1.6;color:var(--ink);margin:0 0 10px}
+.site .contact-person>a{display:inline-block;font-size:26px;font-weight:800;letter-spacing:.5px;color:var(--primary);text-decoration:none;line-height:1.7}
+.contact-office{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin:18px 0}
+.contact-office>div{padding:20px;background:var(--soft);border:1px solid var(--line);border-radius:14px;min-width:0}
+.site .contact-office dt{font-size:15px;font-weight:700;color:var(--muted);margin-bottom:7px}
+.site .contact-office dd{font-size:18px;font-weight:700;line-height:2;color:var(--ink);margin:0}
+.site .contact-channels{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 32px}
+.site .contact-channels a{padding:11px 16px;border:1px solid var(--line);border-radius:11px;text-decoration:none;font-weight:700;background:var(--paper);color:var(--primary)}
+.contact-team a:focus-visible,.contact-channels a:focus-visible{outline:3px solid #4486e0;outline-offset:3px}
+@media(max-width:600px){.contact-team,.contact-office{grid-template-columns:minmax(0,1fr);gap:12px}.contact-person{padding:16px 18px}.site .contact-person h3{font-size:22px}.site .contact-person>a{font-size:25px}.contact-office>div{padding:15px 18px}.site .contact-office dd{font-size:16px}.site .contact-channels a{font-size:13px}}
+/* Keep the hidden anti-spam field from widening RTL mobile pages. */
+.contact-request-form .seller-honeypot{left:0;right:auto;top:0;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);opacity:0;pointer-events:none}
