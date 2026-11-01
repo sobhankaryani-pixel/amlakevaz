@@ -1,6 +1,7 @@
 export const SITE='https://evazmelk.ir';
 export const DEFAULT_IMAGE=SITE+'/brand/favicon-emblem-v3-256.png';
 export const PAGES={
+ '/agency':['پنل بنگاه‌داران | املاک خودمونی','ورود بنگاه‌داران و مدیریت فایل‌های اختصاصی.'],
  '/':['املاک خودمونی اوز | شاخص قیمت و آگهی ملک','خرید و فروش زمین، خانه، مسکن مهر و سایر املاک اوز؛ مشاهده شاخص قیمت و دریافت مشاوره از املاک خودمونی.'],
  '/search':['جستجوی ملک در اوز | املاک خودمونی','ملک مناسب خود را بر اساس نوع، بودجه، متراژ و منطقه انتخاب کنید.'],
  '/map':['املاک روی نقشهٔ اوز | املاک خودمونی','موقعیت آگهی‌های فعال املاک اوز را روی نقشه ببینید.'],
@@ -21,7 +22,7 @@ export function canonicalPath(path){
 export function pageMetadata(path){
  const clean=canonicalPath(path),page=PAGES[clean];
  const [title,description]=page||['آگهی ملک | املاک خودمونی اوز','مشخصات و راه‌های تماس برای این آگهی ملک در اوز.'];
- return {title,description,url:SITE+clean,image:DEFAULT_IMAGE,robots:['/account','/register'].includes(clean)?'noindex,follow':'index,follow',structured:null};
+ return {title,description,url:SITE+clean,image:DEFAULT_IMAGE,robots:['/account','/register','/agency'].includes(clean)?'noindex,follow':'index,follow',structured:null};
 }
 function imageUrl(value){if(typeof value!=='string'||!value.trim())return null;try{const url=new URL(value,SITE);return url.protocol==='https:'?url.href:null}catch{return null}}
 export function isoDate(value){if(!value)return undefined;const date=new Date(value);return Number.isFinite(date.getTime())?date.toISOString():undefined}

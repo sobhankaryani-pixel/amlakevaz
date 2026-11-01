@@ -17,6 +17,8 @@ from psycopg.errors import CheckViolation
 from .price_series import SEGMENTS
 from .seller_auth import seller,require_seller,normalize_phone
 from .crm import crm
+from .agency import router as agency_router,configure as configure_agency
+from .inquiries import router as inquiry_router
 from .launch import launch,MediaItem,validate_media,limit_request
 from fastapi import Request
 from starlette.responses import JSONResponse
@@ -740,6 +742,9 @@ def update_homepage_promotion(promotion_id: int, payload: HomepagePromotionUpdat
         conn.commit()
     return {"item": _promotion_dict(row), "message": "کارت صفحهٔ اصلی ذخیره شد."}
 
+configure_agency(SellerSubmissionIn)
+app.include_router(agency_router)
+app.include_router(inquiry_router)
 app.include_router(public); app.include_router(admin); app.include_router(seller); app.include_router(crm)
 
 app.include_router(launch)

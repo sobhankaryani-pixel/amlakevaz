@@ -21,11 +21,12 @@ export default function SellerRegistration({user,onLogin}:{user:SellerUser|null;
  if(!user)return <section className="content-section seller-page"><div className="page-heading"><span className="section-kicker">برای فروشندگان اوز</span><h1>ثبت ملک برای فروش</h1><p>برای ثبت ملک، ابتدا با شمارهٔ موبایل وارد شوید.</p></div><button className="seller-submit" onClick={onLogin}>ورود یا ثبت‌نام با موبایل</button></section>;
  return <RegistrationForm key={user.id} user={user}/>;
 }
-function RegistrationForm({user}:{user:SellerUser}){
- const key=draftKey(user.id);
- const [initial]=useState(()=>{try{return readDraft(localStorage,key,empty)}catch{return {form:{...empty},media:[] as MediaItem[],restored:false}}});
+export function RegistrationForm({user,agency}:{user:SellerUser;agency?:{id:string;version:number;details:Record<string,unknown>;onSaved:()=>void}}){
+ const [version,setVersion]=useState(agency?.version||0);
+ const key=agency?'evaz-agency:'+user.id+':'+agency.id+':'+agency.version:draftKey(user.id);
+ const [initial]=useState(()=>{try{return readDraft(localStorage,key,agency?Object.fromEntries(Object.entries({...empty,...agency.details}).map(([k,v])=>[k,v==null?'':String(v)])) as Form:empty)}catch{return {form:{...empty},media:[] as MediaItem[],restored:false}}});
  const [form,setForm]=useState<Form>({...initial.form,seller_name:initial.form.seller_name||user.name,seller_phone:user.phone});
- const [media,setMedia]=useState<MediaItem[]>(initial.media),[uploading,setUploading]=useState(false);
+ const [media,setMedia]=useState<MediaItem[]>(initial.restored?initial.media:(agency?.details.media as MediaItem[]||initial.media)),[uploading,setUploading]=useState(false);
  const [restored,setRestored]=useState(initial.restored),[storageError,setStorageError]=useState(false);
  const allowVideo=['villa','apartment','mehr','national'].includes(form.kind);
  const visibleMedia=media.filter(item=>item.kind==='image'||allowVideo);
@@ -39,7 +40,7 @@ function RegistrationForm({user}:{user:SellerUser}){
  const set=(key:keyof Form,value:string)=>setForm(v=>({...v,[key]:value}));
  const input=(key:keyof Form,label:string,required=false,numeric=false)=><label key={key}>{label}<input required={required} type={numeric?'number':'text'} min={numeric?'0':undefined} step={numeric&&!['bedrooms','floor_count','build_year','asking_price_toman'].includes(key)?'any':undefined} value={form[key]} onChange={e=>set(key,e.target.value)}/></label>;
  const select=(key:keyof Form,label:string,values:string[],required=false)=><label key={key}>{label}<select required={required} value={form[key]} onChange={e=>set(key,e.target.value)}><option value="">انتخاب کنید</option>{values.map(x=><option key={x} value={x}>{x}</option>)}</select></label>;
- async function submit(e:FormEvent){
+ async function submit(e:FormEvent,draftOnly=false){
   e.preventDefault();setError('');setSuccess('');setBusy(true);
   try{
    if(!user)throw Error('ابتدا با شمارهٔ موبایل وارد شوید.');
@@ -48,13 +49,19 @@ function RegistrationForm({user}:{user:SellerUser}){
    const specificFields=new Set(Object.values(kindFields).flat());
    for(const key of specificFields)if(!kindFields[form.kind].includes(key))payload[key]='';
    for(const key of numbers)payload[key]=payload[key]===''?null:Number(payload[key]);
+   if(agency){
+    const saved=await fetch(`${API}/api/agency/files/${agency.id}`,{method:'PUT',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({details:payload,expected_version:version})});
+    const d=await saved.json();if(!saved.ok)throw Error(typeof d.detail==='string'?d.detail:'ذخیره انجام نشد.');setVersion(d.version);
+    if(!draftOnly){const r=await fetch(`${API}/api/agency/files/${agency.id}/submit`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({expected_version:d.version})});const result=await r.json();if(!r.ok)throw Error(typeof result.detail==='string'?result.detail:'ارسال انجام نشد.');}
+    localStorage.removeItem(key);agency.onSaved();return;
+   }
    const r=await fetch(`${API}/api/seller/property-submissions`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,analytics:getAnalyticsContext()})});
    const d=await r.json();if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:'مشخصات واردشده را بررسی کنید.');
    setSuccess(d.message);setRestored(false);setMedia([]);setForm({...empty,seller_name:user.name,seller_phone:user.phone});
   }catch(e){setError(e instanceof Error?e.message:'ارسال درخواست انجام نشد. دوباره تلاش کنید.')}finally{setBusy(false)}
  }
 
- return <section className="content-section seller-page"><div className="page-heading"><span className="section-kicker">برای فروشندگان اوز</span><h1>ثبت ملک برای فروش</h1><p>مشخصات ملک را وارد کنید. پس از بررسی و تأیید، آگهی در سایت منتشر می‌شود.</p></div>
+ return <section className="content-section seller-page"><div className="page-heading"><span className="section-kicker">{agency?"فایل اختصاصی بنگاه":"برای فروشندگان اوز"}</span><h1>{agency?"ثبت و ویرایش فایل بنگاه":"ثبت ملک برای فروش"}</h1><p>مشخصات ملک را وارد کنید. پس از بررسی و تأیید، آگهی در سایت منتشر می‌شود.</p></div>
  <p className="seller-privacy" role="status">{storageError?'ذخیرهٔ پیش‌نویس در این مرورگر ممکن نیست؛ تا ارسال درخواست این صفحه را نبندید.':restored?'پیش‌نویس قبلی بازیابی شد. تغییرات روی همین مرورگر تا ۷ روز نگه داشته می‌شوند.':'پیش‌نویس به‌صورت خودکار روی همین مرورگر تا ۷ روز ذخیره می‌شود.'}</p>
  <button type="button" className="account-link" disabled={busy||uploading} onClick={clearDraft}>پاک‌کردن پیش‌نویس و شروع دوباره</button>
  <form className="seller-form" onSubmit={submit}>
@@ -67,13 +74,14 @@ function RegistrationForm({user}:{user:SellerUser}){
    {form.kind==='national'&&<>{input('building_area_m2','زیربنا (مترمربع)',true,true)}{select('national_phase','فاز مسکن ملی',['1','2','3','4','5'],true)}<label>شمارهٔ بلوک<input required type="text" inputMode="numeric" pattern="[0-9۰-۹٠-٩]+" value={form.national_block} onChange={e=>set('national_block',e.target.value)}/></label>{select('national_level','موقعیت طبقه',['بالا','پایین','نامشخص'],true)}{select('national_stage','مرحلهٔ ساخت',stages,true)}</>}
    {form.kind==='garden'&&<>{input('area_m2','متراژ باغ شهری (مترمربع)',true,true)}{input('land_length_m','طول باغ (متر)',false,true)}{input('land_width_m','عرض باغ (متر)',false,true)}</>}
    {form.kind==='shop'&&<>{input('commercial_area_m2','متراژ مغازه (مترمربع)',true,true)}{input('street_frontage_m','بر مغازه (متر)',false,true)}</>}
-   {form.kind!=='land'&&<label>منطقه<select value={form.region_key} onChange={e=>set('region_key',e.target.value)}><option value="">کل اوز / نامشخص</option>{regions.map(r=><option value={r.slug} key={r.slug}>{r.name}</option>)}</select></label>}
+   {form.kind!=='land'&&<label>منطقه<select required={!!agency} value={form.region_key} onChange={e=>set('region_key',e.target.value)}><option value="">{agency?"انتخاب کنید":"کل اوز / نامشخص"}</option>{regions.map(r=><option value={r.slug} key={r.slug}>{r.name}</option>)}</select></label>}
    {input('neighborhood','محله یا محدوده')}{input('asking_price_toman','قیمت پیشنهادی (تومان)',true,true)}
    <label className="full">توضیحات تکمیلی<textarea maxLength={2000} value={form.extra_details} onChange={e=>set('extra_details',e.target.value)} placeholder="مشخصات تکمیلی ملک را بنویسید"/></label>
   </div></div>
-  <div className="seller-step"><MediaUploader items={visibleMedia} draftItems={media} onChange={items=>setMedia(previous=>allowVideo?items:[...items,...previous.filter(item=>item.kind==='video')])} allowVideo={allowVideo} onBusy={setUploading}/></div>
-  <div className="seller-step"><h2>۳. اطلاعات فروشنده</h2><div className="seller-fields">{input('seller_name','نام فروشنده',true)}<label>شمارهٔ تأییدشده<input readOnly dir="ltr" value={user.phone}/></label></div><label className="seller-honeypot" aria-hidden="true">وب‌سایت<input tabIndex={-1} autoComplete="off" value={form.website} onChange={e=>set('website',e.target.value)}/></label><p className="seller-privacy">شمارهٔ شما تنها در پنل مدیریت دیده می‌شود. پس از تأیید، آگهی منتشر می‌شود و هنگام پیدا شدن خریدار با شما تماس می‌گیریم.</p></div>
+  <div className="seller-step"><MediaUploader audience={agency?'agency':'seller'} items={visibleMedia} draftItems={media} onChange={items=>setMedia(previous=>allowVideo?items:[...items,...previous.filter(item=>item.kind==='video')])} allowVideo={allowVideo} onBusy={setUploading}/></div>
+  <div className="seller-step"><h2>{agency?"۳. اطلاعات بنگاه":"۳. اطلاعات فروشنده"}</h2><div className="seller-fields">{agency?<label>نام بنگاه<input readOnly value={user.name}/></label>:input('seller_name','نام فروشنده',true)}<label>{agency?"شمارهٔ ثبت‌شده نزد مدیریت":"شمارهٔ تأییدشده"}<input readOnly dir="ltr" value={user.phone}/></label></div><label className="seller-honeypot" aria-hidden="true">وب‌سایت<input tabIndex={-1} autoComplete="off" value={form.website} onChange={e=>set('website',e.target.value)}/></label><p className="seller-privacy">شمارهٔ شما تنها در پنل مدیریت دیده می‌شود. پس از تأیید، آگهی منتشر می‌شود و هنگام پیدا شدن خریدار با شما تماس می‌گیریم.</p></div>
   {error&&<p className="seller-error" role="alert">{error}</p>}{success&&<p className="seller-success" role="status">{success}</p>}
-  <button className="seller-submit" disabled={busy||uploading} type="submit">{busy?'در حال ارسال…':'ارسال درخواست ثبت ملک'}</button>
+  <button className="seller-submit" disabled={busy||uploading} type="submit">{busy?'در حال ارسال…':agency?'ارسال برای تأیید مدیر اصلی':'ارسال درخواست ثبت ملک'}</button>
+  {agency&&<button className="account-link" type="button" disabled={busy||uploading} onClick={e=>void submit(e,true)}>ذخیرهٔ پیش‌نویس بدون ارسال</button>}
  </form></section>;
 }

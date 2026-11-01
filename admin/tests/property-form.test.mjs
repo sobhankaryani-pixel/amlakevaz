@@ -8,7 +8,7 @@ test('server code is readonly, removed panel is absent, notes stay and wheel can
  let instance,uninstall,dom;
  try{
   const entry=join(folder,'entry.tsx');await writeFile(entry,"export {default as App} from '../src/App';export {installWheelValueGuard} from '../src/wheelValueGuard';export {act,createElement} from 'react';export {createRoot} from 'react-dom/client';");
-  await build({configFile:false,plugins:[react()],logLevel:'silent',build:{lib:{entry,formats:['es'],fileName:()=> 'test.mjs'},outDir:folder,emptyOutDir:false,rollupOptions:{external:['react','react/jsx-runtime','react-dom/client']}}});
+  await build({configFile:false,plugins:[react()],logLevel:'silent',build:{lib:{entry,cssFileName:'test',formats:['es'],fileName:()=> 'test.mjs'},outDir:folder,emptyOutDir:false,rollupOptions:{external:['react','react/jsx-runtime','react-dom/client']}}});
   process.env.NODE_ENV='test';dom=new JSDOM('<div id="root"></div>',{url:'https://admin.evazmelk.ir',pretendToBeVisual:true});
   for(const key of ['window','document','Element','HTMLElement','localStorage','sessionStorage','navigator'])put(key,dom.window[key]);
   put('getComputedStyle',dom.window.getComputedStyle);put('IS_REACT_ACT_ENVIRONMENT',true);

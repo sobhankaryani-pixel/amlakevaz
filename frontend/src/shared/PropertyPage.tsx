@@ -1,8 +1,9 @@
+import PropertyInquiry from './PropertyInquiry';
 import {applyMetadata} from './seo';
 import {canonicalPath,pageMetadata,propertyMetadata,propertyFailureMetadata} from './seoMetadata.js';
 import {fetchWithTimeout as fetch} from './http';
 import {useEffect,useState} from 'react';
-import {API,contact,type Property} from './propertyUI';
+import {API,type Property} from './propertyUI';
 import {propertyPath,navigate} from './navigation';
 import {track} from './analytics';
 import type {MediaItem} from './MediaUploader';
@@ -21,7 +22,7 @@ export function PropertyContent({item}:{item:PropertyDetail}){
  return <article className="property-full"><span className="section-kicker">آگهی فروش · کد {item.public_code}</span><h1>{item.property_type} در {item.neighborhood||item.region||'اوز'}</h1><div className="property-date">آخرین به‌روزرسانی: {item.updated_at?persianDate(item.updated_at):'تاریخ ویرایش قدیمی ثبت نشده'} <span>· انتشار: {persianDate(item.published_at)}</span></div><strong className="property-full-price">{fmt(item.asking_price_toman)} تومان</strong>
  {images.length?<div className="property-gallery"><img className="property-main-photo" src={images[Math.min(active,images.length-1)].url} alt={`تصویر ملک ${item.public_code}`} onError={e=>{e.currentTarget.alt='تصویر در دسترس نیست'}}/><div className="property-thumbnails">{images.map((x,i)=><button type="button" key={x.url} className={i===active?'active':''} aria-label={`نمایش عکس ${i+1}`} aria-pressed={i===active} onClick={()=>setActive(i)}><img src={x.url} loading="lazy" alt={`عکس ${i+1}`}/></button>)}</div></div>:<p className="state-message">تصویری برای این ملک ثبت نشده است.</p>}
  <dl className="property-facts">{fields.filter(([,v])=>v!=null&&v!=='').map(([label,value])=><div key={label}><dt>{label}</dt><dd>{String(value)}</dd></div>)}</dl>{item.public_notes&&<section><h2>توضیحات ملک</h2><p className="property-description">{item.public_notes}</p></section>}{videos.length>0&&<section><h2>فیلم ملک</h2>{videos.map(x=><video key={x.url} src={x.url} controls playsInline preload="none" aria-label="فیلم ملک"/>)}</section>}
- <div className="property-actions"><a href="tel:09212745755" data-property-code={item.public_code}>تماس با مشاور</a><a href={`${contact}?text=${encodeURIComponent(`سلام، دربارهٔ ملک با کد ${item.public_code} سؤال دارم. ${location.origin+propertyPath(item.public_code)}`)}`} data-property-code={item.public_code} target="_blank" rel="noopener noreferrer">گفتگو در واتساپ</a><button type="button" onClick={()=>void share()}>اشتراک‌گذاری آگهی</button>{item.latitude!=null&&item.longitude!=null&&<button type="button" onClick={()=>{track('map_open',{},item.public_code);navigate('map',item.public_code)}}>دیدن این ملک روی نقشه</button>}</div>{notice&&<p role="status" className="share-notice">{notice}</p>}</article>
+ <div className="property-actions"><button type="button" onClick={()=>void share()}>اشتراک‌گذاری آگهی</button>{item.latitude!=null&&item.longitude!=null&&<button type="button" onClick={()=>{track('map_open',{},item.public_code);navigate('map',item.public_code)}}>دیدن این ملک روی نقشه</button>}</div>{notice&&<p role="status" className="share-notice">{notice}</p>}</article>
 }
 export default function PropertyPage({code}:{code:string}){
  const [resolvedCode,setResolvedCode]=useState(''),[errorStatus,setErrorStatus]=useState(0);

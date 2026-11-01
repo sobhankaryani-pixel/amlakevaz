@@ -18,7 +18,9 @@ owner=Depends(require_roles('owner'))
 FILENAME=re.compile(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:jpg|png|webp|mp4|webm)')
 REFERENCES="""NOT EXISTS(SELECT 1 FROM app.properties p WHERE strpos(to_jsonb(p)::text,u.filename)>0)
  AND NOT EXISTS(SELECT 1 FROM app.property_submissions s WHERE strpos(to_jsonb(s)::text,u.filename)>0)
- AND NOT EXISTS(SELECT 1 FROM app.homepage_promotions h WHERE strpos(to_jsonb(h)::text,u.filename)>0)"""
+ AND NOT EXISTS(SELECT 1 FROM app.homepage_promotions h WHERE strpos(to_jsonb(h)::text,u.filename)>0)
+ AND NOT EXISTS(SELECT 1 FROM app.agency_files f WHERE strpos(f.details::text,u.filename)>0)
+ AND NOT EXISTS(SELECT 1 FROM app.agency_requests r WHERE strpos(r.details::text,u.filename)>0)"""
 ELIGIBLE="""u.cleanup_state IN ('active','deleting') AND u.created_at<now()-interval '30 days' AND u.retain_until<now()
  AND u.filename ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}[.](jpg|png|webp|mp4|webm)$'"""
 
@@ -51,7 +53,7 @@ def retain_files(payload,user):
         rows=conn.execute('SELECT id,filename,owner_id,owner_role,cleanup_state FROM app.uploaded_media WHERE filename=ANY(%s) ORDER BY id FOR UPDATE',(names,)).fetchall()
         if len(rows)!=len(names):raise HTTPException(409,'بعضی فایل‌های پیش‌نویس موجود نیستند؛ دوباره بارگذاری کنید.')
         for row in rows:
-            if user.get('role')=='seller' and (str(row['owner_id'])!=identity(user) or row['owner_role']!='seller'):
+            if user.get('role') in ('seller','agency') and (str(row['owner_id'])!=identity(user) or row['owner_role']!=user['role']):
                 raise HTTPException(403,'فایل متعلق به حساب شما نیست')
             if row['cleanup_state']!='active':raise HTTPException(409,'فایل در حال حذف است؛ آن را دوباره بارگذاری کنید.')
         if rows:conn.execute("UPDATE app.uploaded_media SET retain_until=GREATEST(retain_until,now()+interval '30 days') WHERE filename=ANY(%s)",(names,))

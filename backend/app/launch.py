@@ -56,7 +56,7 @@ def validate_media(items:list[MediaItem],user:dict,house:bool=True):
             row=conn.execute('SELECT owner_id,owner_role,kind,cleanup_state FROM app.uploaded_media WHERE filename=%s',(filename,)).fetchone()
             if not row or row['kind']!=item.kind:raise HTTPException(422,'فایل بارگذاری‌شده معتبر نیست')
             if row.get('cleanup_state','active')!='active':raise HTTPException(409,'فایل در حال حذف است یا قبلاً حذف شده؛ دوباره بارگذاری کنید.')
-            if user.get('role')=='seller' and (str(row['owner_id'])!=str(user['id']) or row['owner_role']!='seller'):
+            if user.get('role') in ('seller','agency') and (str(row['owner_id'])!=str(user['id']) or row['owner_role']!=user['role']):
                 raise HTTPException(403,'فایل متعلق به حساب شما نیست')
 
 

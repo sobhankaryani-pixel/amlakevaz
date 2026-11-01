@@ -1,5 +1,5 @@
 import type {Page} from './propertyUI';
-const paths:Record<Page,string>={home:'/',listings:'/search',map:'/map',index:'/index',areas:'/areas',register:'/register',account:'/account',about:'/about',contact:'/contact',property:'/properties'};
+const paths:Record<Page,string>={agency:'/agency',home:'/',listings:'/search',map:'/map',index:'/index',areas:'/areas',register:'/register',account:'/account',about:'/about',contact:'/contact',property:'/properties'};
 export function propertyPath(code:string){return '/properties/'+encodeURIComponent(code)}
 export function readRoute(){
  const url=new URL(window.location.href),path=url.pathname.replace(/\/$/,'')||'/';

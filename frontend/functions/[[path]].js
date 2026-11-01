@@ -4,11 +4,11 @@ const API='https://api.evazmelk.ir';
 export async function onRequest(context){
  const {request}=context,url=new URL(request.url),path=url.pathname.replace(/\/$/,'')||'/';
  const api=context.env.PUBLIC_API_BASE_URL||API;
- if(path==='/robots.txt')return new Response('User-agent: *\nAllow: /\nDisallow: /account\nSitemap: '+SITE+'/sitemap.xml\n',{headers:{'Content-Type':'text/plain; charset=utf-8'}});
+ if(path==='/robots.txt')return new Response('User-agent: *\nAllow: /\nDisallow: /account\nDisallow: /agency\nSitemap: '+SITE+'/sitemap.xml\n',{headers:{'Content-Type':'text/plain; charset=utf-8'}});
  if(path==='/sitemap.xml'){
   try{
    const r=await fetchWithTimeout(api+'/api/public/sitemap-data',{timeoutMs:8000});if(!r.ok)throw Error();const data=await r.json();
-   const entries=[...Object.keys(PAGES).filter(p=>!['/account','/register'].includes(p)).map(p=>({path:p})),...data.items.map(p=>({path:propertyPath(p.public_code),updated:isoDate(p.updated_at)}))];
+   const entries=[...Object.keys(PAGES).filter(p=>!['/account','/register','/agency'].includes(p)).map(p=>({path:p})),...data.items.map(p=>({path:propertyPath(p.public_code),updated:isoDate(p.updated_at)}))];
    return new Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+entries.map(p=>'<url><loc>'+escapeHtml(SITE+p.path)+'</loc>'+(p.updated?'<lastmod>'+escapeHtml(p.updated)+'</lastmod>':'')+'</url>').join('')+'</urlset>',{headers:{'Content-Type':'application/xml; charset=utf-8','Cache-Control':'public,max-age=300'}});
   }catch{return new Response('Sitemap temporarily unavailable',{status:503,headers:{'Retry-After':'60'}})}
  }

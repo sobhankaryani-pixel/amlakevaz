@@ -14,7 +14,7 @@ test('cleanup requires preview and exact confirmation; draft lease protects hidd
  const entry=join(output,'entry.tsx');let instance,dom;
  try{
   await writeFile(entry,`export {default as Cleanup} from '../src/MediaCleanup';export {default as Uploader} from '../src/MediaUploader';export {createRoot} from 'react-dom/client';export {act,createElement} from 'react';`);
-  await build({configFile:false,plugins:[react()],logLevel:'silent',build:{lib:{entry,formats:['es'],fileName:()=> 'test.mjs'},outDir:output,emptyOutDir:false,rollupOptions:{external:['react','react-dom/client','react/jsx-runtime']}}});
+  await build({configFile:false,plugins:[react()],logLevel:'silent',build:{lib:{entry,cssFileName:'test',formats:['es'],fileName:()=> 'test.mjs'},outDir:output,emptyOutDir:false,rollupOptions:{external:['react','react-dom/client','react/jsx-runtime']}}});
   process.env.NODE_ENV='test';
   dom=new JSDOM('<div id="root"></div>',{url:'https://admin.evazmelk.ir',pretendToBeVisual:true});
   put('window',dom.window);put('document',dom.window.document);put('navigator',dom.window.navigator);put('HTMLElement',dom.window.HTMLElement);put('IS_REACT_ACT_ENVIRONMENT',true);
