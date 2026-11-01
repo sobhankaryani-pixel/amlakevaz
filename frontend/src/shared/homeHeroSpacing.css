@@ -1,0 +1,6 @@
+/* Reveal more of the lower part of the mobile hero without changing its text. */
+@media(max-width:900px){
+ .site.mobile-site .unified-hero-image{height:clamp(326px,calc(92vw + 36px),426px);object-fit:cover;object-position:center top}
+ .site.mobile-site .content-section.featured{padding-top:12px}
+ .site.mobile-site .featured>.section-heading{margin-bottom:8px}
+}
