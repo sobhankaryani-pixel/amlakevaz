@@ -2,7 +2,7 @@ import {fetchWithTimeout as fetch} from './http';
 import { useEffect, useState } from 'react';
 import './HomepagePromotions.css';
 
-const API='https://api.evazmelk.ir';
+const API='https://backend.evazmelk.ir';
 type Promotion={id:number;slug:string;title:string;subtitle:string;badge:string;image_url:string;cta_text:string;target_page:string;sort_order:number;is_active:boolean};
 const targets=[{value:'listings',label:'فهرست آگهی‌ها'},{value:'map',label:'نقشهٔ املاک'},{value:'index',label:'شاخص قیمت'},{value:'areas',label:'مناطق اوز'},{value:'register',label:'ثبت ملک'}];
 function imagePreview(url:string){return url.startsWith('/')?'https://evazmelk.ir'+url:url;}

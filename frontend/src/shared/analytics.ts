@@ -1,5 +1,5 @@
 import {fetchWithTimeout as fetch} from './http';
-const API='https://api.evazmelk.ir';
+const API='https://backend.evazmelk.ir';
 import {attributionFor,campaignChanged,type Attribution} from './campaignAttribution.js';
 let memoryId:string|undefined;
 let memoryAttribution:Attribution|null=null;

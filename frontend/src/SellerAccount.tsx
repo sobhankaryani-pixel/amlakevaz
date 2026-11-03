@@ -6,7 +6,7 @@ import {RESIDENCE_CITIES,validResidenceCity} from './shared/residenceCities';
 import {inviteAfterProfile} from './shared/SellInvitation';
 import {showSuccessToast} from './shared/SiteToast';
 import {normalizeDigits,normalizeSellerPhone,remainingSeconds,RESEND_SECONDS,loadChallenge,saveChallenge,clearChallenge} from './shared/sellerFlow';
-const API='https://api.evazmelk.ir';
+const API='https://backend.evazmelk.ir';
 export type SellerUser={id:string;phone:string;name:string;marketing_opt_in:boolean;residence_city?:string|null};
 type Props={user:SellerUser|null;onUser:(user:SellerUser|null)=>void;onRegister:()=>void};
 export default function SellerAccount({user,onUser,onRegister}:Props){

@@ -4,7 +4,7 @@ import {navigate} from './shared/navigation';
 import MapInteraction from './shared/MapInteraction';
 import type {Property} from './shared/propertyUI';
 import {isLand,isHouse,markerLabel,markerTone,validLocation} from './shared/mapPresentation';
-const API='https://api.evazmelk.ir';
+const API='https://backend.evazmelk.ir';
 const KEY=import.meta.env.VITE_NESHAN_MAP_KEY as string|undefined;
 const EVaz={lat:27.7600,lng:54.0073};
 type Listing={public_code:string;property_code:string;property_type:string;category:string;region:string|null;area_m2:number|null;building_area_m2:number|null;latitude:number;longitude:number;asking_price_toman:number;usage_type:string|null;land_length_m:number|null;land_width_m:number|null;mehr_section:string|null;mehr_level:string|null;house_condition:string|null;bedrooms:number|null;floor_count:number|null;commercial_area_m2:number|null;national_phase:string|null;national_block:string|null;national_level:string|null;national_stage:string|null;cover_photo_url?:string|null;neighborhood?:string|null;public_notes?:string|null;build_year?:number|null;street_width?:number|null;street_frontage_m?:number|null;floor?:number|null};

@@ -6,7 +6,7 @@ const size=(value:number)=>(Number(value||0)/1024/1024).toLocaleString('fa-IR',{
 export default function MediaCleanup({token}:{token:string}){
  const [report,setReport]=useState<Report|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[selected,setSelected]=useState<Item|null>(null),[confirmation,setConfirmation]=useState('');
  async function request(path:string,options:RequestInit={}){
-  const response=await fetch('https://api.evazmelk.ir/api/admin/media/'+path,{...options,headers:{Authorization:'Bearer '+token,...options.headers}});
+  const response=await fetch('https://backend.evazmelk.ir/api/admin/media/'+path,{...options,headers:{Authorization:'Bearer '+token,...options.headers}});
   const data=await response.json();if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:'دریافت اطلاعات فایل‌ها انجام نشد.');return data;
  }
  async function scan(offset=0){setBusy(true);setError('');setSelected(null);setConfirmation('');try{setReport(await request('cleanup-preview?offset='+offset))}catch(e){setError((e as Error).message)}finally{setBusy(false)}}

@@ -5,7 +5,7 @@ import {useEffect,useState,type FormEvent} from 'react';
 import type {SellerUser} from './SellerAccount';
 import {draftKey,readDraft,writeDraft} from './shared/sellerFlow';
 
-const API='https://api.evazmelk.ir';
+const API='https://backend.evazmelk.ir';
 type Kind='land'|'villa'|'apartment'|'mehr'|'national'|'shop'|'garden';
 const kinds:{value:Kind;label:string}[]=[
  {value:'land',label:'زمین'},{value:'villa',label:'خانهٔ ویلایی'},

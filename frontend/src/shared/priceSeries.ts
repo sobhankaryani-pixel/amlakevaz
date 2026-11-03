@@ -10,7 +10,7 @@ const requests=new Map<string,Promise<PriceSeriesResult>>();
 export function getPriceSeries(region:string):Promise<PriceSeriesResult>{
  const cached=requests.get(region);
  if(cached)return cached;
- const request=fetch(`https://api.evazmelk.ir/api/public/price-series?region=${encodeURIComponent(region)}`)
+ const request=fetch(`https://backend.evazmelk.ir/api/public/price-series?region=${encodeURIComponent(region)}`)
   .then(async response=>{
    if(!response.ok)throw new Error('Price request failed');
    return response.json() as Promise<PriceSeriesResult>;

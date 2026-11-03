@@ -1,0 +1,10 @@
+import {execSync} from 'node:child_process';
+import {cpSync,mkdirSync,rmSync,writeFileSync} from 'node:fs';
+execSync('npm run build --prefix frontend',{stdio:'inherit'});
+execSync('npm run build --prefix admin',{stdio:'inherit'});
+rmSync('liara-web-dist',{recursive:true,force:true});
+cpSync('frontend/dist','liara-web-dist',{recursive:true});
+cpSync('admin/dist','liara-web-dist/management',{recursive:true});
+rmSync('liara-web-dist/asset-range-sw.js',{force:true});
+writeFileSync('liara-web-dist/liara.json',JSON.stringify({app:'evazmelk-web',platform:'static'}));
+writeFileSync('liara-web-dist/liara_nginx.conf','location / { index index.html; try_files $uri $uri/ /index.html =404; }\nlocation /assets/ { try_files $uri =404; }\nlocation /management/ { add_header X-Robots-Tag "noindex, nofollow" always; try_files $uri $uri/ /management/index.html =404; }\nlocation /management/assets/ { try_files $uri =404; }\nlocation ~ /\\.well-known { allow all; }\n');
