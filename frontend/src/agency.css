@@ -1,1 +1,33 @@
 .agency-panel{max-width:1100px;margin:auto;padding:20px;color:#173650;font-family:inherit}.agency-panel header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:18px;border-bottom:1px solid #dbe4ed}.agency-panel button,.agency-panel input{font:inherit;border:1px solid #d5dfe9;border-radius:12px;padding:12px}.agency-panel button{cursor:pointer;background:#153d59;color:#fff;margin:8px 0 8px 8px}.agency-panel button:disabled{opacity:.5;cursor:wait}.agency-panel a{color:#15529c}.agency-login{max-width:400px;margin:48px auto;padding:24px;background:#fff;border-radius:20px;box-shadow:0 12px 40px #143c5912}.agency-login label{display:grid;gap:8px;margin:18px 0}.agency-login input{width:100%;box-sizing:border-box}.agency-files{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px;margin:20px 0}.agency-files article{padding:20px;border:1px solid #dbe4ed;border-radius:18px;background:#fff}.agency-files h2{font-size:20px}.agency-files a{display:inline-block;margin:12px}.agency-panel [role=alert]{color:#a51f28;background:#fff0ef;padding:14px;border-radius:12px}.agency-panel [role=status]{padding:12px;background:#eaf7f0;border-radius:12px}.agency-panel .seller-page{padding:12px 0}@media(max-width:600px){.agency-panel{padding:14px}.agency-panel h1{font-size:24px}.agency-login{margin:24px auto;padding:18px}.agency-panel header{font-size:13px}}
+
+/* Compact agency workspace; public registration is unchanged. */
+.agency-panel{max-width:1040px;padding:18px;font-size:14px;line-height:1.7}
+.agency-panel header{gap:10px;padding-bottom:12px;font-size:13px}
+.agency-panel h1{font-size:22px;line-height:1.6;margin:18px 0 10px}
+.agency-panel h2,.agency-panel .seller-step h2{font-size:17px;line-height:1.6;margin:0 0 10px}
+.agency-panel p{font-size:13px;line-height:1.8;margin:8px 0}
+.agency-panel button{font-size:13px;line-height:1.5;font-weight:500;min-height:36px;padding:8px 11px;border-radius:8px;margin:5px 0 5px 6px}
+.agency-panel input,.agency-panel select,.agency-panel textarea{font-size:14px;line-height:1.5;min-height:38px;padding:8px 10px;border-radius:8px}
+.agency-panel input[type=checkbox],.agency-panel input[type=radio]{min-height:18px;width:18px;height:18px}
+.agency-panel label{font-size:13px;font-weight:500}
+.agency-panel .agency-files{gap:12px;margin:14px 0}
+.agency-panel .agency-files article{padding:14px;border-radius:12px}
+.agency-panel .agency-files h2{font-size:17px}
+.agency-panel .agency-files a{font-size:13px;margin:8px}
+.agency-panel [role=alert],.agency-panel [role=status]{padding:10px;border-radius:8px;font-size:13px}
+.agency-panel .seller-page{padding:8px 0}
+.agency-panel .seller-step{padding:15px;border-radius:12px;margin-bottom:12px}
+.agency-panel .seller-fields{gap:10px 14px}
+.agency-panel .seller-fields label{gap:5px}
+.agency-panel .seller-kinds{gap:7px}
+.agency-panel .seller-submit{font-size:14px;padding:10px 16px}
+.agency-panel .media-uploader{margin:10px 0}
+.agency-panel .media-upload-grid{gap:8px}
+.agency-panel .media-upload-grid img,.agency-panel .media-upload-grid video{height:115px}
+@media(max-width:600px){
+ .agency-panel{padding:12px}.agency-panel h1{font-size:20px}
+ .agency-panel button{min-height:44px}
+ .agency-panel input:not([type=checkbox]):not([type=radio]),.agency-panel select,.agency-panel textarea{font-size:16px;min-height:44px}
+ .agency-panel .seller-step{padding:12px}
+ .agency-panel .seller-fields{grid-template-columns:minmax(0,1fr)}
+}

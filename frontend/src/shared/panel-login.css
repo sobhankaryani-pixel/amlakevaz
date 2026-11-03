@@ -30,3 +30,27 @@
 @media(max-height:750px) and (min-width:761px){.admin-login{padding-top:20px}.admin-login-form{padding-top:26px}.admin-login-logo{width:94px;height:98px;margin-bottom:14px}.admin-login-visual{min-height:560px}.admin-login-subtitle{margin-bottom:18px}.admin-login-rule{margin-bottom:14px}}
 
 .admin-login{box-sizing:border-box;width:100%;font-family:inherit}.admin-login *{box-sizing:border-box}.admin-login label{display:block;font-weight:600}.admin-login-field input{display:block;width:100%;font:inherit}.admin-login button{font:inherit;border:0;cursor:pointer}.admin-login button:disabled{opacity:.6;cursor:wait}.admin-login-submit{width:100%;display:flex;align-items:center;justify-content:center;font-weight:600}.admin-login .error{color:#b42318;background:#fff2f0;padding:10px;border-radius:10px;font-size:13px}.admin-login .login-spinner{width:20px;height:20px;border:2px solid #ffffff60;border-top-color:white;border-radius:50%;animation:panel-spin .8s linear infinite}@keyframes panel-spin{to{transform:rotate(360deg)}}
+
+.admin-login{padding:28px 20px 18px}
+.admin-login .admin-login-frame{width:min(960px,100%);border-radius:18px}
+.admin-login .admin-login-form{padding:28px 32px 22px}
+.admin-login .admin-login-logo{width:92px;height:96px;margin-bottom:16px}
+.admin-login .admin-login-rule{margin-bottom:14px}
+.admin-login .admin-login-form h1{font-size:25px}
+.admin-login .admin-login-subtitle{font-size:13px;margin-bottom:20px}
+.admin-login .admin-login-form label{font-size:13px;margin-bottom:7px}
+.admin-login .admin-login-field{margin-bottom:16px}
+.admin-login .admin-login-field input{height:44px;font-size:14px;border-radius:8px}
+.admin-login .admin-login-submit{height:44px;font-size:14px;border-radius:8px}
+.admin-login .admin-login-visual{min-height:510px;padding:36px 20px}
+.admin-login .admin-login-visual h2{font-size:29px}
+.admin-login .admin-login-back{font-size:12px;margin-top:20px;padding-top:15px}
+.admin-login .admin-login-footer{font-size:11px;margin-top:16px}
+@media(max-width:760px){
+ .admin-login{padding:20px 14px}
+ .admin-login .admin-login-frame{max-width:420px}
+ .admin-login .admin-login-form{padding:24px 22px}
+ .admin-login .admin-login-form h1{font-size:23px}
+ .admin-login .admin-login-field input{font-size:16px;min-height:44px}
+ .admin-login .admin-password-toggle{min-width:44px;min-height:44px}
+}

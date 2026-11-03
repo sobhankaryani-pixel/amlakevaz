@@ -1,0 +1,76 @@
+/* Compact admin workspace. Scoped to the dashboard, without browser scaling. */
+.shell{font-size:14px;line-height:1.65}
+.shell>aside{width:220px;padding:20px 12px;gap:4px}
+.shell .brand{gap:7px;font-size:14px;font-weight:700;margin-bottom:8px}
+.shell .brand img{width:42px;height:42px}
+.shell aside .muted{font-size:11px;line-height:1.65;margin:2px 8px 10px}
+.shell button{font-size:13px;line-height:1.5;min-height:36px;padding:7px 12px;border-radius:8px;font-weight:500}
+.shell .nav{padding:8px 10px;text-align:right}
+.shell .content{padding:24px clamp(16px,2.8vw,40px)}
+.shell .content>header{gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.shell h1{font-size:22px;line-height:1.55;font-weight:700}
+.shell h2{font-size:18px;line-height:1.6;font-weight:650;margin:0 0 12px}
+.shell h3{font-size:15px;line-height:1.6;font-weight:600}
+.shell p{margin:8px 0;line-height:1.8}
+.shell label{font-size:13px;font-weight:500;margin:9px 0}
+.shell input,.shell select,.shell textarea{font-size:14px;line-height:1.5;padding:8px 10px;margin-top:5px;border-radius:8px;min-height:38px}
+.shell input[type=checkbox],.shell input[type=radio]{width:18px;height:18px;min-height:18px;padding:0;flex:none}
+.shell textarea{min-height:78px}
+.shell .status{font-size:12px;padding:5px 10px}
+.shell .grid{gap:12px}
+.shell .grid article,.shell .panel{padding:16px;border-radius:12px;box-shadow:0 3px 12px #243b5306}
+.shell .grid strong{font-size:25px;margin:8px 0 5px}
+.shell .panel{margin-top:16px}
+.shell .entry{gap:12px}
+.shell .entry .panel{margin-top:0}
+.shell .fields{gap:2px 14px}
+.shell .actions{gap:8px;margin-top:14px;flex-wrap:wrap}
+.shell .entry .submit,.shell .fields .submit{min-width:130px}
+.shell td,.shell th{font-size:12.5px;line-height:1.7;padding:8px 10px;font-weight:400}
+.shell th{font-weight:600}
+.shell td button{font-size:12px;padding:6px 9px}
+.shell .kind-grid{grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.shell .location-map{height:300px;border-radius:10px;margin:12px 0}
+.shell .location-edit{margin-top:14px;padding-top:12px}
+.shell .media-uploader{margin:12px 0}
+.shell .media-uploader>p,.shell .hint{font-size:12px;line-height:1.8}
+.shell .media-upload-grid{gap:8px;grid-template-columns:repeat(auto-fit,minmax(135px,1fr))}
+.shell .media-upload-grid img,.shell .media-upload-grid video{height:115px}
+.shell .media-upload-grid figcaption{padding:6px}
+.shell .report-cards{gap:8px;margin:14px 0}
+.shell .report-cards article{padding:12px;border-radius:10px}
+.shell .report-cards h3{font-size:12px;margin-bottom:8px}
+.shell .report-cards strong{font-size:23px}
+.shell .report-toolbar{gap:10px}
+.shell .crm-stats{gap:8px;margin:12px 0}
+.shell .crm-stats span{padding:8px 10px;border-radius:8px}
+.shell .crm-form{gap:8px 12px;margin:10px 0 18px}
+.shell .crm-form label,.shell .agency-admin label{gap:5px}
+.shell .crm-export-panel{gap:12px;margin:16px 0;padding:12px;border-radius:10px}
+.shell .crm-pages{gap:8px;margin:10px 0}
+.shell .agency-admin-list{gap:12px;margin:14px 0}
+.shell .agency-admin-list article{padding:13px;border-radius:11px}
+.shell .agency-admin dl{gap:8px}
+.shell .agency-admin dt{font-size:12px}
+.shell .agency-review-media img{width:125px;height:92px}
+.shell .admin-account-form{padding:15px;margin:16px 0;border-radius:10px}
+.shell .admin-accounts .table-wrap{margin:14px 0}
+.shell .import-report{padding:12px;gap:8px;margin-top:14px}
+.shell .sheet-result{padding:8px;font-size:12px}
+@media(max-width:760px){
+ .shell{font-size:14px}
+ .shell>aside{width:100%;padding:12px;display:block}
+ .shell .brand{font-size:15px;margin-bottom:6px}
+ .shell .brand img{width:40px;height:40px}
+ .shell aside .muted{margin:4px 0 8px}
+ .shell .nav{width:auto;display:inline-flex;align-items:center;margin:2px;min-height:44px;padding:8px 10px;font-size:12px}
+ .shell .logout{margin:6px 2px 0;min-height:44px}
+ .shell .content{padding:18px 12px}
+ .shell h1{font-size:20px}.shell h2{font-size:17px}
+ .shell .grid article,.shell .panel{padding:13px}
+ .shell button{min-height:44px}
+ .shell input:not([type=checkbox]):not([type=radio]),.shell select,.shell textarea{font-size:16px;min-height:44px}
+ .shell .media-upload-grid button{min-height:44px}
+ .shell .fields{grid-template-columns:minmax(0,1fr)}
+ .shell .location-map{height:260px}
+}
