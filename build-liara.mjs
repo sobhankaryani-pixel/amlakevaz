@@ -1,10 +1,30 @@
 import {execSync} from 'node:child_process';
-import {cpSync,mkdirSync,rmSync,writeFileSync} from 'node:fs';
-execSync('npm run build --prefix frontend',{stdio:'inherit'});
-execSync('npm run build --prefix admin',{stdio:'inherit'});
-rmSync('liara-web-dist',{recursive:true,force:true});
-cpSync('frontend/dist','liara-web-dist',{recursive:true});
-cpSync('admin/dist','liara-web-dist/management',{recursive:true});
-rmSync('liara-web-dist/asset-range-sw.js',{force:true});
-writeFileSync('liara-web-dist/liara.json',JSON.stringify({app:'evazmelk-web',platform:'static'}));
-writeFileSync('liara-web-dist/liara_nginx.conf','location / { index index.html; try_files $uri $uri/ /index.html =404; }\nlocation /assets/ { try_files $uri =404; }\nlocation /management/ { add_header X-Robots-Tag "noindex, nofollow" always; try_files $uri $uri/ /management/index.html =404; }\nlocation /management/assets/ { try_files $uri =404; }\nlocation ~ /\\.well-known { allow all; }\n');
+import {cpSync,existsSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {join} from 'node:path';
+
+// Resolve relative to this file, independently of the caller's current directory.
+const root=fileURLToPath(new URL('.',import.meta.url));
+for(const directory of ['frontend','admin']){
+  execSync('npm run build',{cwd:join(root,directory),stdio:'inherit'});
+}
+const output=join(root,'liara-web-dist');
+rmSync(output,{recursive:true,force:true});
+cpSync(join(root,'frontend/dist'),output,{recursive:true});
+cpSync(join(root,'admin/dist'),join(output,'management'),{recursive:true});
+rmSync(join(output,'asset-range-sw.js'),{force:true});
+writeFileSync(join(output,'liara.json'),JSON.stringify({app:'evazmelk-web',platform:'static'})+'\n');
+writeFileSync(join(output,'liara_nginx.conf'),`location / { index index.html; try_files $uri $uri/ /index.html =404; }
+location /assets/ { try_files $uri =404; }
+location /management/ { add_header X-Robots-Tag "noindex, nofollow" always; try_files $uri $uri/ /management/index.html =404; }
+location /management/assets/ { try_files $uri =404; }
+location ~ /\\.well-known { allow all; }
+`);
+// Fail before deployment if either application or one of its HTML assets is missing.
+for(const html of ['index.html','management/index.html']){
+  const content=readFileSync(join(output,html),'utf8');
+  for(const match of content.matchAll(/(?:src|href)="(\/[^"?#]+)(?:[?#][^"]*)?"/g)){
+    if(!existsSync(join(output,match[1].slice(1))))throw Error(`Missing asset in ${html}: ${match[1]}`);
+  }
+}
+console.log('Website and admin ready in liara-web-dist (evazmelk-web).');

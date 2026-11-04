@@ -1,0 +1,57 @@
+name: Deploy website and panels to Liara
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'admin/**'
+      - 'build-liara.mjs'
+      - '.github/workflows/liara-web.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: liara-evazmelk-web-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            admin/package-lock.json
+      - name: Check deployment secret
+        env:
+          LIARA_TOKEN: ${{ secrets.LIARA_API_TOKEN }}
+        run: |
+          if [ -z "$LIARA_TOKEN" ]; then
+            echo 'Add LIARA_API_TOKEN in repository Settings > Secrets and variables > Actions.'
+            exit 1
+          fi
+      - name: Install website dependencies
+        run: npm ci --prefix frontend --no-audit --no-fund
+      - name: Install admin dependencies
+        run: npm ci --prefix admin --no-audit --no-fund
+      - name: Build website and panels
+        env:
+          VITE_NESHAN_MAP_KEY: ${{ secrets.VITE_NESHAN_MAP_KEY }}
+        run: node build-liara.mjs
+      - name: Install Liara CLI
+        run: npm install --global @liara/cli@9 --no-audit --no-fund
+      - name: Deploy static output to evazmelk-web
+        working-directory: liara-web-dist
+        env:
+          LIARA_TOKEN: ${{ secrets.LIARA_API_TOKEN }}
+        run: liara deploy --app="evazmelk-web" --api-token="$LIARA_TOKEN" --no-app-logs
