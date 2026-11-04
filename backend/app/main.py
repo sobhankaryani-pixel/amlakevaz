@@ -778,3 +778,7 @@ async def launch_monitor(request: Request, call_next):
 def safe_error_path(request):
     route=request.scope.get('route')
     return getattr(route,'path','/unknown')[:250]
+
+# Dynamic sitemap and listing metadata, hosted entirely on Liara.
+from .seo import router as seo_router
+app.include_router(seo_router)

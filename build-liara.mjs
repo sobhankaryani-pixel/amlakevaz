@@ -1,5 +1,6 @@
+import {PAGES, pageMetadata, injectMetadata} from './frontend/src/shared/seoMetadata.js';
 import {execSync} from 'node:child_process';
-import {cpSync,existsSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
+import {cpSync,existsSync,mkdirSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {join} from 'node:path';
 
@@ -14,8 +15,39 @@ cpSync(join(root,'frontend/dist'),output,{recursive:true});
 cpSync(join(root,'admin/dist'),join(output,'management'),{recursive:true});
 rmSync(join(output,'asset-range-sw.js'),{force:true});
 writeFileSync(join(output,'liara.json'),JSON.stringify({app:'evazmelk-web',platform:'static'})+'\n');
-writeFileSync(join(output,'liara_nginx.conf'),`location / { index index.html; try_files $uri $uri/ /index.html =404; }
+// Keep a static shell for the backend renderer, independently of SPA routing.
+const shell=readFileSync(join(output,'index.html'),'utf8');
+writeFileSync(join(output,'seo-shell.html'),shell);
+for(const path of Object.keys(PAGES)){
+  const directory=join(output,path.slice(1));
+  mkdirSync(directory,{recursive:true});
+  writeFileSync(join(directory,'index.html'),injectMetadata(shell,pageMetadata(path)));
+}
+writeFileSync(join(output,'robots.txt'),'User-agent: *\nAllow: /\nDisallow: /account\nDisallow: /register\nDisallow: /agency\nDisallow: /management/\nDisallow: /seo-shell.html\nSitemap: https://evazmelk.ir/sitemap.xml\n');
+const pageLocations=Object.keys(PAGES).filter(path=>path!=='/').map(path=>`location = ${path} { try_files ${path}/index.html =404; }`).join('\n');
+writeFileSync(join(output,'liara_nginx.conf'),`${pageLocations}\nlocation / { index index.html; try_files $uri $uri/ /index.html =404; }
 location /assets/ { try_files $uri =404; }
+location = /seo-shell.html { add_header X-Robots-Tag "noindex, nofollow" always; add_header Cache-Control "no-store" always; try_files $uri =404; }
+location = /sitemap.xml {
+  proxy_ssl_server_name on;
+  proxy_ssl_name backend.evazmelk.ir;
+  proxy_set_header Host backend.evazmelk.ir;
+  proxy_set_header Cookie "";
+  proxy_set_header Authorization "";
+  proxy_connect_timeout 5s;
+  proxy_read_timeout 20s;
+  proxy_pass https://backend.evazmelk.ir/api/public/seo/sitemap.xml;
+}
+location /properties/ {
+  proxy_ssl_server_name on;
+  proxy_ssl_name backend.evazmelk.ir;
+  proxy_set_header Host backend.evazmelk.ir;
+  proxy_set_header Cookie "";
+  proxy_set_header Authorization "";
+  proxy_connect_timeout 5s;
+  proxy_read_timeout 20s;
+  proxy_pass https://backend.evazmelk.ir/api/public/seo/properties/;
+}
 location /management/ { add_header X-Robots-Tag "noindex, nofollow" always; try_files $uri $uri/ /management/index.html =404; }
 location /management/assets/ { try_files $uri =404; }
 location ~ /\\.well-known { allow all; }
