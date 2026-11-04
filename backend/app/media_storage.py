@@ -24,7 +24,7 @@ def configuration():
     if not (url.scheme == 'https' and url.hostname and not url.username and not url.password
             and url.path in ('', '/') and not url.query and not url.fragment
             and bucket and access and secret):
-        raise HTTPException(503, 'تنظیمات فضای ابری کامل نیست؛ پنج متغیر اتصال آروان را در Render بررسی کنید')
+        raise HTTPException(503, 'تنظیمات فضای ابری کامل نیست؛ پنج متغیر اتصال آروان را در تنظیمات برنامهٔ بک‌اند لیارا بررسی کنید')
     return endpoint, bucket, access, secret, region
 
 

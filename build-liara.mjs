@@ -13,7 +13,7 @@ const output=join(root,'liara-web-dist');
 rmSync(output,{recursive:true,force:true});
 cpSync(join(root,'frontend/dist'),output,{recursive:true});
 cpSync(join(root,'admin/dist'),join(output,'management'),{recursive:true});
-rmSync(join(output,'asset-range-sw.js'),{force:true});
+for(const legacy of ['asset-range-sw.js','_headers','_redirects']) rmSync(join(output,legacy),{force:true});
 writeFileSync(join(output,'liara.json'),JSON.stringify({app:'evazmelk-web',platform:'static'})+'\n');
 // Keep a static shell for the backend renderer, independently of SPA routing.
 const shell=readFileSync(join(output,'index.html'),'utf8');
@@ -25,8 +25,8 @@ for(const path of Object.keys(PAGES)){
 }
 writeFileSync(join(output,'robots.txt'),'User-agent: *\nAllow: /\nDisallow: /account\nDisallow: /register\nDisallow: /agency\nDisallow: /management/\nDisallow: /seo-shell.html\nSitemap: https://evazmelk.ir/sitemap.xml\n');
 const pageLocations=Object.keys(PAGES).filter(path=>path!=='/').map(path=>`location = ${path} { try_files ${path}/index.html =404; }`).join('\n');
-writeFileSync(join(output,'liara_nginx.conf'),`${pageLocations}\nlocation / { index index.html; try_files $uri $uri/ /index.html =404; }
-location /assets/ { try_files $uri =404; }
+writeFileSync(join(output,'liara_nginx.conf'),`${pageLocations}\nlocation / { add_header Cache-Control "no-cache, no-store, must-revalidate" always; index index.html; try_files $uri $uri/ /index.html =404; }
+location /assets/ { add_header Cache-Control "public, max-age=31536000, immutable"; try_files $uri =404; }
 location = /seo-shell.html { add_header X-Robots-Tag "noindex, nofollow" always; add_header Cache-Control "no-store" always; try_files $uri =404; }
 location = /sitemap.xml {
   proxy_ssl_server_name on;
@@ -49,7 +49,7 @@ location /properties/ {
   proxy_pass https://backend.evazmelk.ir/api/public/seo/properties/;
 }
 location /management/ { add_header X-Robots-Tag "noindex, nofollow" always; try_files $uri $uri/ /management/index.html =404; }
-location /management/assets/ { try_files $uri =404; }
+location /management/assets/ { add_header Cache-Control "public, max-age=31536000, immutable"; add_header X-Robots-Tag "noindex, nofollow" always; try_files $uri =404; }
 location ~ /\\.well-known { allow all; }
 `);
 // Fail before deployment if either application or one of its HTML assets is missing.
