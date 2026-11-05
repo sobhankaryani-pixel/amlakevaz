@@ -5,4 +5,5 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './styles.css';
 import './compact-panel.css';
+import './professional-compact.css';
 createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);

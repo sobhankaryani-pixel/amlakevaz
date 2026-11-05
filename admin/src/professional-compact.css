@@ -1,0 +1,88 @@
+/* Density and responsive structure; all permissions and actions are unchanged. */
+.shell{line-height:1.65}
+.shell .content{padding:20px clamp(14px,2.4vw,32px)}
+.shell .content>header{margin-bottom:14px;align-items:center;gap:8px}
+.shell .content>header h1{font-size:21px;margin:0}
+.shell .content>header p{font-size:12px;margin:0}
+.shell .panel{padding:14px;border-radius:11px;margin-top:12px}
+.shell h2{font-size:17px;margin:0 0 10px}
+.shell h3{font-size:14px;margin:12px 0 7px}
+.shell .hint{font-size:12px;line-height:1.8}
+.shell .fields{gap:2px 12px}
+.shell label{margin:7px 0}
+.shell .admin-desktop-nav{display:grid;gap:3px}
+.shell .admin-mobile-nav{display:none}
+.shell .workspace-fold{border:1px solid #dce4ed;border-radius:10px;margin:10px 0;background:#fff;min-width:0}
+.shell .workspace-fold>summary{padding:10px 13px;min-height:40px;cursor:pointer;font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.shell .workspace-fold[open]>summary{border-bottom:1px solid #e5ebf1}
+.shell .workspace-fold>form,.shell .workspace-fold>.table-wrap,.shell .workspace-fold>article,.shell .workspace-fold>.report-search,.shell .workspace-fold>p{margin:12px}
+.shell .workspace-fold>summary:focus-visible,.shell .row-actions>summary:focus-visible{outline:2px solid #1767ec;outline-offset:2px}
+.shell .row-actions{min-width:95px}
+.shell .row-actions>summary{min-height:36px;cursor:pointer;border:1px solid #dbe4ed;border-radius:8px;padding:7px 10px;font-size:12px;white-space:nowrap}
+.shell .row-action-buttons{display:grid;gap:5px;margin-top:7px;white-space:normal;min-width:120px}
+.shell .row-action-buttons button{margin:0;width:100%;text-align:center}
+.shell .report-toolbar{gap:8px;align-items:center}
+.shell .report-toolbar p{font-size:12px}
+.shell .report-toolbar label{font-size:12px}
+.shell .report-cards{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:12px 0}
+.shell .report-cards article{padding:10px}
+.shell .report-cards strong{font-size:21px}
+.shell .report-cards h3{font-size:11px;line-height:1.7;margin:0 0 6px}
+.shell .crm-stats{gap:6px;margin:10px 0}
+.shell .crm-stats span{padding:7px 9px;font-size:12px}
+.shell .crm-export-panel{padding:12px;margin:0;gap:12px;border:0;background:transparent}
+.shell .crm-form{gap:7px 12px;margin:12px}
+.shell .crm-search{margin:12px 0;gap:7px}
+.shell .crm-form textarea{min-height:80px}
+.shell .agency-admin-list{gap:0;margin:12px 0}
+.shell .agency-item>article{padding:0;border:0;border-radius:0}
+.shell .agency-item>article>h3{margin-top:0}
+.shell .agency-admin dl{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.shell .agency-admin dd{font-size:13px;line-height:1.8}
+.shell .agency-admin .agency-account-fields{gap:8px}
+.shell .agency-admin .agency-review-media img{width:110px;height:82px}
+.shell .homepage-promotions-list{gap:4px}
+.shell .homepage-promo-edit{padding:12px;border:0;gap:14px;border-radius:0}
+.shell .homepage-promo-edit-preview,.shell .homepage-promo-edit-preview img,.shell .homepage-promo-no-image{min-height:140px}
+.shell .homepage-promo-edit-fields{gap:7px}
+.shell td,.shell th{padding:7px 9px;vertical-align:top}
+@media(max-width:760px){
+ .shell>aside{padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:7px 10px}
+ .shell>aside .brand{grid-column:1;grid-row:1;margin:0;font-size:14px}
+ .shell>aside .brand img{width:32px;height:32px}
+ .shell>aside>.muted{display:none}
+ .shell>aside>a.nav{grid-column:2;grid-row:1;font-size:11px;padding:7px!important;min-height:44px;display:flex!important;align-items:center}
+ .shell>aside .admin-desktop-nav{display:none}
+ .shell>aside .admin-mobile-nav{display:block;grid-column:1;grid-row:2;margin:0;font-size:11px;color:#d2e1df}
+ .shell .admin-mobile-nav select{margin:3px 0 0;font-size:16px;min-height:44px;color:#172033}
+ .shell>aside .logout{grid-column:2;grid-row:2;align-self:end;margin:0;min-height:44px;padding:8px 12px}
+ .shell .content{padding:14px 10px}
+ .shell .content>header h1{font-size:19px}
+ .shell .content>header p{font-size:11px}
+ .shell .panel{padding:12px;margin-top:10px}
+ .shell .workspace-fold>summary{min-height:44px;padding:11px 12px;font-size:13px}
+ .shell .workspace-fold>form,.shell .workspace-fold>.table-wrap,.shell .workspace-fold>article{margin:10px}
+ .shell .row-actions>summary,.shell button{min-height:44px}
+ .shell input:not([type=checkbox]):not([type=radio]),.shell select,.shell textarea{font-size:16px;min-height:44px}
+ .shell .report-toolbar{display:flex;flex-wrap:wrap;gap:7px}
+ .shell .report-toolbar label{flex:1;min-width:140px}
+ .shell .report-toolbar button{flex:1;min-width:110px}
+ .shell .report-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .shell .crm-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .shell .crm-stats span{font-size:11px;line-height:1.8;min-width:0}
+ .shell .agency-admin dl{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .shell .agency-account-fields{grid-template-columns:1fr}
+ .shell .homepage-promo-edit{grid-template-columns:1fr;padding:0}
+ .shell .homepage-promo-edit-preview,.shell .homepage-promo-edit-preview img,.shell .homepage-promo-no-image{min-height:110px}
+ .shell .homepage-promo-edit-fields input,.shell .homepage-promo-edit-fields select,.shell .homepage-promo-edit-fields textarea{font-size:16px}
+ .shell .property-list-table,.shell .contacts-list-table{display:block;min-width:0;white-space:normal}
+ .shell .property-list-table thead,.shell .contacts-list-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ .shell .property-list-table tbody,.shell .contacts-list-table tbody{display:grid;gap:10px}
+ .shell .property-list-table tr,.shell .contacts-list-table tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid #dce4ed;border-radius:10px;padding:7px;gap:5px}
+ .shell .property-list-table td,.shell .contacts-list-table td{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;padding:7px;border:0;overflow-wrap:anywhere;font-size:13px}
+ .shell .property-list-table td::before,.shell .contacts-list-table td::before{content:attr(data-label);font-size:11px;color:#677987;font-weight:500}
+ .shell .property-list-table td:last-child,.shell .contacts-list-table td:last-child{grid-column:1/-1}
+ .shell .property-list-table .row-actions{width:100%}
+ .shell .property-list-table .row-action-buttons{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .shell .contacts-list-table td[dir=ltr]::before{align-self:flex-end;direction:rtl}
+}

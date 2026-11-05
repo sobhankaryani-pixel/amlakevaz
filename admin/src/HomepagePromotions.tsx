@@ -17,7 +17,7 @@ export default function HomepagePromotions({token}:{token:string}){
  return <div className="panel homepage-promotions-panel"><div className="homepage-promotions-intro"><div><h2>مدیریت کارت‌های صفحهٔ اصلی</h2><p>چهار کارت اولیه برای طراحی صفحه آماده شده‌اند. عنوان، توضیح، برچسب، عکس و مقصد هر کارت را تغییر بده و ذخیره کن.</p></div><span className="homepage-promo-count">{items.length} کارت</span></div>
  {error&&<div className="error" role="alert">{error}</div>}{success&&<div className="success" role="status">{success}</div>}
  {items.length===0&&!error&&<p className="hint">هنوز کارت تبلیغاتی در پایگاه داده وجود ندارد. مهاجرت 0012_homepage_promotions.sql را اجرا کن.</p>}
- <div className="homepage-promotions-list">{items.map(item=><article className="homepage-promo-edit" key={item.id}><div className="homepage-promo-edit-preview">{item.image_url?<img src={imagePreview(item.image_url)} alt={item.title} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity='0.25'}}/>:<div className="homepage-promo-no-image">بدون تصویر</div>}<span>{item.badge||'بدون برچسب'}</span></div><div className="homepage-promo-edit-fields">
+ <div className="homepage-promotions-list">{items.map(item=><details className="workspace-fold promo-item" key={item.id}><summary>{item.title || 'کارت بدون عنوان'} · {item.is_active?'فعال':'غیرفعال'}</summary><article className="homepage-promo-edit"><div className="homepage-promo-edit-preview">{item.image_url?<img src={imagePreview(item.image_url)} alt={item.title} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity='0.25'}}/>:<div className="homepage-promo-no-image">بدون تصویر</div>}<span>{item.badge||'بدون برچسب'}</span></div><div className="homepage-promo-edit-fields">
  <label>عنوان کارت<input value={item.title} maxLength={100} onChange={e=>change(item.id,'title',e.target.value)}/></label>
  <label>توضیح کوتاه<textarea rows={2} value={item.subtitle} maxLength={220} onChange={e=>change(item.id,'subtitle',e.target.value)}/></label>
  <div className="homepage-promo-fields-row"><label>برچسب<input value={item.badge} maxLength={40} onChange={e=>change(item.id,'badge',e.target.value)}/></label><label>متن دکمه<input value={item.cta_text} maxLength={40} onChange={e=>change(item.id,'cta_text',e.target.value)}/></label></div>
@@ -25,6 +25,6 @@ export default function HomepagePromotions({token}:{token:string}){
  <div className="homepage-promo-fields-row"><label>با کلیک کجا باز شود؟<select value={item.target_page} onChange={e=>change(item.id,'target_page',e.target.value)}>{targets.map(t=><option value={t.value} key={t.value}>{t.label}</option>)}</select></label><label>ترتیب نمایش<input type="number" min={1} max={20} value={item.sort_order} onChange={e=>change(item.id,'sort_order',e.target.value)}/></label></div>
  <label className="homepage-promo-active"><input type="checkbox" checked={item.is_active} onChange={e=>change(item.id,'is_active',e.target.checked)}/> نمایش این کارت در صفحهٔ اصلی</label>
  <div className="homepage-promo-actions"><button type="button" disabled={busyId===item.id} onClick={()=>save(item)}>{busyId===item.id?'در حال ذخیره…':'ذخیرهٔ این کارت'}</button></div>
- </div></article>)}</div>
+ </div></article></details>)}</div>
  </div>;
 }
