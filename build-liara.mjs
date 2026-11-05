@@ -23,9 +23,11 @@ for(const path of Object.keys(PAGES)){
   mkdirSync(directory,{recursive:true});
   writeFileSync(join(directory,'index.html'),injectMetadata(shell,pageMetadata(path)));
 }
-writeFileSync(join(output,'robots.txt'),'User-agent: *\nAllow: /\nDisallow: /account\nDisallow: /register\nDisallow: /agency\nDisallow: /management/\nDisallow: /seo-shell.html\nSitemap: https://evazmelk.ir/sitemap.xml\n');
+writeFileSync(join(output,'robots.txt'),'User-agent: *\nAllow: /\nDisallow: /account\nDisallow: /register\nDisallow: /agency\nDisallow: /management/\nDisallow: /seo-shell.html\nDisallow: /mobile-preview\nSitemap: https://evazmelk.ir/sitemap.xml\n');
 const pageLocations=Object.keys(PAGES).filter(path=>path!=='/').map(path=>`location = ${path} { try_files ${path}/index.html =404; }`).join('\n');
-writeFileSync(join(output,'liara_nginx.conf'),`${pageLocations}\nlocation / { add_header Cache-Control "no-cache, no-store, must-revalidate" always; index index.html; try_files $uri $uri/ /index.html =404; }
+writeFileSync(join(output,'liara_nginx.conf'),`${pageLocations}\nlocation = /mobile-preview { add_header X-Robots-Tag "noindex, nofollow" always; add_header Cache-Control "no-store" always; try_files /mobile-preview.html =404; }
+location = /mobile-preview/ { add_header X-Robots-Tag "noindex, nofollow" always; add_header Cache-Control "no-store" always; try_files /mobile-preview.html =404; }
+location / { add_header Cache-Control "no-cache, no-store, must-revalidate" always; index index.html; try_files $uri $uri/ /index.html =404; }
 location /assets/ { add_header Cache-Control "public, max-age=31536000, immutable"; try_files $uri =404; }
 location = /seo-shell.html { add_header X-Robots-Tag "noindex, nofollow" always; add_header Cache-Control "no-store" always; try_files $uri =404; }
 location = /sitemap.xml {
@@ -53,7 +55,7 @@ location /management/assets/ { add_header Cache-Control "public, max-age=3153600
 location ~ /\\.well-known { allow all; }
 `);
 // Fail before deployment if either application or one of its HTML assets is missing.
-for(const html of ['index.html','management/index.html']){
+for(const html of ['index.html','management/index.html','mobile-preview.html']){
   const content=readFileSync(join(output,html),'utf8');
   for(const match of content.matchAll(/(?:src|href)="(\/[^"?#]+)(?:[?#][^"]*)?"/g)){
     if(!existsSync(join(output,match[1].slice(1))))throw Error(`Missing asset in ${html}: ${match[1]}`);
