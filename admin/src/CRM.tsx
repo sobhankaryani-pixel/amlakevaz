@@ -145,7 +145,7 @@ export default function CRM({ token, section }: { token: string; section: string
     {success && <div className="success" role="status">{success}</div>}
 
     {section === 'کاربران و مخاطبان' ? <>
-      <h2>افزودن مخاطب</h2>
+      <details className="workspace-fold"><summary>افزودن مخاطب</summary>
       <form onSubmit={add} className="crm-form">
         <label>نام<input required minLength={2} value={name} onChange={e => setName(e.target.value)} /></label>
         <label>موبایل<input required dir="ltr" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="09123456789" /></label>
@@ -153,9 +153,9 @@ export default function CRM({ token, section }: { token: string; section: string
         <label className="crm-check"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /> رضایت دریافت پیامک تبلیغاتی ثبت شده است</label>
         {consent && <label>منبع رضایت<input required value={evidence} onChange={e => setEvidence(e.target.value)} placeholder="مثلاً فرم سایت یا رضایت کتبی" /></label>}
         <button disabled={busy}>ذخیرهٔ مخاطب</button>
-      </form>
+      </form></details>
 
-      <div className="crm-export-panel">
+      <details className="workspace-fold"><summary>خروجی مخاطبان</summary><div className="crm-export-panel">
         <div><h2>خروجی مخاطبان برای نرم‌افزار تبلیغاتی</h2><p className="hint">برای Business Sender Pro، فایل TXT شامل یک شماره در هر خط است. فقط افرادی صادر می‌شوند که رضایت واتساپشان ثبت شده باشد.</p></div>
         <div className="crm-export-actions">
           <button type="button" disabled={exportBusy} onClick={() => downloadExport('whatsapp', 'txt')}>دانلود TXT واتساپ</button>
@@ -163,19 +163,19 @@ export default function CRM({ token, section }: { token: string; section: string
           <button type="button" className="secondary" disabled={exportBusy} onClick={() => downloadExport('sms', 'csv')}>دانلود CSV پیامک</button>
         </div>
       </div>
-
+</details>
       <h2>کاربران و مخاطبان</h2>
       <form className="crm-search" onSubmit={e => { e.preventDefault(); setOffset(0); setAppliedQ(q.trim()); }}>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="جست‌وجوی نام یا موبایل" />
         <button type="submit">جست‌وجو</button>
         <button type="button" className="secondary" onClick={() => { setQ(''); setAppliedQ(''); setOffset(0); }}>پاک‌کردن</button>
       </form>
-      <div className="table-wrap"><table><thead><tr><th>نام</th><th>موبایل</th><th>منبع</th><th>حساب</th><th>رضایت پیامک</th><th>رضایت واتساپ</th><th>ثبت</th></tr></thead><tbody>
+      <div className="table-wrap"><table className="contacts-list-table"><thead><tr><th>نام</th><th>موبایل</th><th>منبع</th><th>حساب</th><th>رضایت پیامک</th><th>رضایت واتساپ</th><th>ثبت</th></tr></thead><tbody>
         {contacts.map(c => <tr key={c.id}>
-          <td>{c.name || '—'}</td><td dir="ltr">{c.phone}</td><td>{sourceName[c.source] || c.source}</td><td>{c.account_enabled ? 'دارد' : '—'}</td>
-          <td>{c.marketing_opt_in ? 'بله' : 'خیر'} <button className="secondary" disabled={busy} onClick={() => updateSmsConsent(c)}>{c.marketing_opt_in ? 'لغو' : 'ثبت رضایت'}</button></td>
-          <td>{c.whatsapp_opt_in ? 'بله' : 'خیر'} <button className="secondary" disabled={busy} onClick={() => updateWhatsappConsent(c)}>{c.whatsapp_opt_in ? 'لغو' : 'ثبت رضایت'}</button></td>
-          <td>{new Date(c.created_at).toLocaleDateString('fa-IR')}</td>
+          <td data-label="نام">{c.name || '—'}</td><td data-label="موبایل" dir="ltr">{c.phone}</td><td data-label="منبع">{sourceName[c.source] || c.source}</td><td data-label="حساب">{c.account_enabled ? 'دارد' : '—'}</td>
+          <td data-label="رضایت پیامک">{c.marketing_opt_in ? 'بله' : 'خیر'} <button className="secondary" disabled={busy} onClick={() => updateSmsConsent(c)}>{c.marketing_opt_in ? 'لغو' : 'ثبت رضایت'}</button></td>
+          <td data-label="رضایت واتساپ">{c.whatsapp_opt_in ? 'بله' : 'خیر'} <button className="secondary" disabled={busy} onClick={() => updateWhatsappConsent(c)}>{c.whatsapp_opt_in ? 'لغو' : 'ثبت رضایت'}</button></td>
+          <td data-label="ثبت">{new Date(c.created_at).toLocaleDateString('fa-IR')}</td>
         </tr>)}
       </tbody></table></div>
       {contacts.length === 0 && <p className="hint">مخاطبی در این صفحه پیدا نشد.</p>}
@@ -183,11 +183,11 @@ export default function CRM({ token, section }: { token: string; section: string
     </> : <>
       <h2>پیامک تبلیغاتی</h2>
       <p className="hint">وضعیت اتصال: {overview?.sms_configured ? 'آمادهٔ آزمایش با سرویس‌دهنده' : 'درگاه هنوز تنظیم نشده است'}. ساخت پیامک بدون اتصال ممکن است؛ شروع ارسال به درگاه نیاز دارد.</p>
-      <form className="crm-form" onSubmit={createCampaign}>
+      <details className="workspace-fold"><summary>ساخت پیش‌نویس پیامک</summary><form className="crm-form" onSubmit={createCampaign}>
         <label>عنوان داخلی<input required minLength={2} value={title} onChange={e => setTitle(e.target.value)} /></label>
         <label className="crm-wide">متن پیامک<textarea required maxLength={500} value={body} onChange={e => setBody(e.target.value)} /></label>
         <button disabled={busy}>ذخیرهٔ پیش‌نویس</button>
-      </form>
+      </form></details>
       <h2>کمپین‌ها</h2>
       <div className="table-wrap"><table><thead><tr><th>عنوان و متن</th><th>وضعیت</th><th>کل</th><th>ارسال موفق</th><th>ناموفق</th><th>عملیات</th></tr></thead><tbody>
         {campaigns.map(c => <tr key={c.id}><td><b>{c.title}</b><br />{c.body}</td><td>{c.status}</td><td>{c.total}</td><td>{c.sent}</td><td>{c.failed}</td><td>
