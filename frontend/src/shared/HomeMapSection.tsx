@@ -30,7 +30,7 @@ export default function HomeMapSection({onFullMap}:{onFullMap:()=>void}){
  return <section className="content-section home-map-section" aria-labelledby="home-map-title">
  <div className={`home-map-intro${open?' home-map-intro-open':''}`}><div className="home-map-copy"><span className="section-kicker">ملک را با موقعیتش ببینید</span><h2 id="home-map-title">املاک روی نقشهٔ اوز</h2><p>موقعیت آگهی‌های فعال را روی نقشه بررسی کنید و ملک موردنظرتان را در منطقهٔ دلخواه پیدا کنید.</p><div className="home-map-actions"><button ref={opener} className="home-map-open" type="button" onClick={()=>open?close():setOpen(true)} aria-expanded={open} aria-controls="home-online-map">{open?'بستن نقشه':'نمایش نقشهٔ آنلاین'} <span aria-hidden="true">⌖</span></button>
  {open&&<div ref={frame} id="home-online-map" className="home-map-live"><div className="home-map-live-bar"><strong>نقشهٔ آنلاین اوز</strong><button type="button" className="home-map-close" onClick={close}><span aria-hidden="true">×</span> بستن نقشه</button></div><Suspense fallback={<p className="state-message" role="status">در حال بازکردن نقشهٔ اوز…</p>}><PropertyMap/></Suspense></div>}
- <button className="link-button" type="button" onClick={onFullMap}>رفتن به صفحهٔ نقشه ←</button></div></div>
+ <button className="link-button" type="button" onClick={onFullMap}>رفتن به صفحهٔ نقشه</button></div></div>
  {!open&&<figure className="home-map-preview evaz-satellite-preview"><img src="/visual/evaz-satellite-preview-v1.png" width="1663" height="945" loading="lazy" decoding="async" alt="تصویر ماهواره‌ای اوز؛ پیش‌نمایش نمادین نقشه"/><figcaption>پیش‌نمایش شهر اوز؛ برای دیدن موقعیت املاک، نقشهٔ آنلاین را باز کنید.</figcaption></figure>}</div>
  </section>;
 }
