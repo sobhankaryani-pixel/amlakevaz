@@ -210,10 +210,10 @@ PUBLIC_SELECT='''SELECT p.public_code,t.code AS property_code,t.name AS property
  (SELECT max(a.created_at) FROM app.audit_logs a WHERE a.entity_type='property' AND a.entity_id=p.id AND a.action='availability_checked') AS availability_checked_at
  FROM app.properties p JOIN app.property_types t ON t.id=p.property_type_id
  LEFT JOIN app.regions r ON r.id=p.region_id
- JOIN LATERAL (SELECT l.asking_price_toman,l.published_at FROM app.listings l
- JOIN app.market_records m ON m.id=l.market_record_id
- WHERE m.property_id=p.id AND l.is_public=true AND l.status='published'
- ORDER BY l.published_at DESC NULLS LAST LIMIT 1) l ON true
+ JOIN (SELECT DISTINCT ON (m.property_id) m.property_id,l.asking_price_toman,l.published_at
+ FROM app.listings l JOIN app.market_records m ON m.id=l.market_record_id
+ WHERE l.is_public=true AND l.status='published'
+ ORDER BY m.property_id,l.published_at DESC NULLS LAST,l.id DESC) l ON l.property_id=p.id
  WHERE p.status='آگهی فروش' '''
 
 @launch.get('/api/public/properties/{code}')
@@ -324,9 +324,19 @@ def operations(user=manager):
         blocked=conn.execute('SELECT count(*) AS count FROM app.request_limits WHERE expires_at>now() AND hits>10').fetchone()['count']
     return {'backups':[dict(r) for r in backups],'errors':[dict(r) for r in errors],'media_directory_configured':bool(os.getenv('MEDIA_DIR')),'media_storage':media_storage.mode(),'media_storage_configured':media_storage.configured(),'recent_busy_limit_buckets':blocked}
 
+CARD_COLUMNS='public_code,property_code,property_type,region,region_key,neighborhood,area_m2,building_area_m2,commercial_area_m2,bedrooms,mehr_section,mehr_level,usage_type,house_condition,floor_count,national_phase,national_block,national_level,national_stage,latitude,longitude,cover_photo_url,asking_price_toman,published_at'
+
+def public_page(where,params,offset,limit,order='published_at DESC NULLS LAST,public_code',columns=CARD_COLUMNS):
+    # All SQL fragments are internal constants; visitor values stay bound parameters.
+    base=' FROM ('+PUBLIC_SELECT+') q WHERE '+where
+    with pool.connection() as conn:
+        total=conn.execute('SELECT count(*) AS total'+base,params).fetchone()['total']
+        rows=conn.execute('SELECT '+columns+base+' ORDER BY '+order+' LIMIT %s OFFSET %s',(*params,limit,offset)).fetchall()
+    return {'items':[dict(row) for row in rows],'total':total,'offset':offset,'limit':limit,'has_more':offset+len(rows)<total}
+
 @launch.get('/api/public/search')
 def search_properties(kind:str='all',regions:str='',min_price:int=1000000000,max_price:int=100000000000,min_area:int=50,max_area:int=1000,sort:str='newest',offset:int=0):
-    if kind not in ('all','land','house','garden','mehr','national','shop') or sort not in ('newest','price_asc','price_desc') or not (1000000000<=min_price<=max_price<=100000000000) or not(50<=min_area<=max_area<=1000) or offset<0 or offset>100000:
+    if kind not in ('all','land','house','garden','mehr','national','shop') or sort not in ('newest','price_asc','price_desc') or not (1000000000<=min_price<=max_price<=100000000000) or not(50<=min_area<=max_area<=1000) or offset<0 or offset>2000000000:
         raise HTTPException(422,'فیلترها معتبر نیستند')
     selected=list(dict.fromkeys(x for x in regions.split(',') if x))
     if len(selected)>40 or any(len(x)>30 for x in selected):raise HTTPException(422,'مناطق معتبر نیستند')
@@ -336,9 +346,7 @@ def search_properties(kind:str='all',regions:str='',min_price:int=1000000000,max
     if kind!='all':clauses.append('property_code=ANY(%s)');params.append(codes[kind])
     if selected:clauses.append('region_key=ANY(%s)');params.append(selected)
     order={'newest':'COALESCE(updated_at,published_at) DESC NULLS LAST,public_code','price_asc':'asking_price_toman ASC,public_code','price_desc':'asking_price_toman DESC,public_code'}[sort]
-    with pool.connection() as conn:
-        rows=conn.execute('SELECT q.*,count(*) OVER() AS total FROM ('+PUBLIC_SELECT+') q WHERE '+' AND '.join(clauses)+' ORDER BY '+order+' LIMIT 24 OFFSET %s',(*params,offset)).fetchall()
-    return {'items':[{k:v for k,v in dict(r).items() if k!='total'} for r in rows],'total':rows[0]['total'] if rows else 0}
+    return public_page(' AND '.join(clauses),tuple(params),offset,24,order)
 
 @launch.get('/api/public/property-detail')
 def public_property_query(code:str):

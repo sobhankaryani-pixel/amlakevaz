@@ -43,7 +43,8 @@ class DB:
   if 'SELECT id,status FROM app.properties' in sql:return Cursor([{'id':USER['sub'],'status':'آگهی فروش'}])
   if 'SELECT l.id,l.asking_price_toman' in sql:return Cursor([{'id':USER['sub'],'asking_price_toman':15000000000}])
   if 'SELECT q.*' in sql:return Cursor([{**PROPERTY,'total':1}])
-  if 'JOIN LATERAL' in sql:return Cursor([] if self.missing else [PROPERTY])
+  if 'SELECT count(*) AS total FROM (' in sql:return Cursor([{'total':1}])
+  if 'FROM app.properties p JOIN app.property_types' in sql:return Cursor([] if self.missing else [PROPERTY])
   if 'SELECT * FROM app.contact_requests' in sql:return Cursor([])
   if 'UPDATE app.contact_requests' in sql:return Cursor([{'id':str(uuid4())}])
   if 'count(DISTINCT session_id)' in sql and 'GROUP BY' not in sql:return Cursor([{'count':2}])
@@ -69,7 +70,7 @@ def test_public_detail_exact_price_and_timestamp(env):
 def test_search_parameterized_multiple_regions_and_boundaries(env):
  db,c=env;r=c.get('/api/public/search?kind=land&regions=R-1,R-2&min_price=1000000000&max_price=100000000000&min_area=50&max_area=1000&sort=price_asc')
  assert r.status_code==200 and r.json()['total']==1
- sql,params=next(x for x in db.calls if 'SELECT q.*' in x[0]);assert ['R-1','R-2'] in params and 'asking_price_toman ASC' in sql
+ sql,params=next(x for x in db.calls if 'ORDER BY asking_price_toman ASC' in x[0]);assert ['R-1','R-2'] in params and 'asking_price_toman ASC' in sql
  for query in ['min_price=0','max_area=1001','kind=invalid','sort=DROP','min_area=800&max_area=60']:
   assert c.get('/api/public/search?'+query).status_code==422
 

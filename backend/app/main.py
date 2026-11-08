@@ -18,10 +18,11 @@ from .price_series import SEGMENTS
 from .seller_auth import seller,require_seller,normalize_phone
 from .crm import crm
 from .agency import router as agency_router,configure as configure_agency
+from .thumbnails import router as thumbnails_router
 from .availability import router as availability_router
 from .private_media import router as private_media_router
 from .inquiries import router as inquiry_router
-from .launch import launch,MediaItem,validate_media,limit_request
+from .launch import launch,MediaItem,validate_media,limit_request,public_page
 from fastapi import Request
 from starlette.responses import JSONResponse
 
@@ -34,6 +35,7 @@ app = FastAPI(title="Evaz Property Index API", version="0.1.0", lifespan=lifespa
 
 app.include_router(private_media_router)
 app.include_router(availability_router)
+app.include_router(thumbnails_router)
 
 @app.middleware('http')
 async def private_media_cache_policy(request,call_next):
@@ -435,42 +437,20 @@ def check_national(payload: DirectPropertyIn):
         raise HTTPException(422,'مرحلهٔ ساخت مسکن ملی معتبر نیست')
 
 @public.get('/property-cards')
-def public_property_cards():
-    with pool.connection() as conn:
-        rows = conn.execute('''SELECT p.public_code,t.code AS property_code,t.name AS property_type,
-             r.name AS region,r.slug AS region_key,p.general_area AS neighborhood,p.area_m2,
-             p.building_area_m2,p.commercial_area_m2,p.bedrooms,p.mehr_section,p.mehr_level,
-             p.usage_type,p.house_condition,p.floor_count,p.national_phase,p.national_block,
-             p.national_level,p.national_stage,p.latitude,p.longitude,p.cover_photo_url,p.media,p.updated_at,
-             l.asking_price_toman,l.published_at
-             FROM app.listings l JOIN app.market_records m ON m.id=l.market_record_id
-             JOIN app.properties p ON p.id=m.property_id
-             JOIN app.property_types t ON t.id=p.property_type_id
-             LEFT JOIN app.regions r ON r.id=p.region_id
-             WHERE l.is_public=true AND l.status='published' AND p.status='آگهی فروش'
-             ORDER BY l.published_at DESC NULLS LAST LIMIT 500''').fetchall()
-    return {'items':[dict(row) for row in rows]}
+def public_property_cards(offset:int=Query(default=0,ge=0,le=2000000000),limit:int=Query(default=24,ge=1,le=100)):
+    return public_page('true',(),offset,limit)
 
-@public.get("/map-listings")
-def map_listings():
-    with pool.connection() as conn:
-        rows = conn.execute("""SELECT p.public_code, t.code AS property_code, t.name AS property_type, t.category,
-          r.name AS region, p.area_m2, p.building_area_m2,
-          p.latitude, p.longitude, l.asking_price_toman, p.usage_type,
-          p.land_length_m, p.land_width_m, p.mehr_section, p.mehr_level,
-          p.house_condition, p.bedrooms, p.floor_count, p.commercial_area_m2,
-          p.national_phase, p.national_block, p.national_level, p.national_stage,
-          p.cover_photo_url, p.general_area AS neighborhood, p.public_notes, p.build_year,
-          p.street_width, p.street_frontage_m, p.floor
-          FROM app.listings l
-          JOIN app.market_records m ON m.id=l.market_record_id
-          JOIN app.properties p ON p.id=m.property_id
-          JOIN app.property_types t ON t.id=p.property_type_id
-          LEFT JOIN app.regions r ON r.id=p.region_id
-          WHERE l.is_public=true AND l.status='published' AND p.status='آگهی فروش'
-          AND p.latitude IS NOT NULL AND p.longitude IS NOT NULL
-          ORDER BY l.published_at DESC LIMIT 1000""").fetchall()
-    return {"items":[dict(row) for row in rows]}
+@public.get('/map-listings')
+def map_listings(offset:int=Query(default=0,ge=0,le=2000000000),limit:int=Query(default=200,ge=1,le=200),kind:str=Query(default='all',pattern='^(all|land|house)$')):
+    where='latitude IS NOT NULL AND longitude IS NOT NULL'
+    params=()
+    if kind=='land':
+        where+=" AND (property_code=ANY(%s) OR property_type ~ 'زمین|باغ')"
+        params=(['land','raw_land','commercial_land','residential_land','urban_garden'],)
+    elif kind=='house':
+        where+=" AND (property_code=ANY(%s) OR property_type ~ 'خانه|ویلایی|آپارتمان|مسکن')"
+        params=(['villa','villa_house','apartment','mehr_housing','national_housing','house'],)
+    return public_page(where,params,offset,limit)
 
 @admin.post("/properties/direct")
 def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles("owner","admin","data_entry"))):
