@@ -133,6 +133,7 @@ def logout(response:Response,session:str|None=Cookie(default=None,alias=COOKIE))
 @seller.get('/my-submissions')
 def my_submissions(user=Depends(require_seller)):
     with pool.connection() as conn:
-        rows=conn.execute('''SELECT id,kind,status,created_at,approved_property_code
+        rows=conn.execute('''SELECT id,kind,status,created_at,approved_property_code,reviewed_at,
+          details->>'_review_note' AS review_note,details->>'_resubmitted_at' AS resubmitted_at,COALESCE((details->>'_revision')::integer,0) AS revision
           FROM app.property_submissions WHERE seller_id=%s ORDER BY created_at DESC LIMIT 100''',(user['id'],)).fetchall()
     return {'items':[dict(r) for r in rows]}

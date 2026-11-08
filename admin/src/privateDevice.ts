@@ -15,7 +15,7 @@ export function clearPrivateData(role:Audience,local=browserStore('localStorage'
 export function prunePrivateDrafts(role:Audience,userId:string,store=browserStore('localStorage'),now=Date.now()){
  if(!store)return;const prefix=role==='seller'?prefixes[0]:prefixes[1],own=prefix+userId+(role==='agency'?':':'');
  try{for(const key of keys(store)){if(!key.startsWith(prefix))continue;
-  if(role==='seller'?key!==own&&key!==own+':request-id':!key.startsWith(own)){store.removeItem(key);continue}
+  if(role==='seller'?key!==own&&key!==own+':request-id'&&!key.startsWith(own+':revision:'):!key.startsWith(own)){store.removeItem(key);continue}
   try{const data=JSON.parse(store.getItem(key)||'null');const valid=key.endsWith(':request-id')?data&&Number.isFinite(data.expires)&&data.expires>now:data&&Number.isFinite(data.savedAt)&&data.savedAt<=now+60000&&now-data.savedAt<=7*86400000;if(!valid)store.removeItem(key)}catch{store.removeItem(key)}
  }}catch{}
 }

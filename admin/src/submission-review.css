@@ -1,0 +1,2 @@
+.submission-review-note{display:grid;gap:6px;margin:10px 0;min-width:180px;max-width:320px;font-size:13px;line-height:1.8}
+.submission-review-note textarea{box-sizing:border-box;width:100%;min-height:76px;padding:9px 11px;border:1px solid #ccd7e3;border-radius:9px;font:inherit;color:#173957;resize:vertical;background:#fff}

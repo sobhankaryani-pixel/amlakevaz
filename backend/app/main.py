@@ -38,7 +38,7 @@ app.include_router(availability_router)
 @app.middleware('http')
 async def private_media_cache_policy(request,call_next):
     response=await call_next(request)
-    if any(request.url.path.startswith('/api/'+role+'/media/') for role in ('seller','agency','admin')):
+    if any(request.url.path.startswith('/api/'+role+'/') for role in ('seller','agency','admin')):
         response.headers['Cache-Control']='private,no-store'
         response.headers['X-Content-Type-Options']='nosniff'
         response.headers['X-Robots-Tag']='noindex, nofollow'
@@ -178,7 +178,7 @@ def create_seller_submission(payload: SellerSubmissionIn, request: Request, user
             conn.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))',('seller-submit:'+str(user['id'])+':'+payload.request_id,))
             existing=conn.execute("SELECT id,details FROM app.property_submissions WHERE seller_id=%s AND details->>'request_id'=%s LIMIT 1",(user['id'],payload.request_id)).fetchone()
             if existing:
-                if existing['details'] != data:
+                if {k:v for k,v in existing['details'].items() if not k.startswith('_')} != data:
                     raise HTTPException(409,'درخواست قبلی با این شناسه ثبت شده است. ابتدا درخواست‌های من را بررسی کنید؛ برای ملک دیگری، پیش‌نویس تازه بسازید.')
                 return {'id':str(existing['id']),'message':'این درخواست قبلاً ثبت شده است؛ می‌توانید آن را در حساب من پیگیری کنید.'}
         if payload.request_id:
@@ -191,20 +191,61 @@ def create_seller_submission(payload: SellerSubmissionIn, request: Request, user
         conn.commit()
     return {'id':str(row['id']),'message':'درخواست شما ثبت شد. پس از بررسی و تأیید مدیر، آگهی در سایت منتشر می‌شود.'}
 
+class SellerRevisionIn(SellerSubmissionIn):
+    expected_revision:int=Field(ge=0)
+
+@seller.get('/property-submissions/{submission_id}')
+def seller_submission_for_revision(submission_id:UUID,user=Depends(require_seller)):
+    with pool.connection() as conn:
+        row=conn.execute('SELECT id,kind,status,details FROM app.property_submissions WHERE id=%s AND seller_id=%s',(submission_id,user['id'])).fetchone()
+    if not row:raise HTTPException(404,'درخواست پیدا نشد')
+    if row['status']!='rejected':raise HTTPException(409,'فقط درخواست ردشده قابل اصلاح است')
+    details=row['details'] or {}
+    return {'id':str(row['id']),'kind':row['kind'],'details':{k:v for k,v in details.items() if not k.startswith('_')},
+      'review_note':details.get('_review_note',''),'revision':details.get('_revision',0)}
+
+@seller.put('/property-submissions/{submission_id}/resubmit')
+def resubmit_seller_submission(submission_id:UUID,payload:SellerRevisionIn,request:Request,user=Depends(require_seller)):
+    if not payload.request_id:raise HTTPException(422,'شناسهٔ ارسال مجدد لازم است')
+    if payload.website:raise HTTPException(422,'فرم معتبر نیست')
+    limit_request(request,'seller-resubmit',10,3600,str(user['id']))
+    data=payload.model_dump(exclude={'seller_name','seller_phone','website','analytics','expected_revision'})
+    with pool.connection() as conn:
+        with conn.transaction():
+            row=conn.execute('SELECT id,status,details FROM app.property_submissions WHERE id=%s AND seller_id=%s FOR UPDATE',(submission_id,user['id'])).fetchone()
+            if not row:raise HTTPException(404,'درخواست پیدا نشد')
+            previous=row['details'] or {}
+            if previous.get('request_id')==payload.request_id:
+                if {k:v for k,v in previous.items() if not k.startswith('_')}!=data:raise HTTPException(409,'همین ارسال با مشخصات دیگری ثبت شده؛ وضعیت حساب را بررسی کنید.')
+                return {'id':str(row['id']),'message':'نسخهٔ اصلاح‌شده قبلاً دریافت شده است.'}
+            if row['status']!='rejected' or previous.get('_revision',0)!=payload.expected_revision:
+                raise HTTPException(409,'وضعیت درخواست تغییر کرده؛ درخواست‌های من را تازه کنید.')
+            validate_media(payload.media,{**user,'role':'seller'},payload.kind in ('villa','apartment','mehr','national'))
+            if payload.region_key and not conn.execute('SELECT 1 FROM app.regions WHERE slug=%s AND is_public=true AND slug LIKE %s',(payload.region_key,'R-%')).fetchone():
+                raise HTTPException(422,'منطقهٔ زمین معتبر نیست')
+            data['_revision']=payload.expected_revision+1
+            conn.execute("""UPDATE app.property_submissions SET seller_name=%s,seller_phone=%s,kind=%s,details=jsonb_set(%s::jsonb,'{_resubmitted_at}',to_jsonb(now())),
+              status='pending',approved_property_code=NULL,reviewed_at=NULL,reviewed_by=NULL WHERE id=%s""",
+              (payload.seller_name.strip(),user['phone'],payload.kind,Jsonb(data),submission_id))
+    return {'id':str(row['id']),'message':'همان درخواست با اصلاحات شما دوباره برای بررسی ارسال شد.'}
+
 @admin.get('/property-submissions')
 def list_seller_submissions(user=Depends(require_roles('owner','admin','data_entry'))):
     with pool.connection() as conn:
         rows=conn.execute('''SELECT id,created_at,status,seller_name,seller_phone,kind,details
-          FROM app.property_submissions WHERE status='pending' ORDER BY created_at DESC LIMIT 200''').fetchall()
+          FROM app.property_submissions WHERE status='pending' ORDER BY COALESCE((details->>'_resubmitted_at')::timestamptz,created_at) DESC LIMIT 200''').fetchall()
     return {'items':[dict(r) for r in rows]}
 
 class SubmissionDecision(BaseModel):
     status: str
     approved_property_code: str | None = None
+    note:str=Field(default='',max_length=1000)
 
 @admin.post('/property-submissions/{submission_id}/decision')
-def decide_seller_submission(submission_id: str, payload: SubmissionDecision,
+def decide_seller_submission(submission_id: UUID, payload: SubmissionDecision,
                              user=Depends(require_roles('owner','admin','data_entry'))):
+    if payload.status=='rejected' and len(payload.note.strip())<3:
+        raise HTTPException(422,'دلیل رد درخواست را با حداقل ۳ نویسه بنویسید')
     if payload.status not in ('approved','rejected'):
         raise HTTPException(422,'تصمیم معتبر نیست')
     with pool.connection() as conn:
@@ -216,8 +257,10 @@ def decide_seller_submission(submission_id: str, payload: SubmissionDecision,
                 if not payload.approved_property_code or not conn.execute('SELECT 1 FROM app.properties WHERE public_code=%s',(payload.approved_property_code,)).fetchone():
                     raise HTTPException(422,'برای تأیید، ملک ثبت‌شده را مشخص کنید')
             conn.execute('''UPDATE app.property_submissions SET status=%s,approved_property_code=%s,
-              reviewed_at=now(),reviewed_by=%s WHERE id=%s''',
-              (payload.status,payload.approved_property_code if payload.status=='approved' else None,user['sub'],submission_id))
+              details=jsonb_set(details,'{_review_note}',to_jsonb(%s::text)),reviewed_at=now(),reviewed_by=%s WHERE id=%s''',
+              (payload.status,payload.approved_property_code if payload.status=='approved' else None,payload.note.strip(),user['sub'],submission_id))
+            conn.execute("""INSERT INTO app.audit_logs(user_id,action,entity_type,entity_id,after_data)
+              VALUES (%s,%s,'seller_submission',%s,%s)""",(user['sub'],payload.status,submission_id,Jsonb({'note':payload.note.strip()})))
     return {'status':payload.status}
 
 class PropertyIn(BaseModel):
