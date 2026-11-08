@@ -20,7 +20,7 @@ class Cursor:
  def fetchone(self):return self.rows[0] if self.rows else None
  def fetchall(self):return self.rows
 class DB:
- def __init__(self):self.calls=[];self.hits=1;self.media={};self.missing=False
+ def __init__(self):self.calls=[];self.hits=1;self.media={};self.missing=False;self.public_media=set()
  def __enter__(self):return self
  def __exit__(self,*args):pass
  def connection(self):return self
@@ -29,6 +29,7 @@ class DB:
  def rollback(self):pass
  def execute(self,sql,params=()):
   parse_sql(re.sub(r'%s','NULL',sql));self.calls.append((sql,params))
+  if 'SELECT 1 WHERE EXISTS(' in sql:return Cursor([{'allowed':1}] if params[0].split('/')[-1] in self.public_media else [])
   if 'RETURNING hits' in sql:return Cursor([{'hits':self.hits}])
   if 'INSERT INTO app.uploaded_media' in sql:
    self.media[params[3]]={'owner_id':params[1],'owner_role':params[2],'kind':params[4]};return Cursor([])
@@ -103,6 +104,8 @@ def test_upload_auth_content_limits_and_ownership(env):
  photo=io.BytesIO();Image.new('RGB',(4,4),'red').save(photo,format='PNG')
  r=c.post('/api/admin/media',files={'file':('a.png',photo.getvalue(),'image/png')});assert r.status_code==200
  data=r.json();filename=data['url'].split('/')[-1]
+ assert c.get('/api/public/media/'+filename).status_code==404
+ db.public_media.add(filename)
  assert c.get('/api/public/media/'+filename).headers['content-type']=='image/webp'
  item=launch.MediaItem(**data)
  with pytest.raises(Exception):launch.validate_media([item],{'id':str(uuid4()),'role':'seller'})
@@ -184,6 +187,8 @@ def test_s3_image_video_upload_stream_and_ranges(cloud):
  assert name.endswith('.webp') and fake.calls[0][2]=='image/webp'
  assert not list(temp.iterdir()) and not launch.MEDIA_ROOT.exists()
  assert name in db.media
+ assert c.get('/api/public/media/'+name).status_code==404
+ db.public_media.add(name)
  r=c.get('/api/public/media/'+name);assert r.status_code==200 and r.content==fake.objects[name]
  assert r.headers['content-type']=='image/webp' and fake.closed[-1].closed
  # API URLs stay stable across restarts; there is no dependency on local upload files.
@@ -192,6 +197,7 @@ def test_s3_image_video_upload_stream_and_ranges(cloud):
  main.app.dependency_overrides[require_seller]=lambda:{'id':USER['sub']}
  data=c.post('/api/seller/media',files={'file':('house.mp4',video,'video/mp4')}).json();name=data['url'].split('/')[-1]
  assert data['kind']=='video' and fake.objects[name]==video
+ db.public_media.add(name)
  r=c.get('/api/public/media/'+name,headers={'Range':'bytes=4-11'})
  assert r.status_code==206 and r.content==video[4:12] and r.headers['content-range']==f'bytes 4-11/{len(video)}'
  assert c.get('/api/public/media/'+name,headers={'Range':'bytes=0-1,3-4'}).status_code==416

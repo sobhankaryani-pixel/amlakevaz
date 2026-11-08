@@ -1,3 +1,5 @@
+import {installPrivatePageGuard} from './privateDevice';
+installPrivatePageGuard();
 import {installWheelValueGuard} from './wheelValueGuard';
 installWheelValueGuard();
 import React from 'react';

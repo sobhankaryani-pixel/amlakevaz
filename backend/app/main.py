@@ -18,6 +18,8 @@ from .price_series import SEGMENTS
 from .seller_auth import seller,require_seller,normalize_phone
 from .crm import crm
 from .agency import router as agency_router,configure as configure_agency
+from .availability import router as availability_router
+from .private_media import router as private_media_router
 from .inquiries import router as inquiry_router
 from .launch import launch,MediaItem,validate_media,limit_request
 from fastapi import Request
@@ -29,6 +31,19 @@ async def lifespan(app: FastAPI):
     open_pool(); yield; close_pool()
 
 app = FastAPI(title="Evaz Property Index API", version="0.1.0", lifespan=lifespan)
+
+app.include_router(private_media_router)
+app.include_router(availability_router)
+
+@app.middleware('http')
+async def private_media_cache_policy(request,call_next):
+    response=await call_next(request)
+    if any(request.url.path.startswith('/api/'+role+'/media/') for role in ('seller','agency','admin')):
+        response.headers['Cache-Control']='private,no-store'
+        response.headers['X-Content-Type-Options']='nosniff'
+        response.headers['X-Robots-Tag']='noindex, nofollow'
+        response.headers['Referrer-Policy']='no-referrer'
+    return response
 
 @app.exception_handler(CheckViolation)
 async def media_reference_conflict(request,exc):
@@ -286,7 +301,7 @@ def public_transactions():
 @public.get("/listings")
 def public_listings():
     with pool.connection() as conn:
-        rows = conn.execute("SELECT id, asking_price_toman, price_per_m2_toman, published_at FROM app.listings WHERE is_public=true AND status='published' ORDER BY published_at DESC NULLS LAST LIMIT 100").fetchall()
+        rows = conn.execute("SELECT l.id,l.asking_price_toman,l.price_per_m2_toman,l.published_at FROM app.listings l JOIN app.market_records m ON m.id=l.market_record_id JOIN app.properties p ON p.id=m.property_id WHERE l.is_public=true AND l.status='published' AND p.status='آگهی فروش' ORDER BY l.published_at DESC NULLS LAST LIMIT 100").fetchall()
     return {"items": [dict(r) for r in rows]}
 
 @admin.post("/properties")
@@ -679,6 +694,7 @@ def list_direct_properties(offset:int=Query(default=0,ge=0,le=2000000000),limit:
           p.mehr_block,p.floor AS mehr_floor,p.mehr_unit,p.national_phase,p.national_block,p.national_level,p.national_stage,
           p.national_notes,p.build_year,p.bedrooms,p.land_length_m,p.land_width_m,p.mehr_section,
           p.mehr_level,p.house_condition,p.floor_count,p.cover_photo_url,p.media,p.updated_at,p.latitude,p.longitude,
+          (SELECT max(a.created_at) FROM app.audit_logs a WHERE a.entity_type='property' AND a.entity_id=p.id AND a.action='availability_checked') AS availability_checked_at,
           t.name AS property_type,t.code AS property_type_code,r.name AS region,
           l.asking_price_toman,s.sale_date,s.sale_price_toman
           FROM app.properties p JOIN app.property_types t ON t.id=p.property_type_id

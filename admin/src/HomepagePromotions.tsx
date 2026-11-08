@@ -1,3 +1,4 @@
+import PrivateMedia from './PrivateMedia';
 import {API} from './api';
 import {fetchWithTimeout as fetch} from './http';
 import { useEffect, useState } from 'react';
@@ -18,7 +19,7 @@ export default function HomepagePromotions({token}:{token:string}){
  return <div className="panel homepage-promotions-panel"><div className="homepage-promotions-intro"><div><h2>مدیریت کارت‌های صفحهٔ اصلی</h2><p>چهار کارت اولیه برای طراحی صفحه آماده شده‌اند. عنوان، توضیح، برچسب، عکس و مقصد هر کارت را تغییر بده و ذخیره کن.</p></div><span className="homepage-promo-count">{items.length} کارت</span></div>
  {error&&<div className="error" role="alert">{error}</div>}{success&&<div className="success" role="status">{success}</div>}
  {items.length===0&&!error&&<p className="hint">هنوز کارت تبلیغاتی در پایگاه داده وجود ندارد. مهاجرت 0012_homepage_promotions.sql را اجرا کن.</p>}
- <div className="homepage-promotions-list">{items.map(item=><details className="workspace-fold promo-item" key={item.id}><summary>{item.title || 'کارت بدون عنوان'} · {item.is_active?'فعال':'غیرفعال'}</summary><article className="homepage-promo-edit"><div className="homepage-promo-edit-preview">{item.image_url?<img src={imagePreview(item.image_url)} alt={item.title} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity='0.25'}}/>:<div className="homepage-promo-no-image">بدون تصویر</div>}<span>{item.badge||'بدون برچسب'}</span></div><div className="homepage-promo-edit-fields">
+ <div className="homepage-promotions-list">{items.map(item=><details className="workspace-fold promo-item" key={item.id}><summary>{item.title || 'کارت بدون عنوان'} · {item.is_active?'فعال':'غیرفعال'}</summary><article className="homepage-promo-edit"><div className="homepage-promo-edit-preview">{item.image_url?<PrivateMedia url={imagePreview(item.image_url)} kind="image" label={item.title} audience="admin" token={token}/>:<div className="homepage-promo-no-image">بدون تصویر</div>}<span>{item.badge||'بدون برچسب'}</span></div><div className="homepage-promo-edit-fields">
  <label>عنوان کارت<input value={item.title} maxLength={100} onChange={e=>change(item.id,'title',e.target.value)}/></label>
  <label>توضیح کوتاه<textarea rows={2} value={item.subtitle} maxLength={220} onChange={e=>change(item.id,'subtitle',e.target.value)}/></label>
  <div className="homepage-promo-fields-row"><label>برچسب<input value={item.badge} maxLength={40} onChange={e=>change(item.id,'badge',e.target.value)}/></label><label>متن دکمه<input value={item.cta_text} maxLength={40} onChange={e=>change(item.id,'cta_text',e.target.value)}/></label></div>

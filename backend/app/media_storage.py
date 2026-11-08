@@ -81,7 +81,7 @@ def put_file(path, filename, mime):
         with path.open('rb') as body:
             client.put_object(Bucket=bucket, Key=filename, Body=body,
                               ContentLength=path.stat().st_size, ContentType=mime,
-                              CacheControl='public,max-age=31536000,immutable')
+                              CacheControl='private,no-store')
     except STORAGE_ERRORS as error:
         raise storage_error(error) from None
 

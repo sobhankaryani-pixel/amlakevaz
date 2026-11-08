@@ -1,3 +1,4 @@
+import {clearPrivateData,prunePrivateDrafts} from './privateDevice';
 import {fetchWithTimeout as fetch} from './http';
 import {useEffect,useLayoutEffect,useState} from 'react';
 import {applyMetadata} from './seo';
@@ -20,10 +21,10 @@ export function useSiteState(){
  const retrySession=()=>setSessionRetry(value=>value+1);
  useEffect(()=>{let live=true;const controller=new AbortController();setSessionLoading(true);setSessionError('');
   fetch(`${API}/api/seller/me`,{credentials:'include',signal:controller.signal}).then(async response=>{
-   if(response.status===401)return null;
+   if(response.status===401){clearPrivateData('seller',undefined,undefined,false);return null;}
    if(!response.ok)throw Error('بررسی حساب کاربری انجام نشد. اتصال را بررسی و دوباره تلاش کنید.');
    const data=await response.json();if(!data||!('user' in data))throw Error('پاسخ حساب کاربری معتبر نیست.');return data.user;
-  }).then(user=>{if(live)setSellerUser(user||null)}).catch(()=>{if(live)setSessionError('بررسی حساب کاربری انجام نشد. دوباره تلاش کنید.');}).finally(()=>{if(live)setSessionLoading(false)});
+  }).then(user=>{if(live){if(user)prunePrivateDrafts('seller',user.id);setSellerUser(user||null)}}).catch(()=>{if(live)setSessionError('بررسی حساب کاربری انجام نشد. دوباره تلاش کنید.');}).finally(()=>{if(live)setSessionLoading(false)});
   return()=>{live=false;controller.abort()};
  },[sessionRetry]);
  useLayoutEffect(()=>{applyMetadata(pageMetadata(window.location.pathname))},[page,propertyCode]);

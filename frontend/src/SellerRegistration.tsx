@@ -1,3 +1,4 @@
+import {draftEpoch} from './shared/privateDevice';
 import {API} from './api';
 import SubmissionGuide from './shared/SubmissionGuide';
 import {getAnalyticsContext} from './shared/analytics';
@@ -27,7 +28,10 @@ export function RegistrationForm({user,agency}:{user:SellerUser;agency?:{id:stri
  const [version,setVersion]=useState(agency?.version||0);
  const key=agency?'evaz-agency:'+user.id+':'+agency.id+':'+agency.version:draftKey(user.id);
  const requestId=useRef('');
+ const epoch=useRef(draftEpoch());
+ const currentDraft=()=>epoch.current===draftEpoch();
  function submissionId(){
+  if(!currentDraft())throw Error('نشست حساب تغییر کرده است؛ صفحه را دوباره باز کنید.');
   if(requestId.current)return requestId.current;
   try{const saved=JSON.parse(localStorage.getItem(key+':request-id')||'null');if(saved?.expires>Date.now()&&/^[0-9a-f-]{36}$/.test(saved.id))requestId.current=saved.id}catch{}
   if(!requestId.current)requestId.current=crypto.randomUUID();
@@ -41,7 +45,7 @@ export function RegistrationForm({user,agency}:{user:SellerUser;agency?:{id:stri
  const [restored,setRestored]=useState(initial.restored),[storageError,setStorageError]=useState(false);
  const allowVideo=['villa','apartment','mehr','national'].includes(form.kind);
  const visibleMedia=media.filter(item=>item.kind==='image'||allowVideo);
- useEffect(()=>{try{writeDraft(localStorage,key,form,media);setStorageError(false)}catch{setStorageError(true)}},[key,form,media]);
+ useEffect(()=>{if(!currentDraft())return;try{writeDraft(localStorage,key,form,media);setStorageError(false)}catch{setStorageError(true)}},[key,form,media]);
  function clearDraft(){resetSubmissionId();setForm({...empty,seller_name:user.name,seller_phone:user.phone});setMedia([]);setRestored(false);setSuccess('');setError('')}
 
  const [regions,setRegions]=useState<{slug:string;name:string}[]>([]);
@@ -52,6 +56,7 @@ export function RegistrationForm({user,agency}:{user:SellerUser;agency?:{id:stri
  const input=(key:keyof Form,label:string,required=false,numeric=false)=><label key={key}>{label}<input required={required} type={numeric?'number':'text'} min={numeric?'0':undefined} step={numeric&&!['bedrooms','floor_count','build_year','asking_price_toman'].includes(key)?'any':undefined} value={form[key]} onChange={e=>set(key,e.target.value)}/></label>;
  const select=(key:keyof Form,label:string,values:string[],required=false)=><label key={key}>{label}<select required={required} value={form[key]} onChange={e=>set(key,e.target.value)}><option value="">انتخاب کنید</option>{values.map(x=><option key={x} value={x}>{x}</option>)}</select></label>;
  async function submit(e:FormEvent,draftOnly=false){
+  if(!currentDraft()){e.preventDefault();setError('نشست حساب تغییر کرده است؛ صفحه را دوباره باز کنید.');return;}
   e.preventDefault();if(busy||uploading)return;setError('');setSuccess('');setBusy(true);
   try{
    if(!user)throw Error('ابتدا با شمارهٔ موبایل وارد شوید.');

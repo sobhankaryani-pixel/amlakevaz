@@ -137,9 +137,24 @@ async def admin_upload(request:Request,file:UploadFile=File(...),user=Depends(re
 
 @launch.api_route('/api/public/media/{filename}',methods=['GET','HEAD'])
 def media_file(filename:str,request:Request):
+    if not public_media_allowed(filename):raise HTTPException(404,headers={'Cache-Control':'no-store'})
+    return serve_media(filename,request)
+
+def public_media_allowed(filename:str):
+    if not re.fullmatch(r'[0-9a-f-]{36}\.(jpg|png|webp|mp4|webm)',filename):return False
+    with pool.connection() as conn:
+        return bool(conn.execute("""SELECT 1 WHERE EXISTS(
+          SELECT 1 FROM app.properties p WHERE p.status='آگهی فروش'
+          AND (p.cover_photo_url=%s OR EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(p.media,'[]'::jsonb)) m WHERE m->>'url'=%s))
+          AND EXISTS(SELECT 1 FROM app.listings l JOIN app.market_records mr ON mr.id=l.market_record_id
+             WHERE mr.property_id=p.id AND l.is_public=true AND l.status='published'))
+          OR EXISTS(SELECT 1 FROM app.homepage_promotions h WHERE h.is_active=true AND h.image_url=%s)
+          """,(MEDIA_BASE+'/'+filename,)*3).fetchone())
+
+def serve_media(filename:str,request:Request,private:bool=False):
     if not re.fullmatch(r'[0-9a-f-]{36}\.(jpg|png|webp|mp4|webm)',filename):raise HTTPException(404)
     mime={'.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.mp4':'video/mp4','.webm':'video/webm'}[Path(filename).suffix]
-    headers={'Cache-Control':'public,max-age=31536000,immutable','X-Content-Type-Options':'nosniff','Accept-Ranges':'bytes'}
+    headers={'Cache-Control':'private,no-store' if private else 'public,max-age=0,must-revalidate','X-Content-Type-Options':'nosniff','Accept-Ranges':'bytes'}
     if media_storage.mode()=='s3':
         # SDK signs the request server-side. No public bucket, expiring URL or browser CORS setup needed.
         byte_range=request.headers.get('range')
@@ -191,7 +206,8 @@ PUBLIC_SELECT='''SELECT p.public_code,t.code AS property_code,t.name AS property
  p.floor_count,p.national_phase,p.national_block,p.national_level,p.national_stage,
  p.latitude,p.longitude,p.cover_photo_url,p.media,p.public_notes,p.build_year,p.street_width,
  p.street_frontage_m,p.floor,p.land_length_m,p.land_width_m,p.registration_month,p.updated_at,
- l.asking_price_toman,l.published_at
+ l.asking_price_toman,l.published_at,
+ (SELECT max(a.created_at) FROM app.audit_logs a WHERE a.entity_type='property' AND a.entity_id=p.id AND a.action='availability_checked') AS availability_checked_at
  FROM app.properties p JOIN app.property_types t ON t.id=p.property_type_id
  LEFT JOIN app.regions r ON r.id=p.region_id
  JOIN LATERAL (SELECT l.asking_price_toman,l.published_at FROM app.listings l
@@ -204,7 +220,13 @@ PUBLIC_SELECT='''SELECT p.public_code,t.code AS property_code,t.name AS property
 def public_property(code:str):
     if len(code)>80:raise HTTPException(404,'آگهی پیدا نشد')
     with pool.connection() as conn:row=conn.execute(PUBLIC_SELECT+' AND p.public_code=%s',(code,)).fetchone()
-    if not row:raise HTTPException(404,'این آگهی موجود نیست یا دیگر فعال نیست.')
+    if not row:
+        with pool.connection() as conn:
+            previous=conn.execute("""SELECT p.status FROM app.properties p WHERE p.public_code=%s
+              AND EXISTS(SELECT 1 FROM app.listings l JOIN app.market_records m ON m.id=l.market_record_id
+              WHERE m.property_id=p.id AND l.published_at IS NOT NULL)""",(code,)).fetchone()
+        message={'فروخته شده':'این ملک فروخته شده و آگهی آن بسته شده است.','غیرفعال':'نمایش این آگهی فعلاً متوقف شده است.'}.get(previous['status'] if previous else '', 'این آگهی موجود نیست یا دیگر فعال نیست.')
+        raise HTTPException(404,message)
     return {'item':dict(row)}
 
 @launch.get('/api/public/sitemap-data')

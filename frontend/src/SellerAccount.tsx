@@ -1,3 +1,4 @@
+import {clearPrivateData,prunePrivateDrafts} from './shared/privateDevice';
 import {API} from './api';
 import {useSmsOtp} from './shared/useSmsOtp';
 import {fetchWithTimeout as fetch} from './shared/http';
@@ -33,7 +34,7 @@ export default function SellerAccount({user,onUser,onRegister}:Props){
  const [submissionsLoading,setSubmissionsLoading]=useState(false),[submissionsError,setSubmissionsError]=useState(''),[submissionsRetry,setSubmissionsRetry]=useState(0);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  useEffect(()=>{setName(user?.name||'');setResidenceCity(user?.residence_city||'')},[user?.id]);
- useEffect(()=>{if(!user||!completed||completing)return;let live=true;const controller=new AbortController();setSubmissionsLoading(true);setSubmissionsError('');fetch(`${API}/api/seller/my-submissions`,{credentials:'include',signal:controller.signal}).then(async r=>{if(!r.ok)throw Error('دریافت درخواست‌ها انجام نشد.');return r.json()}).then(d=>{if(live)setItems(d.items||[])}).catch(e=>{if(live)setSubmissionsError(e instanceof Error?e.message:'دریافت درخواست‌ها انجام نشد.')}).finally(()=>{if(live)setSubmissionsLoading(false)});return()=>{live=false;controller.abort()}},[user?.id,completed,completing,submissionsRetry]);
+ useEffect(()=>{setItems([]);if(!user||!completed||completing)return;let live=true;const controller=new AbortController();setSubmissionsLoading(true);setSubmissionsError('');fetch(`${API}/api/seller/my-submissions`,{credentials:'include',signal:controller.signal}).then(async r=>{if(!r.ok)throw Error('دریافت درخواست‌ها انجام نشد.');return r.json()}).then(d=>{if(live)setItems(d.items||[])}).catch(e=>{if(live)setSubmissionsError(e instanceof Error?e.message:'دریافت درخواست‌ها انجام نشد.')}).finally(()=>{if(live)setSubmissionsLoading(false)});return()=>{live=false;controller.abort()}},[user?.id,completed,completing,submissionsRetry]);
  async function send(path:string,body:object){const r=await fetch(API+path,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok){const error=new Error(typeof d.detail==='string'?d.detail:'درخواست انجام نشد') as Error&{status:number;retryAfter:number};error.status=r.status;error.retryAfter=Number(r.headers.get('Retry-After'))||RESEND_SECONDS;throw error}return d}
  async function requestCode(e?:FormEvent){
   e?.preventDefault();const normalized=normalizeSellerPhone(phone);
@@ -61,7 +62,7 @@ export default function SellerAccount({user,onUser,onRegister}:Props){
   try{
    const d=await send('/api/seller/auth/verify-code',{phone:normalizeSellerPhone(phone),code:value});
    if(!mounted.current)return;
-   clearChallenge();setDeadline(0);onUser(d.user);setNotice('');
+   clearChallenge();setDeadline(0);prunePrivateDrafts('seller',d.user.id);onUser(d.user);setNotice('');
    if(d.user?.name?.trim()&&validResidenceCity(d.user?.residence_city))navigate('home');
   }catch(e){setError(e instanceof Error?e.message:'کد نامعتبر است؛ آن را بررسی کنید.')}finally{verifyLock.current=false;setBusy(false)}
  }
@@ -83,7 +84,7 @@ export default function SellerAccount({user,onUser,onRegister}:Props){
    redirectTimer.current=window.setTimeout(()=>{navigate('home');inviteAfterProfile(d.user.id)},900);
   }catch(e){setError(e instanceof Error?e.message:'خطا در ذخیره')}finally{setBusy(false)}
  }
- async function logout(){if(busy)return;setBusy(true);setError('');try{await send('/api/seller/auth/logout',{});onUser(null);clearChallenge();setDeadline(0);setCode('');setStep('phone');setNotice('از حساب خارج شدید.')}catch(e){setError(e instanceof Error?e.message:'خروج انجام نشد؛ دوباره تلاش کنید.')}finally{setBusy(false)}}
+ async function logout(){if(busy)return;setBusy(true);setError('');try{await send('/api/seller/auth/logout',{});const localCleared=clearPrivateData('seller');sms.stop();setItems([]);setName('');setResidenceCity('');setPhone('');setSentPhone('');onUser(null);clearChallenge();setDeadline(0);setCode('');setStep('phone');setNotice(localCleared?'از حساب خارج شدید.':'از حساب خارج شدید؛ پاک‌کردن اطلاعات محلی ممکن نشد. در دستگاه مشترک، داده‌های این سایت را از تنظیمات مرورگر پاک کنید.')}catch(e){setError(e instanceof Error?e.message:'خروج انجام نشد؛ دوباره تلاش کنید.')}finally{setBusy(false)}}
  if(!user)return <section className="account-login-scene" aria-label="ورود به حساب کاربری">
  <picture className="account-login-background"><source media="(max-width:900px)" srcSet="/visual/account-login-mobile.webp"/><img src="/visual/account-login-desktop.webp" alt="املاک خودمونی اوز؛ نخلستان و برکهٔ گنبدی اوز" fetchPriority="high"/></picture>
  <div className="account-login-card" dir="rtl"><img className="account-login-emblem" src="/brand/logo-emblem-v2.png" alt="لوگوی املاک خودمونی"/><div className="account-login-title"><h1>{step==='phone'?'ورود یا ثبت‌نام':'کد تأیید'}</h1>{step==='code'&&<button type="button" className="account-edit-phone" disabled={busy} onClick={editPhone}>اصلاح شماره</button>}</div><p className="account-login-intro">{step==='phone'?'شماره موبایل خود را وارد کنید.':<>کد شش‌رقمی ارسال‌شده به <b dir="ltr">{phone}</b> را وارد کنید.</>}</p>
