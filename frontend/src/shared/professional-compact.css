@@ -169,3 +169,42 @@
 
 .site .contact-banner{width:calc(100% - 48px)}
 @media(max-width:900px){.site.mobile-site .contact-banner{width:auto}}
+
+/* Mobile legibility: small type increases, preserving the compact layout. */
+@media(max-width:900px){
+ .site.mobile-site .page-heading p,.site.mobile-site .section-kicker{font-size:12px}
+ .site.mobile-site .contact-banner p,.site.mobile-site .service-grid p,.site.mobile-site .seller-invite p{font-size:13px}
+ .site.mobile-site .footer-about p,.site.mobile-site .footer-columns a,.site.mobile-site .footer-columns button{font-size:13px}
+ .site.mobile-site .footer-bottom{font-size:11px;line-height:1.8}
+ .site.mobile-site .info-page p,.site.mobile-site .property-description{font-size:15px;line-height:1.95}
+ .site.mobile-site .property-date{font-size:12px}
+ .site.mobile-site .property-facts dt{font-size:13px}
+ .site.mobile-site .property-facts dd{font-size:14px}
+ .site.mobile-site .property-actions button{font-size:13px}
+ .site.mobile-site .areas-grid small{font-size:12px}
+ .site.mobile-site .market-refined .market-card-heading>small,.site.mobile-site .market-refined .market-growth>small{font-size:11px}
+ .site.mobile-site .market-refined .market-periods,.site.mobile-site .market-refined .market-value>span,.site.mobile-site .market-refined .market-scope-note{font-size:11px;line-height:1.8}
+ .site.mobile-site .market-refined .market-method-details,.site.mobile-site .market-refined .market-shared-footer{font-size:12px}
+ .site.mobile-site .compact-listings .page-heading p{font-size:12px}
+ .site.mobile-site .compact-listings .compact-filter>span,.site.mobile-site .compact-listings .compact-filter summary>span{font-size:10px;line-height:1.7}
+ .site.mobile-site .compact-listings .compact-filter summary>b{font-size:12px}
+ .site.mobile-site .compact-listings .compact-reset{font-size:11px}
+ .site.mobile-site .compact-listings .listing-body h3{font-size:14px;line-height:1.7}
+ .site.mobile-site .compact-listings .listing-body strong{font-size:15px;line-height:1.8;overflow-wrap:anywhere}
+ .site.mobile-site .compact-listings .listing-body p,.site.mobile-site .compact-listings .listing-location,.site.mobile-site .compact-listings .listing-code{font-size:11px;line-height:1.8}
+ .site.mobile-site .compact-listings .listing-tag{font-size:10px}
+ .site.mobile-site .compact-listings .state-message,.site.mobile-site .compact-listings .search-no-results{font-size:13px}
+ .site.mobile-site .featured .carousel .listing-code{font-size:10px}
+ .site.mobile-site .featured .carousel .listing-body h3{font-size:12px;line-height:1.7}
+ .site.mobile-site .featured .carousel .listing-body strong{font-size:13px;line-height:1.8;overflow-wrap:anywhere}
+ .site.mobile-site .featured .carousel .listing-body p,.site.mobile-site .featured .carousel .listing-location{font-size:11px;line-height:1.8}
+ .site.mobile-site .listing-open{min-width:0;text-decoration:none;color:inherit}
+}
+@media(max-width:360px){.site.mobile-site .compact-listings .listing-body h3{font-size:13px}.site.mobile-site .compact-listings .listing-body strong{font-size:14px}}
+.listing-card .listing-open{color:inherit;text-decoration:none}
+.listing-card .listing-open:focus-visible{outline:3px solid var(--ink);outline-offset:-3px}
+.app-recovery{max-width:480px;margin:12vh auto;padding:24px;line-height:1.9;direction:rtl;font-family:inherit}
+.app-recovery button,.app-recovery a{display:inline-flex;align-items:center;min-height:44px;margin:8px;padding:8px 14px}
+
+.site .submission-guide{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:12px 0;font-size:14px;line-height:1.9}.site .submission-guide summary{cursor:pointer;min-height:36px;display:list-item;align-content:center}.site .submission-guide>details{border-top:1px solid var(--line);padding-block:6px}.site .submission-guide p{font-size:13px;margin:6px 0}.site .submission-guide summary:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.site .seller-submissions small,.site .seller-submissions b,.site .seller-success{overflow-wrap:anywhere;min-width:0}

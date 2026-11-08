@@ -21,8 +21,8 @@ export function canonicalPath(path){
 }
 export function pageMetadata(path){
  const clean=canonicalPath(path),page=PAGES[clean];
- const [title,description]=page||['آگهی ملک | املاک خودمونی اوز','مشخصات و راه‌های تماس برای این آگهی ملک در اوز.'];
- return {title,description,url:SITE+clean,image:DEFAULT_IMAGE,robots:['/account','/register','/agency'].includes(clean)?'noindex,follow':'index,follow',structured:null};
+ const [title,description]=page||(clean.startsWith('/properties/')?['آگهی ملک | املاک خودمونی اوز','مشخصات و راه‌های تماس برای این آگهی ملک در اوز.']:['صفحه پیدا نشد | املاک خودمونی اوز','صفحهٔ موردنظر وجود ندارد. از آگهی‌ها یا صفحهٔ اصلی ادامه دهید.']);
+ return {title,description,url:SITE+clean,image:DEFAULT_IMAGE,robots:(!page&&!clean.startsWith('/properties/'))||['/account','/register','/agency'].includes(clean)?'noindex,follow':'index,follow',structured:null};
 }
 function imageUrl(value){if(typeof value!=='string'||!value.trim())return null;try{const url=new URL(value,SITE);return url.protocol==='https:'?url.href:null}catch{return null}}
 export function isoDate(value){if(!value)return undefined;const date=new Date(value);return Number.isFinite(date.getTime())?date.toISOString():undefined}

@@ -1,7 +1,8 @@
+import {API} from './api';
 import {fetchWithTimeout as fetch} from './shared/http';
 import { useState, type FormEvent } from 'react';
 
-const API = 'https://backend.evazmelk.ir';
+
 
 type Props = { compact?: boolean };
 

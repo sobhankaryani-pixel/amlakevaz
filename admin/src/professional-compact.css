@@ -86,3 +86,12 @@
  .shell .property-list-table .row-action-buttons{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
  .shell .contacts-list-table td[dir=ltr]::before{align-self:flex-end;direction:rtl}
 }
+
+@media(max-width:760px){
+ .shell .hint,.shell .content>header p,.shell .report-toolbar p,.shell .report-toolbar label,.shell .crm-stats span{font-size:13px;line-height:1.8}
+ .shell .report-cards h3,.shell .property-list-table td::before,.shell .contacts-list-table td::before{font-size:12px}
+ .shell .workspace-fold>summary,.shell .row-actions>summary{font-size:14px}
+ .shell .property-list-table td,.shell .contacts-list-table td{font-size:14px}
+}
+
+.app-recovery{max-width:480px;margin:12vh auto;padding:24px;line-height:1.9;direction:rtl;font-family:inherit}.app-recovery button,.app-recovery a{display:inline-flex;align-items:center;min-height:44px;margin:8px;padding:8px 14px}

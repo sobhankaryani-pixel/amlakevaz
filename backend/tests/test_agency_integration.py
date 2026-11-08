@@ -68,11 +68,21 @@ def test_complete_agency_buyer_workflow(system):
  assert must(c.get('/api/public/property-detail?code='+code))['item']['asking_price_toman']==6000000000
  # Successful callback writes one inquiry + CRM consent + one conversion; retry is idempotent.
  iid=str(uuid4());buyer={'id':iid,'property_code':code,'phone':'09120000123','name':'خریدار آزمایشی','purpose':'visit','marketing_consent':True}
- assert c.post('/api/public/property-inquiries',json={**buyer,'marketing_consent':False}).status_code==422
+ # A callback does not require marketing consent.
+ declined={**buyer,'id':str(uuid4()),'phone':'09120000124','marketing_consent':False}
+ must(c.post('/api/public/property-inquiries',json=declined),201)
+ with db.connection() as conn:
+  row=conn.execute('SELECT marketing_opt_in,consent_at,consent_source FROM app.customer_contacts WHERE phone=%s',(declined['phone'],)).fetchone()
+  assert not row['marketing_opt_in'] and row['consent_at'] is None and row['consent_source'] is None
  must(c.post('/api/public/property-inquiries',json=buyer),201);must(c.post('/api/public/property-inquiries',json=buyer),201)
  with db.connection() as conn:
   assert conn.execute('SELECT count(*) AS n FROM app.property_inquiries WHERE id=%s',(iid,)).fetchone()['n']==1
-  contact=conn.execute('SELECT marketing_opt_in,consent_at,consent_source FROM app.customer_contacts WHERE phone=%s',(buyer['phone'],)).fetchone();assert contact['marketing_opt_in'] and contact['consent_at'] and contact['consent_source']=='property_inquiry_notice_v1'
+  contact=conn.execute('SELECT marketing_opt_in,consent_at,consent_source FROM app.customer_contacts WHERE phone=%s',(buyer['phone'],)).fetchone();assert contact['marketing_opt_in'] and contact['consent_at'] and contact['consent_source']=='property_inquiry_notice_v2'
+ # Omitting a new opt-in must preserve previously granted consent.
+ must(c.post('/api/public/property-inquiries',json={**buyer,'id':str(uuid4()),'marketing_consent':False}),201)
+ with db.connection() as conn:
+  row=conn.execute('SELECT marketing_opt_in,consent_source FROM app.customer_contacts WHERE phone=%s',(buyer['phone'],)).fetchone()
+  assert row['marketing_opt_in'] and row['consent_source']=='property_inquiry_notice_v2'
  assert c.get('/api/admin/property-inquiries').status_code==401
  rows=must(c.get('/api/admin/property-inquiries',headers=owner))['items'];assert any(x['id']==iid and x['property_code']==code and x['phone']==buyer['phone'] for x in rows)
  must(c.put('/api/admin/property-inquiries/'+iid,headers=owner,json={'status':'followed_up'}))
@@ -158,3 +168,21 @@ def test_all_seven_agency_property_types_publish_without_transaction_data(system
   assert must(c.get('/api/public/property-detail?code='+f['public_code']))['item']['asking_price_toman']==5000000000
  assert len(set(codes))==7
  with db.connection() as conn:assert conn.execute('SELECT count(*) AS n FROM app.transactions').fetchone()['n']==0
+
+
+def test_seller_submission_retries_return_one_receipt(system):
+ c,db,owner,password=system
+ with db.connection() as conn:
+  seller=conn.execute("INSERT INTO app.customer_contacts(phone,name,account_enabled) VALUES ('09120000125','فروشنده آزمایشی',true) RETURNING id,phone,name").fetchone()
+ main.app.dependency_overrides[seller_auth.require_seller]=lambda:seller
+ try:
+  payload={'request_id':str(uuid4()),'seller_name':seller['name'],'seller_phone':seller['phone'],'kind':'garden','area_m2':100,'asking_price_toman':3000000000}
+  first=must(c.post('/api/seller/property-submissions',json=payload),201)
+  again=must(c.post('/api/seller/property-submissions',json=payload),201)
+  assert first['id']==again['id']
+  assert c.post('/api/seller/property-submissions',json={**payload,'area_m2':101}).status_code==409
+  with db.connection() as conn:
+   assert conn.execute("SELECT count(*) AS n FROM app.property_submissions WHERE seller_id=%s AND details->>'request_id'=%s",(seller['id'],payload['request_id'])).fetchone()['n']==1
+  second=must(c.post('/api/seller/property-submissions',json={**payload,'request_id':str(uuid4()),'area_m2':101}),201)
+  assert second['id']!=first['id']
+ finally:main.app.dependency_overrides.pop(seller_auth.require_seller,None)

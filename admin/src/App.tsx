@@ -1,3 +1,4 @@
+import {API} from './api';
 import AgencyAdmin from './AgencyAdmin';
 import {fetchWithTimeout as fetch} from './http';
 function SharedLoginRedirect(){useEffect(()=>{window.location.replace('/agency')},[]);return <p dir="rtl" role="status">در حال باز کردن صفحهٔ ورود…</p>}
@@ -9,7 +10,7 @@ import './styles.css';
 import './admin-login.css';
 import LocationPicker from './LocationPicker';
 import CRM from './CRM';
-const API = 'https://backend.evazmelk.ir';
+
 function newCodeRequestId(){const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const hex=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');return [hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join('-')}
 type Ref = {id:string;name:string;code?:string;slug?:string};
 const initial={public_code:'',property_type_id:'',region_id:'',neighborhood:'',address:'',area_m2:'',building_area_m2:'',commercial_area_m2:'',usage_type:'',status:'آگهی فروش',asking_price_toman:'',registration_year:'',registration_month_name:'',notes:'',street_width:'',street_frontage_m:'',mehr_block:'',mehr_floor:'',mehr_unit:'',national_phase:'',national_block:'',national_level:'',national_stage:'',national_notes:'',build_year:'',bedrooms:'',sale_date:'',sale_price_toman:'',sale_notes:'',latitude:'',longitude:'',land_length_m:'',land_width_m:'',mehr_section:'',mehr_level:'',house_condition:'',floor_count:'',cover_photo_url:''};
@@ -79,7 +80,7 @@ export default function App(){
   const code=kind==='land'?(form.usage_type==='تجاری'?'commercial_land':'raw_land'):kinds.find(k=>k.value===kind)!.codes[0];
   const type=types.find(t=>t.code===code)||types.find(t=>kinds.find(k=>k.value===kind)!.codes.includes(t.code||''));
   if(!type)throw Error('این نوع ملک در پایگاه داده تعریف نشده است.');
-  const payload:any={...form,code_reservation_id:editCode?null:codeReservation,media,cover_photo_url:media.find(x=>x.kind==='image')?.url||(form.cover_photo_url.startsWith('https://backend.evazmelk.ir/api/public/media/')?null:form.cover_photo_url),property_type_id:type.id,registration_month:form.registration_year&&form.registration_month_name?`${form.registration_year}/${form.registration_month_name}`:null};delete payload.registration_year;delete payload.registration_month_name;
+  const payload:any={...form,code_reservation_id:editCode?null:codeReservation,media,cover_photo_url:media.find(x=>x.kind==='image')?.url||(form.cover_photo_url.startsWith(API+'/api/public/media/')?null:form.cover_photo_url),property_type_id:type.id,registration_month:form.registration_year&&form.registration_month_name?`${form.registration_year}/${form.registration_month_name}`:null};delete payload.registration_year;delete payload.registration_month_name;
   numeric.forEach(k=>payload[k]=form[k as keyof Form]===''?null:Number(form[k as keyof Form]));for(const k of Object.keys(payload))if(payload[k]==='')payload[k]=null;
   const d=pendingApprovalCode?{public_code:pendingApprovalCode}:await request(editCode?`/api/admin/properties/${encodeURIComponent(editCode)}/direct`:'/api/admin/properties/direct',{method:editCode?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   if(fromSubmission){

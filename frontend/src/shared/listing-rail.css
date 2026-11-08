@@ -1,0 +1,47 @@
+/* Native RTL scrolling: no translated clones, so touch momentum remains browser-owned. */
+.site .featured .section-heading{margin-bottom:0;padding:12px 16px;border-radius:14px 14px 0 0;background:#173957;color:#fff;align-items:center;gap:12px}
+.site .featured .section-heading h2{color:#fff;font-size:21px;margin:4px 0;line-height:1.6}
+.site .featured .section-heading>.link-button{color:#fff;font-size:13px;flex:none;min-height:44px;text-align:left}
+.site .featured .section-heading .featured-badge{padding:0;border:0;border-radius:0;background:none;color:#dce9f8;font-size:11px}
+.site .featured .section-heading .featured-badge-dot{background:#dce9f8;width:6px;height:6px}
+.site .featured .horizontal-listings{--rail-gap:12px;--card-width:calc((100% - 48px)/4.25);border:1px solid var(--line);border-top:0;border-radius:0 0 14px 14px;background:var(--soft);overflow:hidden;padding:0}
+.site .featured .horizontal-listings .carousel-viewport{direction:rtl;overflow-x:auto;overflow-y:hidden;margin:0;padding:14px 12px 12px;scroll-padding-inline:12px;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y pinch-zoom;scrollbar-width:thin;scrollbar-color:#8ba0b8 transparent;cursor:grab}
+.site .featured .horizontal-listings .carousel-viewport:focus-visible{outline:2px solid #173957;outline-offset:-3px}
+.site .featured .horizontal-listings .carousel-viewport.is-dragging{cursor:grabbing;scroll-snap-type:none}
+.site .featured .horizontal-listings .carousel-track{display:flex;direction:rtl;gap:var(--rail-gap);transform:none;will-change:auto;align-items:stretch}
+.site .featured .horizontal-listings .carousel-track>.listing-card{flex:0 0 var(--card-width);min-width:0;scroll-snap-align:start;box-shadow:none;border-radius:10px}
+.site .featured .horizontal-listings .listing-card:hover{transform:none}
+.site .featured .horizontal-listings .carousel-track .listing-open{display:flex;flex-direction:column;height:100%;text-decoration:none;user-select:none;-webkit-user-drag:none}
+.site .featured .horizontal-listings .carousel-track .listing-image{height:140px;min-height:0;flex:none}
+.site .featured .horizontal-listings .carousel-track .listing-image img{pointer-events:none;-webkit-user-drag:none}
+.site .featured .horizontal-listings .carousel-track .listing-tag{font-size:10px;top:7px;right:7px;padding:3px 7px;max-width:calc(100% - 14px)}
+.site .featured .horizontal-listings .carousel-track .listing-body{padding:10px;min-width:0}
+.site .featured .horizontal-listings .carousel-track .listing-code{font-size:11px}
+.site .featured .horizontal-listings .carousel-track .listing-body h3{font-size:14px;line-height:1.7;margin:4px 0;overflow-wrap:anywhere}
+.site .featured .horizontal-listings .carousel-track .listing-body strong{font-size:16px;line-height:1.8;overflow-wrap:anywhere}
+.site .featured .horizontal-listings .carousel-track .listing-body p{font-size:12px;line-height:1.8;margin:5px 0 8px;min-height:0;overflow-wrap:anywhere}
+.site .featured .horizontal-listings .carousel-track .listing-location{font-size:11px;line-height:1.8;padding-top:6px;overflow-wrap:anywhere}
+.site .featured .horizontal-listings .rail-navigation{display:flex;align-items:center;justify-content:center;gap:14px;padding:7px 12px 10px;font-size:11px;color:var(--muted)}
+.site .featured .horizontal-listings .slide-arrow{position:static;transform:none;width:40px;height:40px;min-width:40px;background:var(--paper);color:var(--ink);box-shadow:none;font-size:29px;cursor:pointer}
+.site .featured .horizontal-listings .slide-arrow:disabled{opacity:.35;cursor:default}
+@media(min-width:1200px){.site .featured .horizontal-listings{--card-width:calc((100% - 60px)/5.25)}}
+@media(min-width:1600px){.site .featured .horizontal-listings{--card-width:calc((100% - 72px)/6.25)}}
+@media(max-width:900px){
+ .site.mobile-site .featured .section-heading{padding:10px 12px;gap:8px}
+ .site.mobile-site .featured .section-heading h2{font-size:18px;line-height:1.6;margin:3px 0}
+ .site.mobile-site .featured .section-heading>.link-button{font-size:12px;max-width:96px;line-height:1.8}
+ .site.mobile-site .featured .horizontal-listings{--rail-gap:10px;--card-width:calc((100% - 20px)/2.15)}
+ .site.mobile-site .featured .horizontal-listings .carousel-viewport{padding:12px 10px 10px;scroll-padding-inline:10px}
+ .site.mobile-site .featured .horizontal-listings .carousel-track>.listing-card{scroll-snap-align:none}
+ .site.mobile-site .featured .horizontal-listings .carousel-track>.listing-card:nth-child(2n+1){scroll-snap-align:start;scroll-snap-stop:always}
+ .site.mobile-site .featured .horizontal-listings .carousel-track .listing-image{height:118px;min-height:0}
+ .site.mobile-site .featured .horizontal-listings .carousel-track .listing-body{padding:8px}
+ .site.mobile-site .featured .horizontal-listings .carousel-track .listing-body h3{font-size:14px;line-height:1.75}
+ .site.mobile-site .featured .horizontal-listings .carousel-track .listing-body strong{font-size:15px}
+ .site.mobile-site .featured .horizontal-listings .carousel-track .listing-body p{font-size:12px}
+ .site.mobile-site .featured .horizontal-listings .slide-arrow{width:44px;height:44px;min-width:44px}
+ .site.mobile-site .featured .horizontal-listings .rail-navigation{gap:9px;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.site .featured .horizontal-listings .carousel-viewport{scroll-behavior:auto}}
+
+@media(max-width:900px){.site.mobile-site .featured .horizontal-listings .rail-navigation .slide-arrow{display:none}.site.mobile-site .featured .horizontal-listings .carousel-viewport{scrollbar-width:none}.site.mobile-site .featured .horizontal-listings .carousel-viewport::-webkit-scrollbar{display:none}}

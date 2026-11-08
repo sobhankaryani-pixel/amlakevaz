@@ -44,7 +44,7 @@ test('WebOTP listens before send, buffers early SMS, submits once, cancels stale
    assert.equal(listeners[0].options.signal.aborted,true);verifyStatus=200;await submit();assert.equal(verifications.length,2);assert.equal(logged.length,1);
   });
   await t.test('changing number cancels listening and ignores a late response',async()=>{
-   await mount();await fill('#seller-login-phone','09120000000');await submit();await click('تغییر شماره');assert.equal(listeners[0].options.signal.aborted,true);
+   await mount();await fill('#seller-login-phone','09120000000');await submit();await click('اصلاح شماره');assert.equal(listeners[0].options.signal.aborted,true);
    await sms('123456',0);assert.equal(verifications.length,0);assert.ok(document.querySelector('#seller-login-phone'));
   });
   await t.test('failed SMS request and unmount abort listeners; stale SMS never logs in',async()=>{

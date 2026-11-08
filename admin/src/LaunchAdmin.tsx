@@ -1,8 +1,9 @@
+import {API} from './api';
 import MediaCleanup from './MediaCleanup';
 import CampaignReport from './CampaignReport';
 import {fetchWithTimeout as fetch} from './http';
 import {useEffect,useState} from 'react';
-const API='https://backend.evazmelk.ir';
+
 const date=(x:string)=>new Date(x).toLocaleString('fa-IR',{timeZone:'Asia/Tehran'});
 const labels:Record<string,string>={page_view:'بازدید صفحه',property_view:'بازدید مشخصات ملک',phone_click:'کلیک تماس',whatsapp_click:'کلیک واتساپ',instagram_click:'کلیک اینستاگرام',share:'اشتراک‌گذاری',search_filter:'جستجوی دارای نتیجه',search_empty:'جستجوی بدون نتیجه',contact_submit:'پیام تماس ثبت‌شده',property_submit:'درخواست ثبت ملک موفق',map_open:'دیدن ملک روی نقشه',scroll_depth:'پیمایش صفحه',engaged_time:'زمان حضور فعال',client_error:'خطای مرورگر'};
 export default function LaunchAdmin({token,section,canCleanup=false}:{token:string;section:string;canCleanup?:boolean}){

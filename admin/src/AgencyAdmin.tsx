@@ -1,7 +1,8 @@
+import {API as API_ORIGIN} from './api';
 import {mediaUrl} from './mediaOrigin';
 import {useEffect,useState,type FormEvent} from 'react';
 import './agency-admin.css';
-const API='https://backend.evazmelk.ir/api/admin';
+const API=API_ORIGIN+'/api/admin';
 type Item={id:string;name?:string;username?:string;phone?:string;is_active?:boolean;agency_name?:string;agency_phone?:string;public_code?:string;property_code?:string;created_at:string;action?:string;details?:Record<string,unknown>;purpose?:string;status?:string};
 const kindNames:Record<string,string>={land:'زمین',villa:'خانه ویلایی',apartment:'آپارتمان',mehr:'مسکن مهر',national:'مسکن ملی',shop:'مغازه',garden:'باغ شهری'};
 const labels:Record<string,string>={kind:'نوع ملک',region_key:'منطقه',neighborhood:'محله',area_m2:'متراژ زمین',building_area_m2:'زیربنا',commercial_area_m2:'متراژ تجاری',usage_type:'کاربری',house_condition:'وضعیت بنا',asking_price_toman:'قیمت (تومان)',extra_details:'توضیحات',land_length_m:'طول',land_width_m:'عرض',street_frontage_m:'بر',bedrooms:'خواب',floor_count:'طبقات',build_year:'سال ساخت',mehr_section:'بخش مهر',mehr_level:'طبقه مهر',national_phase:'فاز',national_block:'بلوک',national_level:'طبقه ملی',national_stage:'مرحله ساخت'};

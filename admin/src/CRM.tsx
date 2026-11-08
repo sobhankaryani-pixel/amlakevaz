@@ -1,8 +1,9 @@
+import {API} from './api';
 import {fetchWithTimeout as fetch} from './http';
 import { useEffect, useState, type FormEvent } from 'react';
 import './CRM.css';
 
-const API = 'https://backend.evazmelk.ir';
+
 
 type Contact = {
   id: string;

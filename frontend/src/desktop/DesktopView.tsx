@@ -10,6 +10,7 @@ const PropertyMap=lazy(()=>import('../PropertyMap'));
 import PriceDashboard from '../PriceDashboard';
 import SellerRegistration from '../SellerRegistration';
 import SellerAccount from '../SellerAccount';
+import SessionGate from '../shared/SessionGate';
 import {Carousel,ListingCard,contact,propertyKinds,money,facts,imageUrl,type Page} from '../shared/propertyUI';
 import {type SiteState} from '../shared/useSiteState';
 
@@ -29,8 +30,8 @@ export default function DesktopView(props:SiteState){
  {page==='about'&&<AboutPage/>}
  {page==='contact'&&<ContactPage/>}
  {page==='map'&&<Suspense fallback={<p className="state-message" role="status">در حال بازکردن نقشهٔ اوز…</p>}><PropertyMap focusCode={focusCode} onOpen={setSelected}/></Suspense>}
- {page==='register'&&<SellerRegistration user={sellerUser} onLogin={()=>go('account')}/>}
- {page==='account'&&<SellerAccount user={sellerUser} onUser={setSellerUser} onRegister={()=>go('register')}/>}
+ {page==='register'&&<SessionGate loading={props.sessionLoading} error={props.sessionError} retry={props.retrySession}><SellerRegistration user={sellerUser} onLogin={()=>go('account')}/></SessionGate>}
+ {page==='account'&&<SessionGate loading={props.sessionLoading} error={props.sessionError} retry={props.retrySession}><SellerAccount user={sellerUser} onUser={setSellerUser} onRegister={()=>go('register')}/></SessionGate>}
  {page==='index'&&<section className="content-section standalone"><div className="page-heading"><span className="section-kicker">روند قیمت در اوز</span><h1>شاخص قیمت املاک</h1></div><PriceDashboard/></section>}
  {page==='areas'&&<section className="content-section standalone"><div className="page-heading"><span className="section-kicker">منطقه‌های اوز</span><h1>ملک را در منطقهٔ دلخواه پیدا کنید</h1><p>منطقه‌ای را انتخاب کنید تا آگهی‌های فعال آن را ببینید.</p></div>{regions.length?<div className="areas-grid">{regions.map(r=><button key={r.slug} onClick={()=>navigateSearchRegions([r.slug])}><span>⌖</span><strong>{r.name}</strong><small>{r.slug}</small></button>)}</div>:<p className="state-message">پس از ثبت آگهی، مناطق دارای ملک در اینجا نمایش داده می‌شوند.</p>}</section>}
  <section className="contact-banner" id="contact"><div><span>در کنار شما برای تصمیم بهتر</span><h2>دربارهٔ یک ملک سؤال دارید؟</h2><p>برای اطلاع از جزئیات آگهی‌ها و مشاورهٔ خرید، با املاک خودمونی در تماس باشید.</p></div><a href={contact} target="_blank" rel="noopener noreferrer">گفتگو در واتساپ ↗</a></section>

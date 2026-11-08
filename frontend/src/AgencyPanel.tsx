@@ -1,3 +1,4 @@
+import {API as API_ORIGIN} from './api';
 import {useEffect,useState,type FormEvent} from 'react';
 import {fetchWithTimeout as fetch} from './shared/http';
 import {navigate,propertyPath} from './shared/navigation';
@@ -6,7 +7,7 @@ import './agency.css';
 import PanelLogin from './shared/PanelLogin';
 import './shared/panel-login.css';
 import {authenticatePanel} from './shared/panelAuth';
-const API='https://backend.evazmelk.ir/api/agency';
+const API=API_ORIGIN+'/api/agency';
 type User={id:string;name:string;phone:string;username:string};
 type File={id:string;version:number;details:Record<string,unknown>;public_code?:string;property_id?:string;review_status?:string;review_version?:number;review_action?:string;review_note?:string;property_status?:string};
 async function api(path:string,options:RequestInit={}){const r=await fetch(API+path,{...options,credentials:'include',headers:{'Content-Type':'application/json',...options.headers}});const d=await r.json();if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:'عملیات انجام نشد. دوباره تلاش کنید.');return d}

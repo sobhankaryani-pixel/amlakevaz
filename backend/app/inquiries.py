@@ -15,7 +15,7 @@ class InquiryIn(BaseModel):
  phone:str=Field(max_length=25)
  name:str=Field(default='',max_length=120)
  purpose:Literal['consultation','visit']='consultation'
- marketing_consent:Literal[True]
+ marketing_consent:bool=False
  website:str=Field(default='',max_length=200)
  analytics:dict|None=None
 class StatusIn(BaseModel):
@@ -38,8 +38,11 @@ def create(payload:InquiryIn,request:Request):
     WHERE m.property_id=p.id AND m.is_public AND l.is_public AND l.status='published') FOR SHARE''',(payload.property_code,)).fetchone()
    if not target:raise HTTPException(404,'این آگهی دیگر برای درخواست مشاوره فعال نیست.')
    contact=conn.execute('''INSERT INTO app.customer_contacts AS c(phone,name,source,marketing_opt_in,consent_at,consent_source)
-    VALUES (%s,%s,'manual',true,now(),'property_inquiry_notice_v1') ON CONFLICT(phone) DO UPDATE SET
-    name=CASE WHEN c.name='' THEN EXCLUDED.name ELSE c.name END,marketing_opt_in=true,consent_at=now(),consent_source='property_inquiry_notice_v1' RETURNING id''',(phone,payload.name.strip())).fetchone()
+    VALUES (%s,%s,'manual',%s,CASE WHEN %s THEN now() ELSE NULL END,CASE WHEN %s THEN 'property_inquiry_notice_v2' ELSE NULL END) ON CONFLICT(phone) DO UPDATE SET
+    name=CASE WHEN c.name='' THEN EXCLUDED.name ELSE c.name END,
+    marketing_opt_in=c.marketing_opt_in OR EXCLUDED.marketing_opt_in,
+    consent_at=CASE WHEN EXCLUDED.marketing_opt_in THEN EXCLUDED.consent_at ELSE c.consent_at END,
+    consent_source=CASE WHEN EXCLUDED.marketing_opt_in THEN EXCLUDED.consent_source ELSE c.consent_source END RETURNING id''',(phone,payload.name.strip(),payload.marketing_consent,payload.marketing_consent,payload.marketing_consent)).fetchone()
    conn.execute('INSERT INTO app.property_inquiries(id,property_id,property_code,contact_id,purpose) VALUES (%s,%s,%s,%s,%s)',(payload.id,target['id'],payload.property_code,contact['id'],payload.purpose))
    record_conversion(conn,'contact_submit','/properties/'+payload.property_code,payload.analytics)
  return {'ok':True,'message':'درخواست شما ثبت شد؛ برای هماهنگی با شما تماس می‌گیریم.'}

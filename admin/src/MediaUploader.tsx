@@ -1,3 +1,4 @@
+import {API} from './api';
 import {mediaUrl} from './mediaOrigin';
 import './media-uploader.css';
 import {fetchWithTimeout as fetch,UPLOAD_TIMEOUT_MS} from './http';
@@ -13,7 +14,7 @@ export default function MediaUploader({items,onChange,allowVideo,token,onBusy,dr
   const retain=async()=>{
    if(document.visibilityState!=='visible'||inFlight)return;inFlight=true;
    try{
-    const response=await fetch('https://backend.evazmelk.ir/api/'+(token?'admin':'seller')+'/media/retain',{method:'POST',credentials:token?'omit':'include',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify({urls:mediaKey.split('\n')}),signal:controller.signal});
+    const response=await fetch(API+'/api/'+(token?'admin':'seller')+'/media/retain',{method:'POST',credentials:token?'omit':'include',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify({urls:mediaKey.split('\n')}),signal:controller.signal});
     const data=await response.json();if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:'حفظ فایل‌های پیش‌نویس تأیید نشد.');
     if(live)setRetentionError('');
    }catch(e){if(live)setRetentionError(e instanceof Error?e.message:'حفظ فایل‌های پیش‌نویس تأیید نشد.')}finally{inFlight=false}
@@ -31,7 +32,7 @@ export default function MediaUploader({items,onChange,allowVideo,token,onBusy,dr
    if(file.size>(video?50:8)*1024*1024)throw Error('حداکثر حجم عکس ۸ و فیلم ۵۰ مگابایت است.');
    if(next.filter(x=>x.kind===(video?'video':'image')).length>=(video?2:12))throw Error('حداکثر ۱۲ عکس و ۲ فیلم مجاز است.');
    const form=new FormData();form.append('file',file);
-   const response=await fetch('https://backend.evazmelk.ir/api/'+(token?'admin':'seller')+'/media',{method:'POST',credentials:token?'omit':'include',headers:token?{Authorization:'Bearer '+token}:{},body:form,timeoutMs:UPLOAD_TIMEOUT_MS});
+   const response=await fetch(API+'/api/'+(token?'admin':'seller')+'/media',{method:'POST',credentials:token?'omit':'include',headers:token?{Authorization:'Bearer '+token}:{},body:form,timeoutMs:UPLOAD_TIMEOUT_MS});
    const data=await response.json();if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:'بارگذاری فایل انجام نشد.');
    next=[...next,{url:data.url,kind:data.kind}];onChange(next);
   }}catch(e){setError(e instanceof Error?e.message:'خطای بارگذاری')}finally{setBusy(false);onBusy?.(false);if(input.current)input.current.value=''}

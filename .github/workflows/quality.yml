@@ -1,0 +1,33 @@
+name: Project quality checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci --prefix frontend --no-audit --no-fund
+      - run: npm ci --prefix admin --no-audit --no-fund
+      - run: npm ci --prefix qa --no-audit --no-fund
+      - run: npm run check --prefix frontend
+      - run: npm run check --prefix admin
+      - run: node --test frontend/tests/*.test.mjs
+        env:
+          JSDOM_MODULE: ${{ github.workspace }}/qa/node_modules/jsdom/lib/api.js
+      - run: pip install -r backend/requirements-test.txt
+      - run: python -m pytest -q backend/tests
+        env:
+          AGENCY_TEST_PGLITE: '1'
+          PGLITE_MODULE: ${{ github.workspace }}/qa/node_modules/@electric-sql/pglite/dist/index.js
+      - run: node build-liara.mjs

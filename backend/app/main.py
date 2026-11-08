@@ -43,6 +43,7 @@ admin = APIRouter(prefix="/api/admin", tags=["admin"])
 NATIONAL_STAGES = ('مرحله سقف اول','مرحله سقف دوم','اتمام اسکلت کامل','اسکلت + تأسیسات کامل','تأسیسات + نما','کامل‌شده')
 
 class SellerSubmissionIn(BaseModel):
+    request_id: str | None = Field(default=None, pattern=r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')
     analytics:dict|None=None
     seller_name: str = Field(min_length=2, max_length=120)
     seller_phone: str = Field(min_length=10, max_length=20, pattern=r'^\+?[0-9۰-۹٠-٩\s\-]{10,20}$')
@@ -153,9 +154,20 @@ def create_seller_submission(payload: SellerSubmissionIn, request: Request, user
     limit_request(request,"seller-submission",10,3600,str(user["id"]))
     if payload.website:
         return {'message':'درخواست شما برای بررسی دریافت شد.'}
-    validate_media(payload.media,{**user,'role':'seller'},payload.kind in ('villa','apartment','mehr','national'))
+    if not payload.request_id:
+        validate_media(payload.media,{**user,'role':'seller'},payload.kind in ('villa','apartment','mehr','national'))
     data=payload.model_dump(exclude={'seller_name','seller_phone','website','analytics'})
     with pool.connection() as conn:
+        # A transaction-scoped lock makes concurrent retries return the same receipt.
+        if payload.request_id:
+            conn.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))',('seller-submit:'+str(user['id'])+':'+payload.request_id,))
+            existing=conn.execute("SELECT id,details FROM app.property_submissions WHERE seller_id=%s AND details->>'request_id'=%s LIMIT 1",(user['id'],payload.request_id)).fetchone()
+            if existing:
+                if existing['details'] != data:
+                    raise HTTPException(409,'درخواست قبلی با این شناسه ثبت شده است. ابتدا درخواست‌های من را بررسی کنید؛ برای ملک دیگری، پیش‌نویس تازه بسازید.')
+                return {'id':str(existing['id']),'message':'این درخواست قبلاً ثبت شده است؛ می‌توانید آن را در حساب من پیگیری کنید.'}
+        if payload.request_id:
+            validate_media(payload.media,{**user,'role':'seller'},payload.kind in ('villa','apartment','mehr','national'))
         if payload.region_key and not conn.execute('SELECT 1 FROM app.regions WHERE slug=%s AND is_public=true AND slug LIKE %s', (payload.region_key,'R-%')).fetchone():
             raise HTTPException(422, 'منطقهٔ زمین معتبر نیست')
         row=conn.execute('''INSERT INTO app.property_submissions(seller_name,seller_phone,seller_id,kind,details)
@@ -754,6 +766,7 @@ app.include_router(property_codes)
 
 @app.middleware('http')
 async def launch_monitor(request: Request, call_next):
+    from starlette.concurrency import run_in_threadpool
     if request.method in ('POST','PUT','DELETE'):
         origin=request.headers.get('origin')
         allowed={x.strip() for x in settings.allowed_origins.split(',')}|{'https://admin.evazmelk.ir'}
@@ -761,19 +774,19 @@ async def launch_monitor(request: Request, call_next):
     try:
         response=await call_next(request)
         if response.status_code>=500:
-            try:
-                with pool.connection() as conn:
-                    conn.execute('INSERT INTO app.site_errors(kind,path) VALUES (%s,%s)',(f'http_{response.status_code}',safe_error_path(request)));conn.commit()
-            except Exception:pass
+            await run_in_threadpool(record_site_error,f'http_{response.status_code}',safe_error_path(request))
         return response
     except Exception as error:
         import logging
         logging.getLogger('evaz.errors').error('Unhandled %s at %s',type(error).__name__,safe_error_path(request))
-        try:
-            with pool.connection() as conn:
-                conn.execute('INSERT INTO app.site_errors(kind,path) VALUES (%s,%s)',(type(error).__name__[:100],safe_error_path(request)));conn.commit()
-        except Exception:pass
+        await run_in_threadpool(record_site_error,type(error).__name__[:100],safe_error_path(request))
         return JSONResponse({'detail':'خطای موقت سرور؛ دوباره تلاش کنید.'},status_code=500)
+
+def record_site_error(kind,path):
+    try:
+        with pool.connection() as conn:
+            conn.execute('INSERT INTO app.site_errors(kind,path) VALUES (%s,%s)',(kind,path));conn.commit()
+    except Exception:pass
 
 def safe_error_path(request):
     route=request.scope.get('route')

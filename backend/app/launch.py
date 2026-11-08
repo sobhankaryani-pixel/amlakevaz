@@ -89,7 +89,7 @@ async def store_upload(file:UploadFile,request:Request,user:dict):
     try:
         if not media_storage.configured():
             raise HTTPException(503,'فضای نگهداری دائمی عکس و فیلم هنوز تنظیم نشده است')
-        limit_request(request,'media',40,3600,str(user.get('sub') or user.get('id')))
+        await run_in_threadpool(limit_request,request,'media',40,3600,str(user.get('sub') or user.get('id')))
         first=await file.read(256)
         ext,kind,mime=file_kind(first)
         maximum=8*1024*1024 if kind=='image' else 50*1024*1024
@@ -101,19 +101,21 @@ async def store_upload(file:UploadFile,request:Request,user:dict):
         media_id=uuid4();filename=f'{media_id}.{ext}';path=root/filename
         size=len(first)
         with path.open('xb') as out:
-            out.write(first)
+            await run_in_threadpool(out.write,first)
             while chunk:=await file.read(1024*1024):
                 size+=len(chunk)
                 if size>maximum:raise HTTPException(413,'حداکثر حجم عکس ۸ و فیلم ۵۰ مگابایت است')
-                out.write(chunk)
+                await run_in_threadpool(out.write,chunk)
         if kind=='image':
             path=await run_in_threadpool(normalize_image,path);filename=path.name;size=path.stat().st_size;mime='image/webp'
         if media_storage.mode()=='s3':
             cloud_attempted=True
             await run_in_threadpool(media_storage.put_file,path,filename,mime)
-        with pool.connection() as conn:
-            conn.execute('INSERT INTO app.uploaded_media(id,owner_id,owner_role,filename,kind,size_bytes) VALUES (%s,%s,%s,%s,%s,%s)',
-              (media_id,user.get('sub') or user['id'],user.get('role','seller'),filename,kind,size));conn.commit()
+        def record_upload():
+            with pool.connection() as conn:
+                conn.execute('INSERT INTO app.uploaded_media(id,owner_id,owner_role,filename,kind,size_bytes) VALUES (%s,%s,%s,%s,%s,%s)',
+                  (media_id,user.get('sub') or user['id'],user.get('role','seller'),filename,kind,size));conn.commit()
+        await run_in_threadpool(record_upload)
     except Exception:
         if cloud_attempted:
             try:await run_in_threadpool(media_storage.delete_file,filename)

@@ -1,0 +1,1 @@
+export default function NotFound(){return <main className="app-recovery" dir="rtl"><h1>صفحه پیدا نشد</h1><p>نشانی را بررسی کنید یا از صفحهٔ آگهی‌ها ادامه دهید.</p><a href="/search">دیدن آگهی‌ها</a><a href="/">صفحهٔ اصلی</a></main>}

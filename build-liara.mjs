@@ -18,6 +18,7 @@ writeFileSync(join(output,'liara.json'),JSON.stringify({app:'evazmelk-web',platf
 // Keep a static shell for the backend renderer, independently of SPA routing.
 const shell=readFileSync(join(output,'index.html'),'utf8');
 writeFileSync(join(output,'seo-shell.html'),shell);
+writeFileSync(join(output,'404.html'),injectMetadata(shell,pageMetadata('/404')));
 for(const path of Object.keys(PAGES)){
   const directory=join(output,path.slice(1));
   mkdirSync(directory,{recursive:true});
@@ -27,7 +28,9 @@ writeFileSync(join(output,'robots.txt'),'User-agent: *\nAllow: /\nDisallow: /acc
 const pageLocations=Object.keys(PAGES).filter(path=>path!=='/').map(path=>`location = ${path} { try_files ${path}/index.html =404; }`).join('\n');
 writeFileSync(join(output,'liara_nginx.conf'),`${pageLocations}\nlocation = /mobile-preview { add_header X-Robots-Tag "noindex, nofollow" always; add_header Cache-Control "no-store" always; try_files /mobile-preview.html =404; }
 location = /mobile-preview/ { add_header X-Robots-Tag "noindex, nofollow" always; add_header Cache-Control "no-store" always; try_files /mobile-preview.html =404; }
-location / { add_header Cache-Control "no-cache, no-store, must-revalidate" always; index index.html; try_files $uri $uri/ /index.html =404; }
+error_page 404 /404.html;
+location = /404.html { internal; add_header X-Robots-Tag "noindex, follow" always; }
+location / { add_header Cache-Control "no-cache, no-store, must-revalidate" always; index index.html; try_files $uri $uri/ =404; }
 location /assets/ { add_header Cache-Control "public, max-age=31536000, immutable"; try_files $uri =404; }
 location = /seo-shell.html { add_header X-Robots-Tag "noindex, nofollow" always; add_header Cache-Control "no-store" always; try_files $uri =404; }
 location = /sitemap.xml {

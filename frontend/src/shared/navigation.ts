@@ -1,10 +1,10 @@
 import type {Page} from './propertyUI';
-const paths:Record<Page,string>={agency:'/agency',home:'/',listings:'/search',map:'/map',index:'/index',areas:'/areas',register:'/register',account:'/account',about:'/about',contact:'/contact',property:'/properties'};
+const paths:Record<Page,string>={notfound:'/404',agency:'/agency',home:'/',listings:'/search',map:'/map',index:'/index',areas:'/areas',register:'/register',account:'/account',about:'/about',contact:'/contact',property:'/properties'};
 export function propertyPath(code:string){return '/properties/'+encodeURIComponent(code)}
 export function readRoute(){
  const url=new URL(window.location.href),path=url.pathname.replace(/\/$/,'')||'/';
  let code='';try{if(path.startsWith('/properties/'))code=decodeURIComponent(path.slice(12))}catch{}
- const page:Page=code?'property':(Object.entries(paths).find(([,p])=>p===path)?.[0] as Page)||'home';
+ const page:Page=code?'property':(Object.entries(paths).find(([key,p])=>key!=='property'&&p===path)?.[0] as Page)||'notfound';
  return {page,code,focusCode:page==='map'?url.searchParams.get('property')||'':''};
 }
 export function navigate(page:Page,code=''){

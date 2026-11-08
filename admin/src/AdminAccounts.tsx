@@ -1,3 +1,4 @@
+import {API} from './api';
 import {fetchWithTimeout as fetch} from './http';
 import {useEffect,useState,type FormEvent} from 'react';
 type Account={id:string;username:string|null;email:string|null;role:string;is_active:boolean;created_at:string};
@@ -6,7 +7,7 @@ const empty={username:'',password:'',role:'admin'};
 export default function AdminAccounts({token,currentId,onSessionChanged}:{token:string;currentId:string;onSessionChanged:()=>void}){
  const [items,setItems]=useState<Account[]>([]),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [form,setForm]=useState(empty),[editing,setEditing]=useState<Account|null>(null),[open,setOpen]=useState(false);
- async function request(path='',options:RequestInit={}){const r=await fetch('https://backend.evazmelk.ir/api/admin/accounts'+path,{...options,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',...options.headers}});const d=await r.json();if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:'نام کاربری، طول رمز و اتصال را بررسی کنید.');return d}
+ async function request(path='',options:RequestInit={}){const r=await fetch(API+'/api/admin/accounts'+path,{...options,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',...options.headers}});const d=await r.json();if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:'نام کاربری، طول رمز و اتصال را بررسی کنید.');return d}
  async function refresh(){setLoading(true);setError('');try{const d=await request();setItems(d.items)}catch(e){setError(e instanceof Error?e.message:'دریافت انجام نشد')}finally{setLoading(false)}}
  useEffect(()=>{void refresh()},[token]);
  function start(item:Account|null){setEditing(item);setForm(item?{username:item.username||'',password:'',role:item.role}:empty);setOpen(true);setError('');setNotice('')}
