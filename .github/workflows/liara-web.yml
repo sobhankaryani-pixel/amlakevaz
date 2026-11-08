@@ -1,14 +1,7 @@
 name: Deploy website and panels to Liara
 
+# Liara web is kept during cutover; deployment can only be started manually.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'frontend/**'
-      - 'admin/**'
-      - 'build-liara.mjs'
-      - 'qa/**'
-      - '.github/workflows/liara-web.yml'
   workflow_dispatch:
 
 permissions:

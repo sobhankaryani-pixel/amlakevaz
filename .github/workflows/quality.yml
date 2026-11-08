@@ -30,4 +30,4 @@ jobs:
         env:
           AGENCY_TEST_PGLITE: '1'
           PGLITE_MODULE: ${{ github.workspace }}/qa/node_modules/@electric-sql/pglite/dist/index.js
-      - run: node build-liara.mjs
+      - run: node build-cloudflare.mjs
