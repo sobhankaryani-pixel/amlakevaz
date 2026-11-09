@@ -1,5 +1,6 @@
 name: Deploy website and panels to Liara
 
+# Deploy the current Liara website on main pushes or manual dispatch.
 on:
   push:
     branches: [main]

@@ -1,0 +1,26 @@
+name: Operations alerts
+on:
+  workflow_run:
+    workflows: ['Operational monitor', 'Daily database backup', 'Database recovery rehearsal']
+    types: [completed]
+permissions:
+  actions: read
+  issues: write
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const run=context.payload.workflow_run;
+            if(run.head_repository?.full_name!==`${context.repo.owner}/${context.repo.repo}` || run.head_branch!=='main') return;
+            const title=`[Operations] ${run.name}`;
+            const issues=await github.paginate(github.rest.issues.listForRepo,{...context.repo,state:'open',creator:'github-actions[bot]',per_page:100});
+            const previous=issues.find(x=>x.title===title && !x.pull_request);
+            if(run.conclusion==='success') {
+              if(previous) await github.rest.issues.update({...context.repo,issue_number:previous.number,state:'closed'});
+            } else if(['failure','timed_out','startup_failure','action_required'].includes(run.conclusion) && !previous) {
+              await github.rest.issues.create({...context.repo,title,body:`An operational check failed. Inspect the private workflow logs: ${run.html_url}\nNo credentials or database contents are included here.`});
+            }

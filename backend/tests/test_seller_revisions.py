@@ -12,7 +12,7 @@ def seller_case(system):
   conn.execute("INSERT INTO app.customer_contacts(id,phone,name,account_enabled) VALUES (%s,%s,'فروشنده تست',true)",(sid,phone));conn.commit()
  user={'id':sid,'phone':phone,'name':'فروشنده تست'}
  main.app.dependency_overrides.clear();main.app.dependency_overrides[require_seller]=lambda:user
- body={'seller_name':'فروشنده تست','seller_phone':phone,'kind':'garden','area_m2':200,'asking_price_toman':5000000000,'media':[],'request_id':str(uuid4())}
+ body={'seller_name':'فروشنده تست','seller_phone':phone,'kind':'garden','area_m2':200,'region_key':'R-QA','asking_price_toman':5000000000,'media':[],'request_id':str(uuid4())}
  yield c,db,owner,user,body
  main.app.dependency_overrides.clear()
 

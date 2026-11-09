@@ -1,0 +1,55 @@
+{
+  "date_utc": "2026-11-09",
+  "backend_tests": {
+    "passed": 168,
+    "subtests_passed": 5
+  },
+  "frontend_tests": {
+    "passed": 62
+  },
+  "typescript": "frontend and admin passed",
+  "build": "build-liara.mjs passed",
+  "public_http": {
+    "scope": "runner HTTP checks, not real mobile performance",
+    "results": [
+      {
+        "name": "home",
+        "ok": true,
+        "status": 200,
+        "bytes": 2779,
+        "ms": 10544
+      },
+      {
+        "name": "health",
+        "ok": true,
+        "status": 200,
+        "bytes": 67,
+        "ms": 8971
+      },
+      {
+        "name": "cards",
+        "ok": true,
+        "status": 200,
+        "bytes": 955,
+        "ms": 7203
+      }
+    ]
+  },
+  "browser_observation": "Live home, search and existing listing 01 displayed; no authenticated writes.",
+  "local_load": {
+    "requests": 100,
+    "concurrency": 5,
+    "errors": 0,
+    "p50_ms": 23.7,
+    "p95_ms": 33.61,
+    "scope": "isolated PGlite/TestClient; not Liara capacity"
+  },
+  "not_executed": [
+    "Actual production backup recovery",
+    "Real iPhone/Android hardware uploads",
+    "Authenticated production submission/admin publication",
+    "Production stress test",
+    "Real mobile carrier Web Vitals",
+    "Live SMS, TOTP activation and repository alert activation"
+  ]
+}

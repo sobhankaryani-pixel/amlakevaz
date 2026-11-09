@@ -1,3 +1,5 @@
+import asyncio
+from . import owner_notifications
 from contextlib import asynccontextmanager
 import json
 from psycopg.types.json import Jsonb
@@ -18,6 +20,7 @@ from .price_series import SEGMENTS
 from .seller_auth import seller,require_seller,normalize_phone
 from .crm import crm
 from .agency import router as agency_router,configure as configure_agency
+from .admin_mfa import verify_admin_mfa
 from .thumbnails import router as thumbnails_router
 from .availability import router as availability_router
 from .private_media import router as private_media_router
@@ -29,7 +32,10 @@ from starlette.responses import JSONResponse
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Enable this only when DATABASE_URL points to a real/staging PostgreSQL instance.
-    open_pool(); yield; close_pool()
+    open_pool();stop=asyncio.Event();task=asyncio.create_task(owner_notifications.worker(stop))
+    try:yield
+    finally:
+        stop.set();await task;close_pool()
 
 app = FastAPI(title="Evaz Property Index API", version="0.1.0", lifespan=lifespan)
 
@@ -62,12 +68,12 @@ NATIONAL_STAGES = ('مرحله سقف اول','مرحله سقف دوم','اتم
 class SellerSubmissionIn(BaseModel):
     request_id: str | None = Field(default=None, pattern=r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')
     analytics:dict|None=None
-    seller_name: str = Field(min_length=2, max_length=120)
+    seller_name: str = Field(default="", max_length=120)
     seller_phone: str = Field(min_length=10, max_length=20, pattern=r'^\+?[0-9۰-۹٠-٩\s\-]{10,20}$')
     kind: str
     media: list[MediaItem] = Field(default_factory=list, max_length=14)
     neighborhood: str | None = Field(default=None, max_length=120)
-    region_key: str | None = Field(default=None, max_length=30)
+    region_key: str = Field(min_length=1, max_length=30)
     area_m2: float | None = Field(default=None, gt=0)
     building_area_m2: float | None = Field(default=None, gt=0)
     land_length_m: float | None = Field(default=None, gt=0)
@@ -85,6 +91,8 @@ class SellerSubmissionIn(BaseModel):
     national_block: str | None = Field(default=None, max_length=30)
     national_level: str | None = None
     national_stage: str | None = None
+    latitude:float|None=Field(default=None,ge=-90,le=90)
+    longitude:float|None=Field(default=None,ge=-180,le=180)
     asking_price_toman: int = Field(gt=0, le=9000000000000000)
     extra_details: str | None = Field(default=None, max_length=2000)
     website: str = ''  # Spam trap: ordinary users never see this input.
@@ -93,20 +101,12 @@ class SellerSubmissionIn(BaseModel):
     def check_kind(self):
         if self.kind not in ('land','villa','apartment','mehr','national','shop','garden'):
             raise ValueError('نوع ملک معتبر نیست')
-        if self.kind == 'land' and (not self.region_key or not self.area_m2 or self.usage_type not in ('مسکونی','تجاری')):
-            raise ValueError('منطقه، متراژ و کاربری زمین لازم است')
-        if self.kind == 'villa' and (not self.area_m2 or not self.building_area_m2 or self.house_condition not in ('نوساز','کلنگی')):
-            raise ValueError('متراژ و وضعیت خانهٔ ویلایی لازم است')
-        if self.kind == 'apartment' and not self.building_area_m2:
-            raise ValueError('زیربنای آپارتمان لازم است')
-        if self.kind == 'mehr' and (self.mehr_section not in ('محلی','فرهنگیان') or self.mehr_level not in ('بالا','پایین')):
-            raise ValueError('بخش و طبقهٔ مسکن مهر لازم است')
-        if self.kind == 'national' and (self.national_phase not in ('1','2','3','4','5') or not self.national_block or not self.national_block.isdecimal() or self.national_level not in ('بالا','پایین','نامشخص') or self.national_stage not in NATIONAL_STAGES):
-            raise ValueError('فاز، بلوک، طبقه و مرحلهٔ ساخت مسکن ملی لازم است')
-        if self.kind == 'garden' and not self.area_m2:
-            raise ValueError('متراژ باغ شهری لازم است')
-        if self.kind == 'shop' and not self.commercial_area_m2:
-            raise ValueError('متراژ مغازه لازم است')
+        area=self.commercial_area_m2 if self.kind=='shop' else self.building_area_m2 if self.kind in ('apartment','mehr','national') else self.area_m2
+        if not area:raise ValueError('متراژ را وارد کنید')
+        if (self.latitude is None)!=(self.longitude is None):raise ValueError('هر دو مختصات باید با هم وارد شوند')
+        for value,allowed in [(self.usage_type,('مسکونی','تجاری')),(self.house_condition,('نوساز','کلنگی')),(self.mehr_section,('محلی','فرهنگیان')),(self.mehr_level,('بالا','پایین')),(self.national_phase,('1','2','3','4','5')),(self.national_level,('بالا','پایین','نامشخص')),(self.national_stage,NATIONAL_STAGES)]:
+            if value and value not in allowed:raise ValueError('مشخصات اختیاری معتبر نیست')
+        if self.national_block and not self.national_block.isdecimal():raise ValueError('شماره بلوک معتبر نیست')
         return self
 
 class PublicContactSubscriptionIn(BaseModel):
@@ -188,7 +188,8 @@ def create_seller_submission(payload: SellerSubmissionIn, request: Request, user
         if payload.region_key and not conn.execute('SELECT 1 FROM app.regions WHERE slug=%s AND is_public=true AND slug LIKE %s', (payload.region_key,'R-%')).fetchone():
             raise HTTPException(422, 'منطقهٔ زمین معتبر نیست')
         row=conn.execute('''INSERT INTO app.property_submissions(seller_name,seller_phone,seller_id,kind,details)
-          VALUES (%s,%s,%s,%s,%s) RETURNING id''', (payload.seller_name.strip(),user['phone'],user['id'],payload.kind,Jsonb(data))).fetchone()
+          VALUES (%s,%s,%s,%s,%s) RETURNING id''', ((user.get('name') or payload.seller_name or 'فروشنده').strip(),user['phone'],user['id'],payload.kind,Jsonb(data))).fetchone()
+        owner_notifications.enqueue(conn,row['id'])
         record_conversion(conn,'property_submit','/register',payload.analytics)
         conn.commit()
     return {'id':str(row['id']),'message':'درخواست شما ثبت شد. پس از بررسی و تأیید مدیر، آگهی در سایت منتشر می‌شود.'}
@@ -228,8 +229,16 @@ def resubmit_seller_submission(submission_id:UUID,payload:SellerRevisionIn,reque
             data['_revision']=payload.expected_revision+1
             conn.execute("""UPDATE app.property_submissions SET seller_name=%s,seller_phone=%s,kind=%s,details=jsonb_set(%s::jsonb,'{_resubmitted_at}',to_jsonb(now())),
               status='pending',approved_property_code=NULL,reviewed_at=NULL,reviewed_by=NULL WHERE id=%s""",
-              (payload.seller_name.strip(),user['phone'],payload.kind,Jsonb(data),submission_id))
+              ((user.get('name') or payload.seller_name or 'فروشنده').strip(),user['phone'],payload.kind,Jsonb(data),submission_id))
+            owner_notifications.enqueue(conn,submission_id,payload.expected_revision+1)
     return {'id':str(row['id']),'message':'همان درخواست با اصلاحات شما دوباره برای بررسی ارسال شد.'}
+
+@admin.get('/submission-notifications')
+def submission_notifications(user=Depends(require_roles('owner','admin','data_entry'))):
+    with pool.connection() as conn:
+        row=conn.execute("SELECT count(*) AS count,max(COALESCE((details->>'_resubmitted_at')::timestamptz,created_at)) AS latest FROM app.property_submissions WHERE status='pending'").fetchone()
+        states=conn.execute("SELECT action,count(*) AS count FROM app.audit_logs WHERE entity_type='owner_notification' AND created_at>now()-interval '7 days' GROUP BY action").fetchall()
+    return {'count':row['count'],'latest':row['latest'],'sms_configured':owner_notifications.owner_notification_configured(),'sms_states':{x['action']:x['count'] for x in states}}
 
 @admin.get('/property-submissions')
 def list_seller_submissions(user=Depends(require_roles('owner','admin','data_entry'))):
@@ -288,6 +297,7 @@ class LoginIn(BaseModel):
     username: str | None = Field(default=None, min_length=3, max_length=254)
     email: str | None = Field(default=None, min_length=3, max_length=254)
     password: str = Field(min_length=8, max_length=128)
+    otp:str=Field(default='',max_length=12)
 
     @model_validator(mode='after')
     def login_identifier(self):
@@ -309,12 +319,19 @@ def login(payload: LoginIn, request: Request):
     with pool.connection() as conn:
         # Email remains a compatibility path for existing owners until they set
         # a username. New accounts need no email address.
-        user = conn.execute("""SELECT id,email,password_hash,role,session_version FROM app.users
+        user = conn.execute("""SELECT id,username,email,password_hash,role,session_version FROM app.users
             WHERE is_active=true AND (lower(username)=%s OR (username IS NULL AND lower(email)=%s))""",
             (identifier,identifier)).fetchone()
     if not user or not verify_password(payload.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="نام کاربری یا رمز عبور نادرست است.")
+    verify_admin_mfa((user.get('username') or user.get('email') or identifier).lower().strip(),user,payload.otp)
     return {"access_token": create_token(str(user["id"]), user["role"], user["password_hash"], user.get('session_version',0)), "token_type": "bearer", "role": user["role"]}
+
+@admin.post('/logout')
+def logout_admin(user=Depends(require_roles('owner','admin','data_entry','analyst','editor','viewer'))):
+    with pool.connection() as conn:
+        conn.execute('UPDATE app.users SET session_version=session_version+1 WHERE id=%s',(user['sub'],));conn.commit()
+    return {'ok':True}
 
 @public.get("/indices")
 def public_indices(): return {"items": [], "message": "Published indices will appear here."}

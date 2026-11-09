@@ -9,7 +9,7 @@ os.environ.setdefault('JWT_SECRET','integration-only-secret')
 from fastapi.testclient import TestClient
 from psycopg_pool import ConnectionPool
 from psycopg.rows import dict_row
-from backend.app import main,agency,inquiries,auth,launch,media_cleanup,seller_auth,property_codes
+from backend.app import main,agency,inquiries,auth,launch,media_cleanup,seller_auth,property_codes,owner_notifications
 
 @pytest.fixture
 def system(monkeypatch):
@@ -19,7 +19,7 @@ def system(monkeypatch):
   db=Database()
  elif url:db=ConnectionPool(url,min_size=1,max_size=1,kwargs={'row_factory':dict_row},open=True)
  else:pytest.skip('Disposable integration database not configured')
- for mod in (main,agency,inquiries,auth,launch,media_cleanup,seller_auth,property_codes):monkeypatch.setattr(mod,'pool',db)
+ for mod in (main,agency,inquiries,auth,launch,media_cleanup,seller_auth,property_codes,owner_notifications):monkeypatch.setattr(mod,'pool',db)
  owner_id=str(uuid4());password='Agency-test-1234';hashed=auth.hash_password(password)
  with db.connection() as c:
   c.execute("INSERT INTO app.users(id,email,password_hash,role) VALUES (%s,%s,%s,'owner')",(owner_id,owner_id+'@example.invalid',hashed))
@@ -46,7 +46,7 @@ def test_complete_agency_buyer_workflow(system):
  assert c.cookies.get('evaz_agency_session')
  assert c.get('/api/admin/agencies').status_code==401
  assert must(c.get('/api/agency/me'))['user']['id']==aid
- file_id=str(uuid4());details={'kind':'land','region_key':'R-QA','usage_type':'مسکونی','area_m2':200,'asking_price_toman':5000000000,'extra_details':'مشخصات عمومی','media':[]}
+ file_id=str(uuid4());details={'kind':'land','region_key':'R-QA','usage_type':'مسکونی','area_m2':200,'region_key':'R-QA','asking_price_toman':5000000000,'extra_details':'مشخصات عمومی','media':[]}
  save=must(c.put('/api/agency/files/'+file_id,json={'details':details,'expected_version':0}));assert save['version']==1
  assert c.put('/api/agency/files/'+file_id,json={'details':details,'expected_version':0}).status_code==409
  rid=must(c.post('/api/agency/files/'+file_id+'/submit',json={'expected_version':1}))['id']
@@ -111,7 +111,7 @@ def test_media_privacy_roles_rejection_and_conflicting_review(system):
  c,db,owner,password=system;suffix=uuid4().hex[:10];username='safe_'+suffix
  aid=must(c.post('/api/admin/agencies',headers=owner,json={'name':'بنگاه ایمن','username':username,'phone':'09123456789','password':password}),201)['id']
  must(c.post('/api/agency/login',json={'username':username,'password':password}))
- fid=str(uuid4());base={'kind':'land','region_key':'R-QA','usage_type':'مسکونی','area_m2':100,'asking_price_toman':1000000000,'media':[]}
+ fid=str(uuid4());base={'kind':'land','region_key':'R-QA','usage_type':'مسکونی','area_m2':100,'region_key':'R-QA','asking_price_toman':1000000000,'media':[]}
  filename=str(uuid4())+'.webp';url=launch.MEDIA_BASE+'/'+filename
  with db.connection() as conn:
   conn.execute("INSERT INTO app.uploaded_media(id,owner_id,owner_role,filename,kind,size_bytes) VALUES (gen_random_uuid(),%s,'agency',%s,'image',100)",(str(uuid4()),filename));conn.commit()
@@ -142,7 +142,7 @@ def test_media_privacy_roles_rejection_and_conflicting_review(system):
  rid=must(c.post('/api/agency/files/'+fid+'/submit',json={'expected_version':3}))['id']
  must(c.post('/api/admin/agency-requests/'+rid+'/review',headers=owner,json={'decision':'approved'}))
  f=next(x for x in must(c.get('/api/agency/files'))['items'] if x['id']==fid)
- must(c.put('/api/agency/files/'+fid,json={'expected_version':3,'details':{**base,'asking_price_toman':2000000000}}))
+ must(c.put('/api/agency/files/'+fid,json={'expected_version':3,'details':{**base,'region_key':'R-QA','asking_price_toman':2000000000}}))
  rid=must(c.post('/api/agency/files/'+fid+'/submit',json={'expected_version':4}))['id']
  with db.connection() as conn:conn.execute("UPDATE app.properties SET public_notes='ویرایش مدیریت' WHERE id=%s",(f['property_id'],));conn.commit()
  assert c.post('/api/admin/agency-requests/'+rid+'/review',headers=owner,json={'decision':'approved'}).status_code==409
@@ -160,7 +160,7 @@ def test_all_seven_agency_property_types_publish_without_transaction_data(system
  variants=[('land',{'area_m2':100,'usage_type':'مسکونی'}),('villa',{'area_m2':150,'building_area_m2':120,'house_condition':'نوساز'}),('apartment',{'building_area_m2':80}),('mehr',{'building_area_m2':90,'mehr_section':'محلی','mehr_level':'بالا'}),('national',{'building_area_m2':90,'national_phase':'1','national_block':'2','national_level':'بالا','national_stage':'کامل‌شده'}),('shop',{'commercial_area_m2':30}),('garden',{'area_m2':500})]
  codes=[]
  for kind,fields in variants:
-  fid=str(uuid4());details={'kind':kind,'region_key':'R-QA','asking_price_toman':5000000000,**fields}
+  fid=str(uuid4());details={'kind':kind,'region_key':'R-QA','region_key':'R-QA','asking_price_toman':5000000000,**fields}
   must(c.put('/api/agency/files/'+fid,json={'details':details,'expected_version':0}))
   rid=must(c.post('/api/agency/files/'+fid+'/submit',json={'expected_version':1}))['id']
   must(c.post('/api/admin/agency-requests/'+rid+'/review',headers=owner,json={'decision':'approved'}))
@@ -176,7 +176,7 @@ def test_seller_submission_retries_return_one_receipt(system):
   seller=conn.execute("INSERT INTO app.customer_contacts(phone,name,account_enabled) VALUES ('09120000125','فروشنده آزمایشی',true) RETURNING id,phone,name").fetchone()
  main.app.dependency_overrides[seller_auth.require_seller]=lambda:seller
  try:
-  payload={'request_id':str(uuid4()),'seller_name':seller['name'],'seller_phone':seller['phone'],'kind':'garden','area_m2':100,'asking_price_toman':3000000000}
+  payload={'request_id':str(uuid4()),'seller_name':seller['name'],'seller_phone':seller['phone'],'kind':'garden','area_m2':100,'region_key':'R-QA','asking_price_toman':3000000000}
   first=must(c.post('/api/seller/property-submissions',json=payload),201)
   again=must(c.post('/api/seller/property-submissions',json=payload),201)
   assert first['id']==again['id']

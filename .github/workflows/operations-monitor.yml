@@ -1,0 +1,30 @@
+name: Operational monitor
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: operations-monitor
+  cancel-in-progress: false
+jobs:
+  public-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - run: python3 backend/scripts/operations_probe.py
+  backup-freshness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const {data} = await github.rest.actions.listWorkflowRuns({...context.repo, workflow_id:'database-backup.yml', branch:'main', status:'success', per_page:1});
+            const latest=data.workflow_runs[0];
+            if (!latest || Date.now()-Date.parse(latest.updated_at)>36*3600000) core.setFailed('No successful database backup in the last 36 hours');

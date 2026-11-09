@@ -36,7 +36,7 @@ def test_new_seller_types_save_private_details_for_review(env,kind,fields):
         if 'INSERT INTO app.property_submissions' in sql:return Cursor([{'id':uuid4()}])
         return result
     db.execute=execute
-    payload={'kind':kind,'seller_name':'علی','seller_phone':'09212745755','asking_price_toman':5000000000,'extra_details':'درخواست برای بررسی',**fields}
+    payload={'kind':kind,'seller_name':'علی','seller_phone':'09212745755','region_key':'R-1','asking_price_toman':5000000000,'extra_details':'درخواست برای بررسی',**fields}
     r=c.post('/api/seller/property-submissions',json=payload);assert r.status_code==201
     params=next(p for sql,p in db.calls if 'INSERT INTO app.property_submissions' in sql)
     assert params[3]==kind and all(params[-1].obj[k]==v for k,v in fields.items())
@@ -46,7 +46,7 @@ def test_new_seller_types_save_private_details_for_review(env,kind,fields):
 @pytest.mark.parametrize('kind,field',[('shop','commercial_area_m2'),('garden','area_m2')])
 def test_new_types_require_positive_area_and_disallow_video(env,kind,field):
     _,c=env;main.app.dependency_overrides[require_seller]=lambda:{'id':USER['sub'],'phone':'09212745755'}
-    base={'kind':kind,'seller_name':'علی','seller_phone':'09212745755','asking_price_toman':5000000000}
+    base={'kind':kind,'seller_name':'علی','seller_phone':'09212745755','region_key':'R-1','asking_price_toman':5000000000}
     for value in [None,0,-1]:
         assert c.post('/api/seller/property-submissions',json={**base,field:value}).status_code==422
     assert c.post('/api/seller/property-submissions',json={**base,field:50,'media':[{'url':'https://api.evazmelk.ir/api/public/media/'+str(uuid4())+'.mp4','kind':'video'}]}).status_code==422

@@ -222,3 +222,6 @@
 .site .theme-toggle{overflow:hidden}
 .site .theme-toggle .theme-toggle-thumb{top:4px;bottom:auto;inset-inline-start:4px;width:calc(50% - 4px);height:calc(100% - 8px);box-sizing:border-box}
 .site .theme-toggle[aria-checked=true] .theme-toggle-thumb{transform:translateX(-100%)}
+
+/* Full toman prices must stay readable without overflowing compact cards or pins. */
+.listing-body strong{max-width:100%;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.evaz-map-balloon{white-space:normal;max-width:190px;text-align:center;overflow-wrap:anywhere}

@@ -1,0 +1,193 @@
+{
+  "date": "2026-11-09",
+  "files": [
+    {
+      "path": ".github/workflows/database-recovery-rehearsal.yml",
+      "sha256": "b65ce4dd5d263a9543d6714fd219a379aaa07c29d279941c2d9e9af35e271cc0"
+    },
+    {
+      "path": ".github/workflows/liara-web.yml",
+      "sha256": "aa79bc0fd744e9503c8581099baa3c030d35d984383b6a88a8e32f2c76fcc575"
+    },
+    {
+      "path": ".github/workflows/operations-alerts.yml",
+      "sha256": "637567f08cf097f9e47e43883c0538f526c646c20da4b110f6af2c6f7323f14d"
+    },
+    {
+      "path": ".github/workflows/operations-monitor.yml",
+      "sha256": "390bc12f8cfeffdf1f1ef52287d488759b62d1712f0c6a84fa7c8d9a23fb2af6"
+    },
+    {
+      "path": ".github/workflows/quality.yml",
+      "sha256": "0875adfcb37d78c04cb7a0e812c8acb016830c60409aa6fa85470038feb39803"
+    },
+    {
+      "path": "UPDATE-INSTALL-fa.txt",
+      "sha256": "b07aa8f01e912deb50d76a66143f624cab5727e78d5070bcc325ee9e3ea96c7b"
+    },
+    {
+      "path": "admin/src/AgencyAdmin.tsx",
+      "sha256": "6ac76ceafeddf53dd2b5726a05c64619e130eb630584de16f56a51d7a1383d77"
+    },
+    {
+      "path": "admin/src/App.tsx",
+      "sha256": "7445422219bf14685a1f092bcef2dc7ffe2ef071cf156a536588bf10b8466a24"
+    },
+    {
+      "path": "admin/src/MoneyInput.tsx",
+      "sha256": "6da813cd69ddf819549f8c1bc62afb7afe4a5c1c7356e0e8a4eff327dc78ae88"
+    },
+    {
+      "path": "admin/src/money.ts",
+      "sha256": "1e37bb98c349340c06d6fe7cad6cb390ff518c984b923e77263541b008d18f4a"
+    },
+    {
+      "path": "admin/src/privateDevice.ts",
+      "sha256": "dbeb5d3ad80ced434540a896fed09e1ab3ea759953878d1d9e6d1eff0629c621"
+    },
+    {
+      "path": "admin/src/request-notifications.css",
+      "sha256": "9e94d155ca6b42537b3098419e0620d1d097fea4c3353690cec8c5fbf7c6d847"
+    },
+    {
+      "path": "backend/app/admin_mfa.py",
+      "sha256": "540b4ccf940950f318f3f2b520dd88ded48535222c8c5d966dc39e94bbe81014"
+    },
+    {
+      "path": "backend/app/agency.py",
+      "sha256": "7861c238ac863ee6f4348d697d201650511d338fd38b45896e03a7d36657ab4a"
+    },
+    {
+      "path": "backend/app/launch.py",
+      "sha256": "9585db26afbff8310ddc2a55ee744c15f70ff026f853948d19e3dc1114efc960"
+    },
+    {
+      "path": "backend/app/main.py",
+      "sha256": "30a3172d5125faf179dd7e64de336e2ec28795e7f7dd1567002e037fa4bda512"
+    },
+    {
+      "path": "backend/app/owner_notifications.py",
+      "sha256": "0ecf49971f9b2bb31beb28739d7efd36a5b970f75f61b02d621e40b1c55065f0"
+    },
+    {
+      "path": "backend/app/sms_gateway.py",
+      "sha256": "6852b6f645b8b953afe0bccd62b824a52b7244ec9b766ed15e41b1a4974f8efa"
+    },
+    {
+      "path": "backend/scripts/create-admin-totp.mjs",
+      "sha256": "2096a403df38f0bbe2b87477e580f7e753c04c719a8cabc98adb3a5e0315f44e"
+    },
+    {
+      "path": "backend/scripts/operations_probe.py",
+      "sha256": "98460869edf98655def0ea543c692b0315655999879e755d7812b7b07087a7f0"
+    },
+    {
+      "path": "backend/scripts/recovery_rehearsal.py",
+      "sha256": "76624d2367a09b35d690408ab1551b0905801fa899aa0c99e4d0c842f79b916a"
+    },
+    {
+      "path": "backend/tests/test_agency_integration.py",
+      "sha256": "9c3ffdc3a1bc64c00b78ee8158f758e61a028af045e16a349d70210c6c7e2f97"
+    },
+    {
+      "path": "backend/tests/test_campaign_attribution.py",
+      "sha256": "d0a246fcf1ae412099db06c743f597a4df2e8630c053f44b70a12970bf7b309e"
+    },
+    {
+      "path": "backend/tests/test_launch.py",
+      "sha256": "f99048cb8461f640762e3fa4ee55b3bae6d31bc79d5f5214acfebcfb8c8a0f57"
+    },
+    {
+      "path": "backend/tests/test_media_cleanup.py",
+      "sha256": "addb55659818d893d262a864b0b84fa374710996c28e8baee6d2ea0d558a1ea9"
+    },
+    {
+      "path": "backend/tests/test_operations.py",
+      "sha256": "b277f1af845f95684e63bd6fb8e23ff8479ed4d7375339cae429042b63b7aa9d"
+    },
+    {
+      "path": "backend/tests/test_operations_journey.py",
+      "sha256": "2b145a86eef7a089455d0124b95d343c817a14b733f478bc56211d34f1146b0c"
+    },
+    {
+      "path": "backend/tests/test_owner_notifications.py",
+      "sha256": "b32487bb5dd577c46f81d2cf64223cbb91a1bbe7f019f2b69b1e372e81514850"
+    },
+    {
+      "path": "backend/tests/test_seller_revisions.py",
+      "sha256": "089a31d36a771906fd8822a946af7f66178067d6bd6aca6416fab07379ad4924"
+    },
+    {
+      "path": "backend/tests/test_step08.py",
+      "sha256": "6108fe6496713ec4ca7c5cc7eaf1541be1dde320603fd2c37e75451e19756f33"
+    },
+    {
+      "path": "frontend/src/AgencyPanel.tsx",
+      "sha256": "9b4a380ca62d1ea5fafb231d7ec12306c475404c9d7d70296ddd49d42f592e64"
+    },
+    {
+      "path": "frontend/src/SellerRegistration.tsx",
+      "sha256": "70eda5ba737e157ad1c29c249d499fce74bc501f2495b0d6375ca4c00b993e27"
+    },
+    {
+      "path": "frontend/src/shared/MoneyInput.tsx",
+      "sha256": "6da813cd69ddf819549f8c1bc62afb7afe4a5c1c7356e0e8a4eff327dc78ae88"
+    },
+    {
+      "path": "frontend/src/shared/PanelLogin.tsx",
+      "sha256": "f0c6fcd6e795cf9f1c9ce6db6723de7c506ffad66018cdb49769911ce4b41f44"
+    },
+    {
+      "path": "frontend/src/shared/SubmissionGuide.tsx",
+      "sha256": "bfd910650fe09fc4d27bacb1fcc6d22d01c80ffb1b89fcf5b9aeb50147e5491a"
+    },
+    {
+      "path": "frontend/src/shared/SubmissionLocation.tsx",
+      "sha256": "8c393afc1b9f4bdb0745f44cf98f53c76efde9c7bc7ff43dead7ad58b437b856"
+    },
+    {
+      "path": "frontend/src/shared/base.css",
+      "sha256": "e48de6435682f271896f2650f49ff63471cdaf06281f853648273dcd6a683bd4"
+    },
+    {
+      "path": "frontend/src/shared/mapPresentation.ts",
+      "sha256": "177e9e63ffee384c05ca38465189155a200caad2361a69e1ce2ec65b08143972"
+    },
+    {
+      "path": "frontend/src/shared/money.ts",
+      "sha256": "1e37bb98c349340c06d6fe7cad6cb390ff518c984b923e77263541b008d18f4a"
+    },
+    {
+      "path": "frontend/src/shared/panelAuth.ts",
+      "sha256": "d2252bd033c8ca7098547873165cf19ad110e3e0aa52804d33e53d0803191d84"
+    },
+    {
+      "path": "frontend/src/shared/privateDevice.ts",
+      "sha256": "dbeb5d3ad80ced434540a896fed09e1ab3ea759953878d1d9e6d1eff0629c621"
+    },
+    {
+      "path": "frontend/src/shared/propertyUI.tsx",
+      "sha256": "5e370b0d5b989332089867691e33e425290ffb36558deee5cb31b6a5c34aa754"
+    },
+    {
+      "path": "frontend/src/shared/submission-pricing.css",
+      "sha256": "b6e2e7da1ed2e4ba2d614e1d46eabf33823267078fc6b3ec5f9b06cda84864ff"
+    },
+    {
+      "path": "frontend/tests/admin-notification.test.mjs",
+      "sha256": "90283fb812655af5e48400b293ce009e9c797fa7ca14235326180ebbd5b16674"
+    },
+    {
+      "path": "frontend/tests/submission-pricing.test.mjs",
+      "sha256": "d8f49ce6354472d226beadcb3070b17cc358761cd794e255e79cee50483b3117"
+    },
+    {
+      "path": "qa/operations/report.html",
+      "sha256": "b38f6b2087401b457987b106a12b6e32ae72b1d9373645a285a0216f021f773e"
+    },
+    {
+      "path": "qa/operations/results.json",
+      "sha256": "2d0a28ef414efbdbbb9a33ac247adae57febbc8658432f187e507e578f0a9b0e"
+    }
+  ]
+}

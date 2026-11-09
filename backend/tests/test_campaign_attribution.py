@@ -44,7 +44,7 @@ def test_seller_conversion_same_transaction_and_no_tracking_in_property_details(
             result=MagicMock();result.fetchone.return_value={'id':uuid4()};return result
         return original(sql,params)
     db.execute=execute
-    r=client.post('/api/seller/property-submissions',json={'seller_name':'علی','seller_phone':'09212745755','kind':'apartment','building_area_m2':120,'asking_price_toman':3000000000,'analytics':ctx})
+    r=client.post('/api/seller/property-submissions',json={'seller_name':'علی','seller_phone':'09212745755','kind':'apartment','building_area_m2':120,'region_key':'R-1','asking_price_toman':3000000000,'analytics':ctx})
     assert r.status_code==201
     assert len(event_params(db))==1 and event_params(db)[0][0]=='property_submit'
     assert str(event_params(db)[0][1])==ctx['session_id']

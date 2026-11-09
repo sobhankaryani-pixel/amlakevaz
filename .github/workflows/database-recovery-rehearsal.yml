@@ -1,0 +1,46 @@
+name: Database recovery rehearsal
+on:
+  workflow_dispatch:
+    inputs:
+      backup_key:
+        description: 'Optional backup key; blank selects latest completed backup'
+        required: false
+permissions:
+  contents: read
+jobs:
+  rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    container: postgres:18-bookworm
+    services:
+      restore-db:
+        image: postgres:18-bookworm
+        env:
+          POSTGRES_PASSWORD: ephemeral-rehearsal-only
+          POSTGRES_DB: evaz_restore_test
+        options: >-
+          --health-cmd "pg_isready -U postgres -d evaz_restore_test"
+          --health-interval 10s --health-timeout 5s --health-retries 8
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Install rehearsal tools
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends python3 python3-venv ca-certificates
+          python3 -m venv /tmp/rehearsal
+          /tmp/rehearsal/bin/pip install --disable-pip-version-check -r backend/requirements-backup.txt
+      - name: Restore app schema into isolated database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESTORE_DATABASE_URL: postgresql://postgres:ephemeral-rehearsal-only@restore-db/evaz_restore_test?sslmode=disable
+          REHEARSAL_BACKUP_KEY: ${{ inputs.backup_key }}
+          S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          BACKUP_ENCRYPTION_PASSWORD: ${{ secrets.BACKUP_ENCRYPTION_PASSWORD }}
+          S3_ENDPOINT_URL: https://s3.ir-central1.arvanstorage.ir
+          S3_REGION: us-east-1
+          S3_BUCKET: evazmelk-media
+          BACKUP_S3_BUCKET: evazmelk-backups
+        run: /tmp/rehearsal/bin/python backend/scripts/recovery_rehearsal.py

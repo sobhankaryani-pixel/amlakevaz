@@ -36,6 +36,7 @@ class DB:
   if 'FROM app.uploaded_media' in sql:return Cursor([self.media[params[0]]]) if params[0] in self.media else Cursor([])
   if 'SELECT code FROM app.property_types' in sql:return Cursor([{'code':'villa_house'}])
   if 'SELECT id FROM app.property_types' in sql:return Cursor([{'id':USER['sub']}])
+  if 'SELECT 1 FROM app.regions' in sql:return Cursor([{'exists':1}])
   if 'SELECT id,name FROM app.regions' in sql:return Cursor([{'id':USER['sub'],'name':'اوز'}])
   if 'SELECT app.allocate_property_code()' in sql:return Cursor([{'code':'02'}])
   if 'INSERT INTO app.properties' in sql:return Cursor([{'id':USER['sub'],'public_code':params[0]}])

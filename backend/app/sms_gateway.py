@@ -72,3 +72,25 @@ def send_sms(phone: str, message: str) -> str:
         raise
     except Exception as exc:
         raise SmsUnavailable('ارسال پیامک از درگاه انجام نشد') from exc
+
+
+def owner_notification_configured():
+    phone=os.getenv('ADMIN_NOTIFICATION_PHONE','').strip()
+    if not re.fullmatch(r'09[0-9]{9}',phone):return False
+    return bool((os.getenv('SMS_PROVIDER','').lower()!='smsir' and configured()) or (os.getenv('SMS_PROVIDER','').lower()=='smsir' and os.getenv('SMSIR_API_KEY','').strip() and re.fullmatch(r'[1-9][0-9]*',os.getenv('SMSIR_ADMIN_NOTIFICATION_TEMPLATE_ID',''))))
+
+def send_owner_submission_notice():
+    if not owner_notification_configured():raise SmsUnavailable('اعلان مدیر تنظیم نشده است')
+    phone=os.environ['ADMIN_NOTIFICATION_PHONE'].strip()
+    if os.getenv('SMS_PROVIDER','').lower()!='smsir':
+        reference=send_sms(phone,'املاک خودمونی اوز\nیک درخواست ثبت ملک در انتظار بررسی دارید.\nevazmelk.ir/management/')
+        if not reference:raise SmsUnavailable('نتیجه ارسال قابل تأیید نیست')
+        return reference
+    payload={'mobile':phone,'templateId':int(os.environ['SMSIR_ADMIN_NOTIFICATION_TEMPLATE_ID']),'parameters':[{'name':'COUNT','value':'1'}]}
+    req=Request('https://api.sms.ir/v1/send/verify',data=json.dumps(payload).encode(),headers={'x-api-key':os.environ['SMSIR_API_KEY'].strip(),'Content-Type':'application/json','Accept':'application/json'},method='POST')
+    try:
+        with urlopen(req,timeout=12) as response:result=json.loads(response.read(16384).decode())
+        reference=result.get('data',{}).get('messageId') if isinstance(result,dict) and isinstance(result.get('data'),dict) else None
+        if type(result.get('status')) is not int or result['status']!=1 or not re.fullmatch(r'[1-9][0-9]*',str(reference)):raise SmsUnavailable('اعلان توسط درگاه پذیرفته نشد')
+        return str(reference)
+    except Exception as exc:raise SmsUnavailable('ارسال اعلان مدیر تأیید نشد؛ گزارش درگاه را بررسی کنید') from exc

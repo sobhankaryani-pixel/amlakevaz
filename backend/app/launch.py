@@ -64,7 +64,13 @@ def file_kind(head:bytes):
     if head.startswith(b'\xff\xd8\xff'):return ('jpg','image','image/jpeg')
     if head.startswith(b'\x89PNG\r\n\x1a\n'):return ('png','image','image/png')
     if head.startswith(b'RIFF') and head[8:12]==b'WEBP':return ('webp','image','image/webp')
-    if len(head)>=12 and head[4:8]==b'ftyp':return ('mp4','video','video/mp4')
+    if len(head)>=12 and head[4:8]==b'ftyp':
+        brands={head[i:i+4] for i in [8,*range(16,min(len(head),128),4)]}
+        if brands & {b'heic',b'heix',b'hevc',b'hevx',b'mif1',b'msf1',b'avif',b'avis'}:
+            raise HTTPException(422,'عکس HEIC یا AVIF را به JPG تبدیل کنید؛ در آیفون می‌توانید عکس سازگار JPEG انتخاب کنید.')
+        if not brands & {b'isom',b'iso2',b'iso5',b'iso6',b'mp41',b'mp42',b'avc1',b'M4V '}:
+            raise HTTPException(422,'این قالب ویدیو پشتیبانی نمی‌شود؛ ویدیو MP4 با کدک H.264 انتخاب کنید.')
+        return ('mp4','video','video/mp4')
     if head.startswith(b'\x1aE\xdf\xa3') and b'webm' in head[:128]:return ('webm','video','video/webm')
     raise HTTPException(422,'فرمت مجاز: JPG، PNG، WebP، MP4 و WebM')
 

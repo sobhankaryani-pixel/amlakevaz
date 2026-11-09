@@ -21,7 +21,7 @@ export function prunePrivateDrafts(role:Audience,userId:string,store=browserStor
 }
 export function installPrivatePageGuard(){
  if(typeof window==='undefined')return()=>{};
- const reset=(event:StorageEvent)=>{if(event.key===RESET_KEY&&event.newValue){try{globalThis.sessionStorage.removeItem('evaz:seller-otp:v1')}catch{}window.location.reload()}else if(event.key==='evazmelk_admin_token'&&event.oldValue!==event.newValue)window.location.reload()};
+ const reset=(event:StorageEvent)=>{if((event.key===RESET_KEY||event.key==='evaz:admin-session-reset:v1')&&event.newValue){try{globalThis.sessionStorage.removeItem('evaz:seller-otp:v1');if(event.key==='evaz:admin-session-reset:v1')globalThis.sessionStorage.removeItem('evazmelk_admin_token')}catch{}window.location.reload()}else if(event.key==='evazmelk_admin_token'&&event.oldValue!==event.newValue)window.location.reload()};
  const restored=(event:PageTransitionEvent)=>{if(event.persisted&&/^\/(account|register|agency|management)(\/|$)/.test(window.location.pathname))window.location.reload()};
  window.addEventListener('storage',reset);window.addEventListener('pageshow',restored);
  return()=>{window.removeEventListener('storage',reset);window.removeEventListener('pageshow',restored)};

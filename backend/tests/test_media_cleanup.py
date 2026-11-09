@@ -144,7 +144,7 @@ def test_trigger_conflict_is_a_readable_409_for_form_submission(env,monkeypatch)
     def conflict(*args):raise GuardConflict()
     monkeypatch.setattr(main,'validate_media',conflict)
     monkeypatch.setattr(main,'limit_request',lambda *args:None)
-    r=c.post('/api/seller/property-submissions',json={'seller_name':'علی','seller_phone':'09212745755','kind':'apartment','building_area_m2':100,'asking_price_toman':3000000000})
+    r=c.post('/api/seller/property-submissions',json={'seller_name':'علی','seller_phone':'09212745755','kind':'apartment','building_area_m2':100,'region_key':'R-1','asking_price_toman':3000000000})
     assert r.status_code==409 and 'دوباره بارگذاری' in r.json()['detail']
 
 def test_storage_delete_uses_one_finite_attempt(env,monkeypatch):

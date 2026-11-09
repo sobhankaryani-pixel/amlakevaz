@@ -1,0 +1,55 @@
+<!doctype html><html lang="fa" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>گزارش بستهٔ جدید املاک خودمونی</title><style>body{font-family:Tahoma,Arial;line-height:1.9;margin:24px;color:#17324a;background:#f4f7fa}main{max-width:1100px;margin:auto;background:white;padding:24px;border-radius:14px}h1{font-size:23px}table{border-collapse:collapse;width:100%;font-size:14px}td,th{border:1px solid #d5dfe8;padding:10px;text-align:right;vertical-align:top}th{background:#173d61;color:white}.table{overflow:auto}.note{background:#fff4df;padding:14px;border-radius:9px}pre{direction:ltr;text-align:left;white-space:pre-wrap;font-size:12px;background:#eef3f7;padding:12px}@media(max-width:600px){body{margin:8px}main{padding:14px}table{min-width:660px}}</style><main><h1>گزارش بستهٔ فرم، اعلان مدیر و بررسی‌های عملیاتی</h1><p>تاریخ بررسی: ۱۸ آبان ۱۴۰۵. این بسته هنوز توسط من روی سایت اصلی منتشر نشده است.</p><p>۱۶۸ تست بک‌اند، ۶۲ تست فرانت، بررسی TypeScript و ساخت سایت و مدیریت موفق بودند. پنج زیرآزمایش SQL هم گذشتند.</p><div class="table"><table><thead><tr><th>ردیف</th><th>موضوع</th><th>انجام‌شده</th><th>نیاز باقی‌مانده</th></tr></thead><tbody><tr><td>۸</td><td>ثبت ملک، بررسی و انتشار</td><td>محلی کامل گذشت؛ مرور عمومی سایت واقعی هم موفق بود.</td><td>ثبت با حساب واقعی و تأیید انتشار آزمایشی انجام نشده است.</td></tr><tr><td>۹</td><td>بازیابی بکاپ</td><td>ابزار و گردش‌کار بازیابی در دیتابیس ایزوله آماده؛ رمزنگاری و حفاظ‌ها تست شدند.</td><td>اجرای گردش‌کار با Secrets بکاپ واقعی لازم است.</td></tr><tr><td>۱۰</td><td>آپلود آیفون و اندروید</td><td>عکس چرخیده، پاک‌کردن EXIF و MP4/WebM محلی آزمایش شدند؛ تشخیص اشتباه HEIC اصلاح شد.</td><td>گوشی واقعی در دسترس نبود؛ HEIC/MOV نیاز به تبدیل دارند.</td></tr><tr><td>۱۱</td><td>هشدار قطعی و بکاپ</td><td>مانیتور HTTP، بررسی تازگی بکاپ و Issue خطا آماده‌اند.</td><td>Push، فعال‌بودن Issues و تنظیم اعلان GitHub لازم است.</td></tr><tr><td>۱۲</td><td>ورود امن مدیریت</td><td>ابطال توکن‌ها هنگام خروج امن، ذخیرهٔ موقت توکن و رمزساز ضدبازپخش تست شدند.</td><td>فعال‌سازی رمزساز با کلید شخصی در لیارا لازم است.</td></tr><tr><td>۱۳</td><td>سرعت و ترافیک</td><td>۱۰۰ درخواست محلی با هم‌زمانی ۵، بدون خطا؛ ۳ مسیر واقعی پاسخ ۲۰۰ دادند.</td><td>سرعت واقعی موبایل و ظرفیت سرور اندازه‌گیری نشده است.</td></tr><tr><td>۱۴</td><td>فرم و قیمت‌ها</td><td>حذف محدوده، نقشهٔ تک‌نقطهٔ اختیاری، سه فیلد اجباری، قیمت دوطرفه و جداکنندهٔ تومان پیاده و تست شدند.</td><td>انتشار فرانت و بک‌اند لازم است.</td></tr><tr><td>۱۵</td><td>اعلان درخواست جدید مدیر</td><td>صف پایدار، جلوگیری از پیامک تکراری، اعلان ورود و نشان قرمز داخل پنل پیاده و تست شدند.</td><td>شماره مدیر و قالب جداگانهٔ تأییدشده SMS.ir تنظیم شوند؛ پیامک واقعی ارسال نشده است.</td></tr></tbody></table></div><h2>قیمت و نقشه</h2><p>موقعیت نقشه و عکس اختیاری هستند. منطقه، متراژ اصلی و قیمت اجباری‌اند. مبلغ کل و هر متر با آخرین فیلد ویرایش‌شده هماهنگ می‌شوند؛ محاسبه با تومان و گردکردن به نزدیک‌ترین تومان انجام می‌شود. مبنای متراژ روی فرم نوشته شده است. نام و تلفن از حساب واردشده گرفته می‌شوند.</p><h2>مرز نتیجه‌ها</h2><p class="note">موفقیت آزمون محلی به معنی موفقیت گوشی واقعی یا تحمل ترافیک سایت اصلی نیست. بازیابی بکاپ تولیدی، رمزساز فعال، تحویل پیامک و هشدار واقعی مخزن ادعا نشده‌اند. اندازه‌گیری HTTP از این محیط به‌ترتیب حدود ۱۰٫۵، ۹ و ۷٫۲ ثانیه بود؛ این اعداد Core Web Vitals یا سرعت کاربران همراه اول نیستند و برای قضاوت دربارهٔ سرعت موبایل کافی نیستند.</p><h2>نصب و تنظیم</h2><p>راهنمای شماره‌گذاری‌شدهٔ UPDATE-INSTALL-fa.txt در ریشهٔ بسته را بخوانید. SQL جدید، تغییر DNS، تغییر میزبانی یا ابزار برگشت کد وجود ندارد. آزمایش بازیابی بکاپ، صرفاً گردش‌کار دستی و ایزوله است.</p><h2>دادهٔ اندازه‌گیری</h2><pre>{
+  &quot;date_utc&quot;: &quot;2026-11-09&quot;,
+  &quot;backend_tests&quot;: {
+    &quot;passed&quot;: 168,
+    &quot;subtests_passed&quot;: 5
+  },
+  &quot;frontend_tests&quot;: {
+    &quot;passed&quot;: 62
+  },
+  &quot;typescript&quot;: &quot;frontend and admin passed&quot;,
+  &quot;build&quot;: &quot;build-liara.mjs passed&quot;,
+  &quot;public_http&quot;: {
+    &quot;scope&quot;: &quot;runner HTTP checks, not real mobile performance&quot;,
+    &quot;results&quot;: [
+      {
+        &quot;name&quot;: &quot;home&quot;,
+        &quot;ok&quot;: true,
+        &quot;status&quot;: 200,
+        &quot;bytes&quot;: 2779,
+        &quot;ms&quot;: 10544
+      },
+      {
+        &quot;name&quot;: &quot;health&quot;,
+        &quot;ok&quot;: true,
+        &quot;status&quot;: 200,
+        &quot;bytes&quot;: 67,
+        &quot;ms&quot;: 8971
+      },
+      {
+        &quot;name&quot;: &quot;cards&quot;,
+        &quot;ok&quot;: true,
+        &quot;status&quot;: 200,
+        &quot;bytes&quot;: 955,
+        &quot;ms&quot;: 7203
+      }
+    ]
+  },
+  &quot;browser_observation&quot;: &quot;Live home, search and existing listing 01 displayed; no authenticated writes.&quot;,
+  &quot;local_load&quot;: {
+    &quot;requests&quot;: 100,
+    &quot;concurrency&quot;: 5,
+    &quot;errors&quot;: 0,
+    &quot;p50_ms&quot;: 23.7,
+    &quot;p95_ms&quot;: 33.61,
+    &quot;scope&quot;: &quot;isolated PGlite/TestClient; not Liara capacity&quot;
+  },
+  &quot;not_executed&quot;: [
+    &quot;Actual production backup recovery&quot;,
+    &quot;Real iPhone/Android hardware uploads&quot;,
+    &quot;Authenticated production submission/admin publication&quot;,
+    &quot;Production stress test&quot;,
+    &quot;Real mobile carrier Web Vitals&quot;,
+    &quot;Live SMS, TOTP activation and repository alert activation&quot;
+  ]
+}</pre></main></html>
