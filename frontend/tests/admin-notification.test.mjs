@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,writeFile,rm} from 'node:fs/promises';import {dirname,join} from 'node:path';import {fileURLToPath,pathToFileURL} from 'node:url';import {build} from 'vite';import react from '@vitejs/plugin-react';
 const {JSDOM}=await import(process.env.JSDOM_MODULE||'jsdom');
-test('admin entry shows new-request alert and badge; dismiss preserves pending count; MFA never falls back to agency',async()=>{
+test('admin entry shows new-request alert and badge; dismiss preserves pending count; password-only admin login',async()=>{
  const root=dirname(fileURLToPath(new URL('../package.json',import.meta.url))),folder=await mkdtemp(join(root,'.qa-admin-notice-'));const saved=new Map();let dom,instance,act;
  const put=(k,v)=>{saved.set(k,Object.getOwnPropertyDescriptor(globalThis,k));Object.defineProperty(globalThis,k,{value:v,configurable:true,writable:true})};
  try{
@@ -15,6 +15,7 @@ test('admin entry shows new-request alert and badge; dismiss preserves pending c
   assert.match(document.querySelector('.request-notification').textContent,/درخواست جدید دارید/);assert.match(document.querySelector('.request-new-badge').textContent,/جدید ۳/);
   await act(async()=>document.querySelector('button[aria-label="بستن اعلان"]').click());assert.equal(document.querySelector('.request-notification'),null);assert.ok(document.querySelector('.request-new-badge'));
   await act(async()=>document.querySelector('.request-mobile-badge').click());assert.match(document.querySelector('.content h1').textContent,/درخواست‌های ثبت ملک/);assert.ok(calls.some(x=>x.endsWith('/property-submissions')));
-  let attempts=0;await assert.rejects(()=>module.authenticatePanel('qa','isolated-password',async()=>{attempts++;return new Response(JSON.stringify({detail:'کد رمزساز را وارد کنید'}),{status:401,headers:{'X-Admin-MFA':'required'}})}),/رمزساز/);assert.equal(attempts,1);
+  let attempts=0;const login=await module.authenticatePanel('qa','isolated-password',async(url,options)=>{attempts++;assert.deepEqual(JSON.parse(options.body),{username:'qa',password:'isolated-password'});return new Response(JSON.stringify({access_token:'isolated-token',role:'owner'}),{status:200})});assert.equal(login.kind,'admin');assert.equal(attempts,1);
+  const notification=document.querySelector('.request-notification');assert.equal(document.querySelector('aside.request-notification'),null);
  }finally{if(instance)await act(async()=>instance.unmount());dom?.window.close();for(const[k,v]of saved)v?Object.defineProperty(globalThis,k,v):delete globalThis[k];await rm(folder,{recursive:true,force:true})}
 });

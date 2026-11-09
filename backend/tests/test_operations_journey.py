@@ -6,7 +6,7 @@ from uuid import uuid4
 from PIL import Image
 from backend.tests.test_agency_integration import system,must
 from backend.tests.test_seller_revisions import seller_case
-from backend.app import launch,admin_mfa
+from backend.app import launch
 
 def test_seller_upload_review_publish_and_bounded_reads(seller_case,monkeypatch,tmp_path):
  c,db,owner,user,body=seller_case
@@ -51,19 +51,15 @@ def test_admin_logout_revokes_copied_token(system):
  assert c.get('/api/admin/operations',headers=owner).status_code==401
 
 
-def test_mfa_login_with_database_replay_protection(system,monkeypatch):
- import base64
+def test_password_login_ignores_retired_totp_setting(system,monkeypatch):
  c,db,owner,password=system
- monkeypatch.setattr(admin_mfa,'pool',db)
  with db.connection() as conn:row=conn.execute("SELECT email FROM app.users WHERE role='owner' LIMIT 1").fetchone()
- identifier=row['email'];secret=bytes(range(20))
- monkeypatch.setenv('ADMIN_TOTP_SECRETS',json.dumps({identifier:base64.b32encode(secret).decode()}))
+ identifier=row['email']
+ monkeypatch.setenv('ADMIN_TOTP_SECRETS',json.dumps({identifier:'this-retired-setting-must-not-block-login'}))
  payload={'email':identifier,'password':password}
- response=c.post('/api/auth/login',json=payload)
- assert response.status_code==401 and response.headers['X-Admin-MFA']=='required'
- code=admin_mfa.code_for(secret,int(time.time()//30))
- good=c.post('/api/auth/login',json={**payload,'otp':code});assert good.status_code==200
- assert c.post('/api/auth/login',json={**payload,'otp':code}).status_code==401
+ assert c.post('/api/auth/login',json={**payload,'password':'wrong-password'}).status_code==401
+ good=c.post('/api/auth/login',json=payload);assert good.status_code==200
+ assert 'X-Admin-MFA' not in good.headers
  copied={'Authorization':'Bearer '+good.json()['access_token']}
  assert c.get('/api/admin/operations',headers=copied).status_code==200
  assert c.post('/api/admin/logout',headers=copied).status_code==200

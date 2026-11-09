@@ -20,7 +20,6 @@ from .price_series import SEGMENTS
 from .seller_auth import seller,require_seller,normalize_phone
 from .crm import crm
 from .agency import router as agency_router,configure as configure_agency
-from .admin_mfa import verify_admin_mfa
 from .thumbnails import router as thumbnails_router
 from .availability import router as availability_router
 from .private_media import router as private_media_router
@@ -297,7 +296,6 @@ class LoginIn(BaseModel):
     username: str | None = Field(default=None, min_length=3, max_length=254)
     email: str | None = Field(default=None, min_length=3, max_length=254)
     password: str = Field(min_length=8, max_length=128)
-    otp:str=Field(default='',max_length=12)
 
     @model_validator(mode='after')
     def login_identifier(self):
@@ -324,7 +322,6 @@ def login(payload: LoginIn, request: Request):
             (identifier,identifier)).fetchone()
     if not user or not verify_password(payload.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="نام کاربری یا رمز عبور نادرست است.")
-    verify_admin_mfa((user.get('username') or user.get('email') or identifier).lower().strip(),user,payload.otp)
     return {"access_token": create_token(str(user["id"]), user["role"], user["password_hash"], user.get('session_version',0)), "token_type": "bearer", "role": user["role"]}
 
 @admin.post('/logout')
