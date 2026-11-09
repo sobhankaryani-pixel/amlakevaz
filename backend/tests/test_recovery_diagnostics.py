@@ -42,12 +42,37 @@ class RecoveryDiagnostics(unittest.TestCase):
   with patch.dict(os.environ,settings,clear=True),contextlib.redirect_stdout(capture):self.assertEqual(module.cli(),1)
   result=json.loads(capture.getvalue());self.assertEqual(result['stage'],'select_backup');self.assertNotIn('sensitive',capture.getvalue())
  def test_full_isolated_flow_still_checks_empty_target_and_all_tables(self):
-  module,backup,pg=load();conn=pg.connect.return_value.__enter__.return_value
+  module,backup,pg=load();module.restore_app=MagicMock();conn=pg.connect.return_value.__enter__.return_value
   conn.execute.return_value.fetchone.side_effect=[('backup-key',),(0,),(0,),(1,),(2,),(2,),(2,),(3,),(0,)]
   settings={'DATABASE_URL':'postgresql://x:x@production/live','RESTORE_DATABASE_URL':'postgresql://x:x@restore-db/evaz_restore_test','S3_ACCESS_KEY_ID':'test','S3_SECRET_ACCESS_KEY':'test','BACKUP_ENCRYPTION_PASSWORD':'test'}
   capture=io.StringIO()
   with patch.dict(os.environ,settings,clear=True),contextlib.redirect_stdout(capture):self.assertEqual(module.cli(),0)
-  self.assertTrue(json.loads(capture.getvalue().splitlines()[-1])['ok']);backup.verify_backup.assert_called_once();backup.pg_run.assert_called_once()
-  self.assertIn('--schema=app',backup.pg_run.call_args.args[0]);self.assertIn('--single-transaction',backup.pg_run.call_args.args[0])
+  self.assertTrue(json.loads(capture.getvalue().splitlines()[-1])['ok']);backup.verify_backup.assert_called_once();module.restore_app.assert_called_once()
+  self.assertIn('CREATE SCHEMA app',[call.args[0] for call in conn.execute.call_args_list]);self.assertEqual(module.restore_app.call_args.args[1],settings['RESTORE_DATABASE_URL'])
+
+class RestoreNamespaceTests(unittest.TestCase):
+ def test_restore_options_and_environment_remain_target_only(self):
+  module,_,_=load();target='postgresql://test:private-password@restore-db/evaz_restore_test'
+  result=types.SimpleNamespace(returncode=0,stderr=b'')
+  with patch.object(module.subprocess,'run',return_value=result) as run:
+   module.restore_app(Path('/temporary/private.dump'),target,{'PGDATABASE':'evaz_restore_test'})
+  args=run.call_args.args[0];self.assertIn('--schema=app',args);self.assertIn('--single-transaction',args);self.assertNotIn(private_password:='private-password',' '.join(args));self.assertEqual(run.call_args.kwargs['env']['PGHOST'],'restore-db')
+ def test_restore_error_never_exposes_copy_data_or_private_identifiers(self):
+  module,_,_=load()
+  cases=[(b'ERROR: schema "app" does not exist','missing_schema'),(b'ERROR: role "private-person" does not exist','missing_role'),(b'ERROR: function extensions.some_private_name() does not exist','missing_function'),(b'ERROR: duplicate key value violates unique constraint "secret"\nDETAIL: Key (phone)=(09123456789) already exists.','data_constraint_failure'),(b'ERROR: unrecognized configuration parameter "transaction_timeout"','version_mismatch')]
+  for error,code in cases:
+   self.assertEqual(module.restore_error_code(error),code)
+   result=types.SimpleNamespace(returncode=1,stderr=error);capture=io.StringIO()
+   with patch.object(module.subprocess,'run',return_value=result),contextlib.redirect_stdout(capture):
+    try:module.restore_app(Path('/tmp/secret.dump'),'postgresql://x:x@restore-db/evaz_restore_test',{'PGDATABASE':'evaz_restore_test'})
+    except module.RestoreError as exc:module.report_failure(exc)
+   self.assertEqual(json.loads(capture.getvalue())['error_code'],code);self.assertNotIn('09123456789',capture.getvalue());self.assertNotIn('private-person',capture.getvalue())
+ def test_existing_target_is_rejected_before_namespace_creation(self):
+  module,_,pg=load();conn=pg.connect.return_value.__enter__.return_value
+  conn.execute.return_value.fetchone.side_effect=[('backup-key',),(1,),(0,)]
+  settings={'DATABASE_URL':'postgresql://x:x@production/live','RESTORE_DATABASE_URL':'postgresql://x:x@restore-db/evaz_restore_test','S3_ACCESS_KEY_ID':'test','S3_SECRET_ACCESS_KEY':'test','BACKUP_ENCRYPTION_PASSWORD':'test'}
+  capture=io.StringIO()
+  with patch.dict(os.environ,settings,clear=True),contextlib.redirect_stdout(capture):self.assertEqual(module.cli(),1)
+  self.assertNotIn('CREATE SCHEMA app',[call.args[0] for call in conn.execute.call_args_list]);self.assertEqual(json.loads(capture.getvalue().splitlines()[-1])['error_code'],'restore_target_must_be_empty')
 
 if __name__=='__main__':unittest.main()
