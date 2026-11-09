@@ -20,7 +20,7 @@ def test_rejection_reason_and_same_receipt_resubmission(seller_case):
  c,db,owner,user,body=seller_case
  sid=must(c.post('/api/seller/property-submissions',json=body),201)['id']
  path='/api/seller/property-submissions/'+sid
- assert c.get(path).status_code==409
+ assert c.get(path).status_code==200
  decision='/api/admin/property-submissions/'+sid+'/decision'
  for note in ['', '  ','ab']:
   assert c.post(decision,headers=owner,json={'status':'rejected','note':note}).status_code==422

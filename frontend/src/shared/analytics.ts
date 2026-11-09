@@ -29,7 +29,7 @@ export function getAnalyticsContext(){
 export function track(event:string,details:Record<string,unknown>={},code?:string,path=window.location.pathname,fixedContext?:ReturnType<typeof getAnalyticsContext>){
  if(navigator.doNotTrack==='1')return;
  const context=fixedContext===undefined?getAnalyticsContext():fixedContext;if(!context)return;
- const body=JSON.stringify({event,session_id:context.session_id,path,property_code:code||undefined,details:{...details,...context.details}});
+ const body=JSON.stringify({event,session_id:context.session_id,path:event==='property_view'&&code?'/properties/'+code:path,property_code:code||undefined,details:{...details,...context.details}});
  void fetch(API+'/api/public/events',{method:'POST',headers:{'Content-Type':'application/json'},body,keepalive:true}).catch(()=>{});
 }
 export function startAnalytics(){

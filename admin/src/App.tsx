@@ -49,6 +49,7 @@ export default function App(){
  const [estimates,setEstimates]=useState<any[]>([]);
  const [submissions,setSubmissions]=useState<any[]>([]);
  const [fromSubmission,setFromSubmission]=useState<string|null>(null);
+ const [submissionRevision,setSubmissionRevision]=useState(0);
  const [pendingApprovalCode,setPendingApprovalCode]=useState<string|null>(null);
  const [media,setMedia]=useState<MediaItem[]>([]),[uploading,setUploading]=useState(false);
  const [form,setForm]=useState<Form>(initial);
@@ -94,12 +95,12 @@ export default function App(){
   const code=kind==='land'?(form.usage_type==='تجاری'?'commercial_land':'raw_land'):kinds.find(k=>k.value===kind)!.codes[0];
   const type=types.find(t=>t.code===code)||types.find(t=>kinds.find(k=>k.value===kind)!.codes.includes(t.code||''));
   if(!type)throw Error('این نوع ملک در پایگاه داده تعریف نشده است.');
-  const payload:any={...form,code_reservation_id:editCode?null:codeReservation,media,cover_photo_url:media.find(x=>x.kind==='image')?.url||(form.cover_photo_url.startsWith(API+'/api/public/media/')?null:form.cover_photo_url),property_type_id:type.id,registration_month:form.registration_year&&form.registration_month_name?`${form.registration_year}/${form.registration_month_name}`:null};delete payload.registration_year;delete payload.registration_month_name;
+  const payload:any={...form,...(fromSubmission?{source_submission_id:fromSubmission,expected_submission_revision:submissionRevision}:{}),code_reservation_id:editCode?null:codeReservation,media,cover_photo_url:media.find(x=>x.kind==='image')?.url||(form.cover_photo_url.startsWith(API+'/api/public/media/')?null:form.cover_photo_url),property_type_id:type.id,registration_month:form.registration_year&&form.registration_month_name?`${form.registration_year}/${form.registration_month_name}`:null};delete payload.registration_year;delete payload.registration_month_name;
   numeric.forEach(k=>payload[k]=form[k as keyof Form]===''?null:Number(form[k as keyof Form]));for(const k of Object.keys(payload))if(payload[k]==='')payload[k]=null;
   const d=pendingApprovalCode?{public_code:pendingApprovalCode}:await request(editCode?`/api/admin/properties/${encodeURIComponent(editCode)}/direct`:'/api/admin/properties/direct',{method:editCode?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   if(fromSubmission){
    setPendingApprovalCode(d.public_code);
-   await request(`/api/admin/property-submissions/${encodeURIComponent(fromSubmission)}/decision`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'approved',approved_property_code:d.public_code})});
+   if(!d.submission_approved)await request(`/api/admin/property-submissions/${encodeURIComponent(fromSubmission)}/decision`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'approved',approved_property_code:d.public_code,expected_revision:submissionRevision})});
    setFromSubmission(null);setPendingApprovalCode(null);
   }
   setMedia([]);setSaved(`ملک ${d.public_code} ${editCode?'ویرایش':'ثبت'} شد.`);setForm(initial);setKind(null);setEditCode(null);resetCode();
@@ -121,14 +122,14 @@ export default function App(){
   const reg=regions.find(r=>r.slug===(s.details.region_key||'evaz'));
   next.region_id=reg?.id||'';
   next.notes=s.details.extra_details||'';
-  resetCode();next.public_code='';setMedia(s.details.media||[]);setForm(next);setKind(s.kind);setEditCode(null);setFromSubmission(s.id);setPendingApprovalCode(null);setError('');setSaved('');setSection('ثبت ملک');window.scrollTo(0,0);
+  resetCode();next.public_code='';setMedia(s.details.media||[]);setForm(next);setKind(s.kind);setEditCode(null);setFromSubmission(s.id);setSubmissionRevision(Number(s.details?._revision||0));setPendingApprovalCode(null);setError('');setSaved('');setSection('ثبت ملک');window.scrollTo(0,0);
  }
  const [reviewNotes,setReviewNotes]=useState<Record<string,string>>({});
  async function rejectSubmission(id:string){
   const note=(reviewNotes[id]||'').trim();if(note.length<3){setError('دلیل رد را با حداقل ۳ نویسه بنویسید؛ فروشنده این پیام را می‌بیند.');return;}
   if(!window.confirm('درخواست با این دلیل رد شود؟ پیام برای فروشنده نمایش داده می‌شود.'))return;
   setBusy(true);setError('');try{
-   await request(`/api/admin/property-submissions/${encodeURIComponent(id)}/decision`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'rejected',note})});
+   await request(`/api/admin/property-submissions/${encodeURIComponent(id)}/decision`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'rejected',note,expected_revision:Number(submissions.find(s=>s.id===id)?.details?._revision||0)})});
    setSubmissions(v=>v.filter(s=>s.id!==id));setSaved('درخواست رد شد.');
   }catch(e){setError(e instanceof Error?e.message:'ثبت تصمیم انجام نشد')}finally{setBusy(false)}
  }

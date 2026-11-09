@@ -4,7 +4,7 @@ from pathlib import Path
 from uuid import UUID, uuid4
 from typing import Literal
 import hashlib,hmac,os,re,logging,tempfile
-from fastapi import APIRouter,Depends,HTTPException,Request,UploadFile,File
+from fastapi import APIRouter,Depends,HTTPException,Request,UploadFile,File,Query
 from fastapi.responses import FileResponse,Response,StreamingResponse
 from pydantic import BaseModel,Field
 from psycopg.types.json import Jsonb
@@ -300,6 +300,7 @@ def collect_event(payload:EventIn,request:Request):
     limit_request(request,'events',600,3600,str(payload.session_id))
     if not re.fullmatch(r'/(?:properties/[^/?#]{1,590}|search|map|index|areas|register|account|about|contact)?',payload.path):raise HTTPException(422,'مسیر معتبر نیست')
     with pool.connection() as conn:
+        if payload.event=='property_view' and (not payload.property_code or payload.path!='/properties/'+payload.property_code or not conn.execute(PUBLIC_SELECT+' AND p.public_code=%s',(payload.property_code,)).fetchone()):raise HTTPException(422,'آگهی معتبر نیست')
         conn.execute('INSERT INTO app.site_events(event,session_id,path,property_code,details) VALUES (%s,%s,%s,%s,%s)',
           (payload.event,payload.session_id,payload.path,payload.property_code,Jsonb(clean_details(payload.details))))
         if payload.event=='client_error':conn.execute('INSERT INTO app.site_errors(kind,path) VALUES (%s,%s)',('client_runtime',payload.path))
@@ -357,3 +358,32 @@ def search_properties(kind:str='all',regions:str='',min_price:int=1000000000,max
 @launch.get('/api/public/property-detail')
 def public_property_query(code:str):
     return public_property(code)
+
+# Public counters are aggregate-only; no visitor identifiers leave the API.
+@launch.get('/api/public/visit-counts')
+def public_visit_counts(code:str|None=Query(default=None,max_length=80)):
+    from datetime import datetime,timedelta
+    from zoneinfo import ZoneInfo
+    now=datetime.now(ZoneInfo('Asia/Tehran'));today=now.replace(hour=0,minute=0,second=0,microsecond=0)
+    week=today-timedelta(days=(today.weekday()+2)%7)
+    month=today-timedelta(days=persian_day(today.year,today.month,today.day)-1)
+    with pool.connection() as conn:
+        row=conn.execute("""SELECT count(DISTINCT (session_id,(created_at AT TIME ZONE 'Asia/Tehran')::date)) FILTER(WHERE created_at>=%s) AS today,
+          count(DISTINCT (session_id,(created_at AT TIME ZONE 'Asia/Tehran')::date)) FILTER(WHERE created_at>=%s) AS week,
+          count(DISTINCT (session_id,(created_at AT TIME ZONE 'Asia/Tehran')::date)) FILTER(WHERE created_at>=%s) AS month
+          FROM app.site_events WHERE event='page_view' AND session_id IS NOT NULL AND created_at>=%s""",tuple(d.isoformat() for d in (today,week,month,min(week,month)))).fetchone()
+        views=None
+        if code:
+            if not conn.execute(PUBLIC_SELECT+' AND p.public_code=%s',(code,)).fetchone():raise HTTPException(404,'آگهی پیدا نشد')
+            views=conn.execute("SELECT count(DISTINCT (session_id,(created_at AT TIME ZONE 'Asia/Tehran')::date)) AS n FROM app.site_events WHERE event='property_view' AND property_code=%s AND session_id IS NOT NULL",(code,)).fetchone()['n']
+    base={'today':100,'week':1200,'month':51000};actual={k:int(row[k]) for k in base}
+    return {'actual':actual,'base':base,'display':{k:base[k]+actual[k] for k in base},'property_views':views,'timezone':'Asia/Tehran','week_start':'Saturday','month_calendar':'persian','includes_base':True}
+
+def persian_day(gy,gm,gd):
+    """Gregorian date to Persian day-of-month (33-year arithmetic calendar)."""
+    cumulative=[0,31,59,90,120,151,181,212,243,273,304,334]
+    gy2=gy+1 if gm>2 else gy
+    days=355666+365*gy+(gy2+3)//4-(gy2+99)//100+(gy2+399)//400+gd+cumulative[gm-1]
+    days%=12053;days%=1461
+    if days>365:days=(days-1)%365
+    return 1+(days%31 if days<186 else (days-186)%30)

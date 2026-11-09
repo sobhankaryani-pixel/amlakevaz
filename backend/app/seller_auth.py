@@ -130,10 +130,15 @@ def logout(response:Response,session:str|None=Cookie(default=None,alias=COOKIE))
     response.delete_cookie(COOKIE,path='/api/seller',domain='.evazmelk.ir')
     return {'message':'از حساب خارج شدید'}
 
+from .submission_tracking import ensure_tracking
+
 @seller.get('/my-submissions')
 def my_submissions(user=Depends(require_seller)):
     with pool.connection() as conn:
-        rows=conn.execute('''SELECT id,kind,status,created_at,approved_property_code,reviewed_at,
+        ensure_tracking(conn)
+        rows=conn.execute('''SELECT id,tracking_code,kind,status,created_at,approved_property_code,reviewed_at,
+          (SELECT count(DISTINCT (e.session_id,(e.created_at AT TIME ZONE 'Asia/Tehran')::date)) FROM app.site_events e WHERE e.event='property_view' AND e.property_code=approved_property_code AND e.session_id IS NOT NULL) AS view_count,
           details->>'_review_note' AS review_note,details->>'_resubmitted_at' AS resubmitted_at,COALESCE((details->>'_revision')::integer,0) AS revision
           FROM app.property_submissions WHERE seller_id=%s ORDER BY created_at DESC LIMIT 100''',(user['id'],)).fetchall()
+        conn.commit()
     return {'items':[dict(r) for r in rows]}

@@ -37,7 +37,7 @@ test('WebOTP listens before send, buffers early SMS, submits once, cancels stale
   });
   await t.test('Persian autofill/manual six digits submit once; errors do not cause an automatic loop',async()=>{
    await mount();await fill('#seller-login-phone','09120000000');await submit();verifyStatus=401;
-   const input=document.querySelector('#seller-login-code');assert.equal(input.autocomplete,'one-time-code');
+   const input=document.querySelector('#seller-login-code');assert.equal(input.autocomplete,'one-time-code');assert.equal(document.querySelectorAll('.otp-cells span').length,6);
    await fill('#seller-login-code','۰۱۲۳۴');assert.equal(verifications.length,0);
    await fill('#seller-login-code','۰۱۲۳۴۵');assert.equal(verifications.length,1);assert.equal(verifications[0].code,'012345');
    await act(async()=>{await new Promise(r=>setTimeout(r,80))});assert.equal(verifications.length,1);assert.match(document.body.textContent,/کد نامعتبر/);

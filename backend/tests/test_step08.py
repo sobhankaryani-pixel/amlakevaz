@@ -33,7 +33,7 @@ def test_new_seller_types_save_private_details_for_review(env,kind,fields):
     original=db.execute
     def execute(sql,params=()):
         result=original(sql,params)
-        if 'INSERT INTO app.property_submissions' in sql:return Cursor([{'id':uuid4()}])
+        if 'INSERT INTO app.property_submissions' in sql:return Cursor([{'id':uuid4(),'tracking_code':123456}])
         return result
     db.execute=execute
     payload={'kind':kind,'seller_name':'علی','seller_phone':'09212745755','region_key':'R-1','asking_price_toman':5000000000,'extra_details':'درخواست برای بررسی',**fields}

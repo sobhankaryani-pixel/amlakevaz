@@ -20,13 +20,14 @@ test('seller form: three required fields, grouped price, empty optional map, no 
   await build({root,configFile:false,plugins:[react()],define:{'import.meta.env.VITE_NESHAN_MAP_KEY':JSON.stringify('isolated-map-key')},logLevel:'silent',build:{lib:{entry:join(folder,'entry.tsx'),formats:['es'],fileName:()=> 'test.mjs'},outDir:folder,emptyOutDir:false,rollupOptions:{external:['react','react/jsx-runtime','react-dom/client']}}});
   process.env.NODE_ENV='test';dom=new JSDOM('<div id="root"></div>',{url:'https://evazmelk.ir/register',pretendToBeVisual:true});
   for(const k of ['window','document','HTMLElement','Element','Event','CustomEvent','navigator','location','localStorage','sessionStorage'])put(k,dom.window[k]);put('IS_REACT_ACT_ENVIRONMENT',true);put('ResizeObserver',class{observe(){}disconnect(){}});
-  const calls=[];put('fetch',async(url,opts)=>{calls.push([String(url),opts]);return new Response(JSON.stringify(String(url).includes('submission-regions')?{items:[{slug:'R-QA',name:'تست'}]}:{id:'isolated-receipt',message:'ثبت شد'}),{status:200,headers:{'Content-Type':'application/json'}})});
+  const calls=[];put('fetch',async(url,opts)=>{calls.push([String(url),opts]);return new Response(JSON.stringify(String(url).includes('submission-regions')?{items:[{slug:'R-QA',name:'تست'}]}:{id:'isolated-receipt',tracking_code:123456,message:'ثبت شد'}),{status:200,headers:{'Content-Type':'application/json'}})});
   const maps=[];let selected;
   window.L={Map:class{constructor(){maps.push(this)}on(name,fn){if(name==='click')selected=fn}panTo(){}invalidateSize(){}remove(){}},marker(){return {addTo(){return this},remove(){}}}};
   const {RegistrationForm,act,createElement:h,createRoot}=await import(pathToFileURL(join(folder,'test.mjs')));reactAct=act;instance=createRoot(document.querySelector('#root'));
   await act(async()=>instance.render(h(RegistrationForm,{user:{id:'local-user',name:'آزمایش',phone:'09120000000',marketing_opt_in:false}})));
   const field=label=>[...document.querySelectorAll('label')].find(x=>x.textContent.startsWith(label))?.querySelector('input,select');
   const set=async(node,value)=>{await act(async()=>{const proto=node.tagName==='SELECT'?window.HTMLSelectElement.prototype:window.HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(node,value);node.dispatchEvent(new window.Event(node.tagName==='SELECT'?'change':'input',{bubbles:true}))})};
+  assert.equal(document.body.textContent.includes('۷ روز'),false);assert.equal(document.body.textContent.includes('پیش‌نویس'),false);
   const price=field('قیمت کل'),unit=field('قیمت هر متر');assert.ok(price.readOnly);await act(async()=>price.dispatchEvent(new window.FocusEvent('focusin',{bubbles:true})));assert.match(document.body.textContent,/ابتدا متراژ را وارد کنید/);
   assert.equal([...document.querySelectorAll('label')].some(x=>x.textContent.startsWith('محله یا محدوده')),false);
   assert.equal(document.querySelectorAll('input[required],select[required]').length,3);
@@ -36,7 +37,7 @@ test('seller form: three required fields, grouped price, empty optional map, no 
   await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))});assert.equal(maps.length,1);assert.equal(calls.some(([url])=>url.includes('map-listings')),false);
   await act(async()=>selected({latlng:{lat:27.76,lng:54.0}}));assert.match(document.body.textContent,/موقعیت انتخاب شد/);
   await act(async()=>document.querySelector('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})));
-  const sent=calls.find(([url])=>url.includes('/property-submissions'));assert.ok(sent,document.body.textContent);const payload=JSON.parse(sent[1].body);assert.equal(payload.asking_price_toman,8000000000);assert.equal(payload.latitude,27.76);assert.equal(payload.longitude,54);assert.deepEqual(payload.media,[]);assert.equal('neighborhood' in payload,false);
+  const sent=calls.find(([url])=>url.includes('/property-submissions'));assert.ok(sent,document.body.textContent);const payload=JSON.parse(sent[1].body);assert.equal(payload.asking_price_toman,8000000000);assert.equal(payload.latitude,27.76);assert.equal(payload.longitude,54);assert.deepEqual(payload.media,[]);assert.equal('neighborhood' in payload,false);assert.match(document.body.textContent,/123456/);assert.equal(document.body.textContent.includes('isolated-receipt'),false);assert.equal(Object.keys(localStorage).some(k=>k.includes('draft')||k.endsWith(':request-id')),false);
  }finally{if(instance)await reactAct(async()=>instance.unmount());dom?.window.close();for(const[k,v]of saved)v?Object.defineProperty(globalThis,k,v):delete globalThis[k];await rm(folder,{recursive:true,force:true})}
 });
 test('decimal areas and large prices never become malformed scientific notation',()=>{

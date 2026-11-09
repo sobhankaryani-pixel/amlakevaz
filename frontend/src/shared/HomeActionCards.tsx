@@ -1,0 +1,3 @@
+export default function HomeActionCards({onRegister,onIndex}:{onRegister:()=>void;onIndex:()=>void}){
+ return <div className="content-section home-actions-row"><section className="home-action-card"><div><span className="section-kicker">برای فروشندگان</span><h2>ملک خود را جهت فروش ثبت کنید</h2><p>درخواست فروش ملک را ثبت کنید؛ انتشار آگهی پس از تأیید مدیریت.</p></div><button type="button" className="link-button" onClick={onRegister}>ثبت ملک</button></section><section className="home-action-card"><div><span className="section-kicker">نبض بازار اوز</span><h2>شاخص قیمت املاک اوز</h2><p>روند قیمت زمین و ساختمان را در نمودارهای زیر ببینید.</p></div><button type="button" className="link-button" onClick={onIndex}>جزئیات شاخص قیمت</button></section></div>
+}

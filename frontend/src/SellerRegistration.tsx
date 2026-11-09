@@ -2,6 +2,7 @@ import {lazy,Suspense} from 'react';
 import MoneyInput from './shared/MoneyInput';
 import {areaField,priceUpdate} from './shared/money';
 import './shared/submission-pricing.css';
+import './shared/request-experience.css';
 const SubmissionLocation=lazy(()=>import('./shared/SubmissionLocation'));
 import {draftEpoch} from './shared/privateDevice';
 import {API} from './api';
@@ -11,7 +12,7 @@ import {fetchWithTimeout as fetch} from './shared/http';
 import MediaUploader,{type MediaItem} from './shared/MediaUploader';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {SellerUser} from './SellerAccount';
-import {draftKey,readDraft,writeDraft} from './shared/sellerFlow';
+import SubmissionList,{type EditableSubmission} from './shared/SubmissionList';
 
 
 type Kind='land'|'villa'|'apartment'|'mehr'|'national'|'shop'|'garden';
@@ -26,33 +27,21 @@ type Form=typeof empty;
 const numbers=['commercial_area_m2','street_frontage_m','area_m2','building_area_m2','land_length_m','land_width_m','bedrooms','floor_count','build_year','asking_price_toman','latitude','longitude'];
 
 export default function SellerRegistration({user,onLogin}:{user:SellerUser|null;onLogin:()=>void}){
+ const [editing,setEditing]=useState<EditableSubmission|null>(null);
  if(!user)return <section className="content-section seller-page"><div className="page-heading"><span className="section-kicker">برای فروشندگان اوز</span><h1>ثبت ملک برای فروش</h1><p>برای ثبت ملک، ابتدا با شمارهٔ موبایل وارد شوید.</p></div><button className="seller-submit" onClick={onLogin}>ورود یا ثبت‌نام با موبایل</button></section>;
- return <RegistrationForm key={user.id} user={user}/>;
+ return <><section className="content-section seller-page"><SubmissionList userId={user.id} onEdit={setEditing}/>{editing&&<button type="button" className="account-link" onClick={()=>setEditing(null)}>ثبت درخواست تازه</button>}</section><RegistrationForm key={user.id+':'+(editing?.id||'new')+':'+(editing?.revision||0)} user={user} correction={editing?{...editing,onSaved:()=>{setEditing(null);window.dispatchEvent(new Event('evaz:submissions-updated'))}}:undefined}/></>;
 }
 export function RegistrationForm({user,agency,correction}:{correction?:{id:string;revision:number;details:Record<string,unknown>;onSaved:()=>void};user:SellerUser;agency?:{id:string;version:number;details:Record<string,unknown>;onSaved:()=>void}}){
  const [version,setVersion]=useState(agency?.version||0);
- const key=correction?draftKey(user.id)+':revision:'+correction.id+':'+correction.revision:agency?'evaz-agency:'+user.id+':'+agency.id+':'+agency.version:draftKey(user.id);
  const requestId=useRef('');
  const epoch=useRef(draftEpoch());
  const currentDraft=()=>epoch.current===draftEpoch();
- function submissionId(){
-  if(!currentDraft())throw Error('نشست حساب تغییر کرده است؛ صفحه را دوباره باز کنید.');
-  if(requestId.current)return requestId.current;
-  try{const saved=JSON.parse(localStorage.getItem(key+':request-id')||'null');if(saved?.expires>Date.now()&&/^[0-9a-f-]{36}$/.test(saved.id))requestId.current=saved.id}catch{}
-  if(!requestId.current)requestId.current=crypto.randomUUID();
-  try{localStorage.setItem(key+':request-id',JSON.stringify({id:requestId.current,expires:Date.now()+7*86400000}))}catch{}
-  return requestId.current;
- }
- function resetSubmissionId(){requestId.current='';try{localStorage.removeItem(key+':request-id')}catch{}}
- const [initial]=useState(()=>{try{return readDraft(localStorage,key,agency||correction?Object.fromEntries(Object.entries({...empty,...(agency||correction)!.details}).map(([k,v])=>[k,v==null?'':String(v)])) as Form:empty)}catch{return {form:{...empty},media:[] as MediaItem[],restored:false}}});
- const [form,setForm]=useState<Form>(()=>priceUpdate({...initial.form,seller_name:initial.form.seller_name||user.name,seller_phone:user.phone},'kind',initial.form.kind));
- const [media,setMedia]=useState<MediaItem[]>(initial.restored?initial.media:((agency||correction)?.details.media as MediaItem[]||initial.media)),[uploading,setUploading]=useState(false);
- const [restored,setRestored]=useState(initial.restored),[storageError,setStorageError]=useState(false);
+ function submissionId(){if(!requestId.current)requestId.current=crypto.randomUUID();return requestId.current}
+ function resetSubmissionId(){requestId.current=''}
+ const [form,setForm]=useState<Form>(()=>{const details=(agency||correction)?.details||{};const initial={...empty,...Object.fromEntries(Object.entries(details).filter(([k])=>k in empty).map(([k,v])=>[k,v==null?'':String(v)])),seller_name:user.name,seller_phone:user.phone} as Form;return priceUpdate(initial,'kind',initial.kind)});
+ const [media,setMedia]=useState<MediaItem[]>((agency||correction)?.details.media as MediaItem[]||[]),[uploading,setUploading]=useState(false);
  const allowVideo=['villa','apartment','mehr','national'].includes(form.kind);
  const visibleMedia=media.filter(item=>item.kind==='image'||allowVideo);
- useEffect(()=>{if(!currentDraft())return;try{writeDraft(localStorage,key,form,media);setStorageError(false)}catch{setStorageError(true)}},[key,form,media]);
- function clearDraft(){resetSubmissionId();setForm({...empty,seller_name:user.name,seller_phone:user.phone});setMedia([]);setRestored(false);setSuccess('');setError('')}
-
  const [regions,setRegions]=useState<{slug:string;name:string}[]>([]);
  const [error,setError]=useState(''),[success,setSuccess]=useState(''),[busy,setBusy]=useState(false);
  useEffect(()=>{if(user)setForm(v=>({...v,seller_name:v.seller_name||user.name,seller_phone:user.phone}))},[user?.id]);
@@ -62,13 +51,13 @@ export function RegistrationForm({user,agency,correction}:{correction?:{id:strin
  const set=(key:keyof Form,value:string)=>{setForm(v=>priceUpdate(v,key,value));if(key===areaField(form.kind)&&Number(value)>0)setPriceError('')};
  const input=(key:keyof Form,label:string,required=false,numeric=false)=><label key={key}>{label}<input required={required} type={numeric?'number':'text'} min={numeric?'0':undefined} step={numeric&&!['bedrooms','floor_count','build_year','asking_price_toman'].includes(key)?'any':undefined} value={form[key]} onChange={e=>set(key,e.target.value)}/></label>;
  const select=(key:keyof Form,label:string,values:string[],required=false)=><label key={key}>{label}<select required={required} value={form[key]} onChange={e=>set(key,e.target.value)}><option value="">انتخاب کنید</option>{values.map(x=><option key={x} value={x}>{x}</option>)}</select></label>;
- async function submit(e:FormEvent,draftOnly=false){
+ async function submit(e:FormEvent){
   if(!currentDraft()){e.preventDefault();setError('نشست حساب تغییر کرده است؛ صفحه را دوباره باز کنید.');return;}
   e.preventDefault();if(busy||uploading)return;setError('');setSuccess('');setBusy(true);
   try{
    if(!user)throw Error('ابتدا با شمارهٔ موبایل وارد شوید.');
-   if(!draftOnly&&form.price_error)throw Error(form.price_error);
-   if(!draftOnly&&(!hasArea||!form.region_key||!Number(form.asking_price_toman)))throw Error('منطقه، متراژ و قیمت را وارد کنید.');
+   if(form.price_error)throw Error(form.price_error);
+   if((!hasArea||!form.region_key||!Number(form.asking_price_toman)))throw Error('منطقه، متراژ و قیمت را وارد کنید.');
    const payload:Record<string,unknown>={...form,seller_name:user.name,seller_phone:user.phone,media:visibleMedia};delete payload.price_error;delete payload.price_basis;delete payload.price_per_m2_toman;delete payload.neighborhood;
    const kindFields:Record<Kind,string[]>={garden:['area_m2','land_length_m','land_width_m'],shop:['commercial_area_m2','street_frontage_m'],land:['area_m2','land_length_m','land_width_m','usage_type'],villa:['house_condition','area_m2','building_area_m2','bedrooms','floor_count','build_year'],apartment:['building_area_m2','bedrooms','floor_count','build_year'],mehr:['building_area_m2','mehr_section','mehr_level'],national:['building_area_m2','national_phase','national_block','national_level','national_stage']};
    const specificFields=new Set(Object.values(kindFields).flat());
@@ -77,19 +66,18 @@ export function RegistrationForm({user,agency,correction}:{correction?:{id:strin
    if(agency){
     const saved=await fetch(`${API}/api/agency/files/${agency.id}`,{method:'PUT',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({details:payload,expected_version:version})});
     const d=await saved.json();if(!saved.ok)throw Error(typeof d.detail==='string'?d.detail:'ذخیره انجام نشد.');setVersion(d.version);
-    if(!draftOnly){const r=await fetch(`${API}/api/agency/files/${agency.id}/submit`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({expected_version:d.version})});const result=await r.json();if(!r.ok)throw Error(typeof result.detail==='string'?result.detail:'ارسال انجام نشد.');}
-    localStorage.removeItem(key);agency.onSaved();return;
+    {const r=await fetch(`${API}/api/agency/files/${agency.id}/submit`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({expected_version:d.version})});const result=await r.json();if(!r.ok)throw Error(typeof result.detail==='string'?result.detail:'ارسال انجام نشد.');}
+    agency.onSaved();return;
    }
    const r=await fetch(correction?`${API}/api/seller/property-submissions/${correction.id}/resubmit`:`${API}/api/seller/property-submissions`,{method:correction?'PUT':'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,request_id:submissionId(),...(correction?{expected_revision:correction.revision}:{}),analytics:getAnalyticsContext()})});
    const d=await r.json();if(!r.ok)throw Error(typeof d.detail==='string'?d.detail:'مشخصات واردشده را بررسی کنید.');
-   if(correction){localStorage.removeItem(key);resetSubmissionId();correction.onSaved();return;}
-   resetSubmissionId();setSuccess(d.message+(d.id?` شمارهٔ پیگیری: ${d.id}`:''));setRestored(false);setMedia([]);setForm({...empty,seller_name:user.name,seller_phone:user.phone});
+   window.dispatchEvent(new Event('evaz:submissions-updated'));
+   if(correction){resetSubmissionId();correction.onSaved();return;}
+   resetSubmissionId();setSuccess(d.message+(d.tracking_code?` شمارهٔ پیگیری: ${d.tracking_code}`:''));setMedia([]);setForm({...empty,seller_name:user.name,seller_phone:user.phone});
   }catch(e){setError(e instanceof Error?e.message:'ارسال درخواست انجام نشد. دوباره تلاش کنید.')}finally{setBusy(false)}
  }
 
- return <section className="content-section seller-page"><div className="page-heading"><span className="section-kicker">{agency?"فایل اختصاصی بنگاه":"برای فروشندگان اوز"}</span><h1>{correction?"اصلاح درخواست ردشده":agency?"ثبت و ویرایش فایل بنگاه":"ثبت ملک برای فروش"}</h1><p>مشخصات ملک را وارد کنید. پس از بررسی و تأیید، آگهی در سایت منتشر می‌شود.</p></div>
- <p className="seller-privacy" role="status">{storageError?'ذخیرهٔ پیش‌نویس در این مرورگر ممکن نیست؛ تا ارسال درخواست این صفحه را نبندید.':restored?'پیش‌نویس قبلی بازیابی شد. تغییرات روی همین مرورگر تا ۷ روز نگه داشته می‌شوند.':'پیش‌نویس به‌صورت خودکار روی همین مرورگر تا ۷ روز ذخیره می‌شود.'}</p>
- <button type="button" className="account-link" disabled={busy||uploading} onClick={clearDraft}>پاک‌کردن پیش‌نویس و شروع دوباره</button>
+ return <section className="content-section seller-page"><div className="page-heading"><span className="section-kicker">{agency?"فایل اختصاصی بنگاه":"برای فروشندگان اوز"}</span><h1>{correction?"ویرایش درخواست":agency?"ثبت و ویرایش فایل بنگاه":"ثبت ملک برای فروش"}</h1><p>مشخصات ملک را وارد کنید. پس از بررسی و تأیید، آگهی در سایت منتشر می‌شود.</p></div>
  {!agency&&<SubmissionGuide/>}
  <form className="seller-form" onSubmit={submit}>
   <div className="seller-step"><h2>۱. نوع ملک</h2><div className="seller-kinds">{kinds.map(k=><button type="button" key={k.value} aria-pressed={form.kind===k.value} className={form.kind===k.value?'active':''} disabled={uploading} onClick={()=>{setForm(v=>priceUpdate(v,'kind',k.value));setPriceError('')}}>{k.label}</button>)}</div></div>
@@ -109,7 +97,6 @@ export function RegistrationForm({user,agency,correction}:{correction?:{id:strin
   <div className="seller-step"><MediaUploader audience={agency?'agency':'seller'} items={visibleMedia} draftItems={media} onChange={items=>setMedia(previous=>allowVideo?items:[...items,...previous.filter(item=>item.kind==='video')])} allowVideo={allowVideo} onBusy={setUploading}/></div>
   <div className="seller-step"><h2>{agency?"۳. اطلاعات بنگاه":"۳. اطلاعات فروشنده"}</h2><div className="seller-fields">{agency?<label>نام بنگاه<input readOnly value={user.name}/></label>:<label>نام فروشنده<input readOnly value={user.name}/></label>}<label>{agency?"شمارهٔ ثبت‌شده نزد مدیریت":"شمارهٔ تأییدشده"}<input readOnly dir="ltr" value={user.phone}/></label></div><label className="seller-honeypot" aria-hidden="true">وب‌سایت<input tabIndex={-1} autoComplete="off" value={form.website} onChange={e=>set('website',e.target.value)}/></label><p className="seller-privacy">شمارهٔ شما تنها در پنل مدیریت دیده می‌شود. پس از تأیید، آگهی منتشر می‌شود و هنگام پیدا شدن خریدار با شما تماس می‌گیریم.</p></div>
   {error&&<p className="seller-error" role="alert">{error}</p>}{success&&<p className="seller-success" role="status">{success}</p>}
-  <button className="seller-submit" disabled={busy||uploading} type="submit">{busy?'در حال ارسال…':correction?'ارسال مجدد همین درخواست':agency?'ارسال برای تأیید مدیر اصلی':'ارسال درخواست ثبت ملک'}</button>
-  {agency&&<button className="account-link" type="button" disabled={busy||uploading} onClick={e=>void submit(e,true)}>ذخیرهٔ پیش‌نویس بدون ارسال</button>}
+  <button className="seller-submit" aria-busy={busy} disabled={busy||uploading} type="submit">{busy?'در حال ارسال…':correction?'ذخیرهٔ تغییرات درخواست':agency?'ارسال برای تأیید مدیر اصلی':'ارسال درخواست ثبت ملک'}</button>
  </form></section>;
 }

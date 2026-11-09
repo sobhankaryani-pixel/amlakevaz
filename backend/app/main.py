@@ -1,5 +1,6 @@
 import asyncio
 from . import owner_notifications
+from .submission_tracking import ensure_tracking
 from contextlib import asynccontextmanager
 import json
 from psycopg.types.json import Jsonb
@@ -174,24 +175,25 @@ def create_seller_submission(payload: SellerSubmissionIn, request: Request, user
         validate_media(payload.media,{**user,'role':'seller'},payload.kind in ('villa','apartment','mehr','national'))
     data=payload.model_dump(exclude={'seller_name','seller_phone','website','analytics'})
     with pool.connection() as conn:
+        ensure_tracking(conn)
         # A transaction-scoped lock makes concurrent retries return the same receipt.
         if payload.request_id:
             conn.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))',('seller-submit:'+str(user['id'])+':'+payload.request_id,))
-            existing=conn.execute("SELECT id,details FROM app.property_submissions WHERE seller_id=%s AND details->>'request_id'=%s LIMIT 1",(user['id'],payload.request_id)).fetchone()
+            existing=conn.execute("SELECT id,tracking_code,details FROM app.property_submissions WHERE seller_id=%s AND details->>'request_id'=%s LIMIT 1",(user['id'],payload.request_id)).fetchone()
             if existing:
                 if {k:v for k,v in existing['details'].items() if not k.startswith('_')} != data:
-                    raise HTTPException(409,'درخواست قبلی با این شناسه ثبت شده است. ابتدا درخواست‌های من را بررسی کنید؛ برای ملک دیگری، پیش‌نویس تازه بسازید.')
-                return {'id':str(existing['id']),'message':'این درخواست قبلاً ثبت شده است؛ می‌توانید آن را در حساب من پیگیری کنید.'}
+                    raise HTTPException(409,'درخواست قبلی با این شناسه ثبت شده است. ابتدا درخواست‌های من را بررسی کنید؛ برای ملک دیگری، فرم تازه باز کنید.')
+                return {'id':str(existing['id']),'tracking_code':existing['tracking_code'],'message':'این درخواست قبلاً ثبت شده است؛ می‌توانید آن را در حساب من پیگیری کنید.'}
         if payload.request_id:
             validate_media(payload.media,{**user,'role':'seller'},payload.kind in ('villa','apartment','mehr','national'))
         if payload.region_key and not conn.execute('SELECT 1 FROM app.regions WHERE slug=%s AND is_public=true AND slug LIKE %s', (payload.region_key,'R-%')).fetchone():
             raise HTTPException(422, 'منطقهٔ زمین معتبر نیست')
         row=conn.execute('''INSERT INTO app.property_submissions(seller_name,seller_phone,seller_id,kind,details)
-          VALUES (%s,%s,%s,%s,%s) RETURNING id''', ((user.get('name') or payload.seller_name or 'فروشنده').strip(),user['phone'],user['id'],payload.kind,Jsonb(data))).fetchone()
+          VALUES (%s,%s,%s,%s,%s) RETURNING id,tracking_code''', ((user.get('name') or payload.seller_name or 'فروشنده').strip(),user['phone'],user['id'],payload.kind,Jsonb(data))).fetchone()
         owner_notifications.enqueue(conn,row['id'])
         record_conversion(conn,'property_submit','/register',payload.analytics)
         conn.commit()
-    return {'id':str(row['id']),'message':'درخواست شما ثبت شد. پس از بررسی و تأیید مدیر، آگهی در سایت منتشر می‌شود.'}
+    return {'id':str(row['id']),'tracking_code':row['tracking_code'],'message':'درخواست شما ثبت شد. پس از بررسی و تأیید مدیر، آگهی در سایت منتشر می‌شود.'}
 
 class SellerRevisionIn(SellerSubmissionIn):
     expected_revision:int=Field(ge=0)
@@ -201,7 +203,7 @@ def seller_submission_for_revision(submission_id:UUID,user=Depends(require_selle
     with pool.connection() as conn:
         row=conn.execute('SELECT id,kind,status,details FROM app.property_submissions WHERE id=%s AND seller_id=%s',(submission_id,user['id'])).fetchone()
     if not row:raise HTTPException(404,'درخواست پیدا نشد')
-    if row['status']!='rejected':raise HTTPException(409,'فقط درخواست ردشده قابل اصلاح است')
+    if row['status'] not in ('pending','rejected'):raise HTTPException(409,'درخواست بررسی‌شده قابل ویرایش نیست')
     details=row['details'] or {}
     return {'id':str(row['id']),'kind':row['kind'],'details':{k:v for k,v in details.items() if not k.startswith('_')},
       'review_note':details.get('_review_note',''),'revision':details.get('_revision',0)}
@@ -220,7 +222,7 @@ def resubmit_seller_submission(submission_id:UUID,payload:SellerRevisionIn,reque
             if previous.get('request_id')==payload.request_id:
                 if {k:v for k,v in previous.items() if not k.startswith('_')}!=data:raise HTTPException(409,'همین ارسال با مشخصات دیگری ثبت شده؛ وضعیت حساب را بررسی کنید.')
                 return {'id':str(row['id']),'message':'نسخهٔ اصلاح‌شده قبلاً دریافت شده است.'}
-            if row['status']!='rejected' or previous.get('_revision',0)!=payload.expected_revision:
+            if row['status'] not in ('pending','rejected') or previous.get('_revision',0)!=payload.expected_revision:
                 raise HTTPException(409,'وضعیت درخواست تغییر کرده؛ درخواست‌های من را تازه کنید.')
             validate_media(payload.media,{**user,'role':'seller'},payload.kind in ('villa','apartment','mehr','national'))
             if payload.region_key and not conn.execute('SELECT 1 FROM app.regions WHERE slug=%s AND is_public=true AND slug LIKE %s',(payload.region_key,'R-%')).fetchone():
@@ -229,7 +231,7 @@ def resubmit_seller_submission(submission_id:UUID,payload:SellerRevisionIn,reque
             conn.execute("""UPDATE app.property_submissions SET seller_name=%s,seller_phone=%s,kind=%s,details=jsonb_set(%s::jsonb,'{_resubmitted_at}',to_jsonb(now())),
               status='pending',approved_property_code=NULL,reviewed_at=NULL,reviewed_by=NULL WHERE id=%s""",
               ((user.get('name') or payload.seller_name or 'فروشنده').strip(),user['phone'],payload.kind,Jsonb(data),submission_id))
-            owner_notifications.enqueue(conn,submission_id,payload.expected_revision+1)
+            if row['status']=='rejected':owner_notifications.enqueue(conn,submission_id,payload.expected_revision+1)
     return {'id':str(row['id']),'message':'همان درخواست با اصلاحات شما دوباره برای بررسی ارسال شد.'}
 
 @admin.get('/submission-notifications')
@@ -250,6 +252,7 @@ class SubmissionDecision(BaseModel):
     status: str
     approved_property_code: str | None = None
     note:str=Field(default='',max_length=1000)
+    expected_revision:int|None=Field(default=None,ge=0)
 
 @admin.post('/property-submissions/{submission_id}/decision')
 def decide_seller_submission(submission_id: UUID, payload: SubmissionDecision,
@@ -260,9 +263,10 @@ def decide_seller_submission(submission_id: UUID, payload: SubmissionDecision,
         raise HTTPException(422,'تصمیم معتبر نیست')
     with pool.connection() as conn:
         with conn.transaction():
-            row=conn.execute('SELECT status FROM app.property_submissions WHERE id=%s FOR UPDATE',(submission_id,)).fetchone()
+            row=conn.execute('SELECT status,details FROM app.property_submissions WHERE id=%s FOR UPDATE',(submission_id,)).fetchone()
             if not row: raise HTTPException(404,'درخواست پیدا نشد')
             if row['status']!='pending': raise HTTPException(409,'این درخواست قبلاً بررسی شده است')
+            if payload.expected_revision is not None and (row['details'] or {}).get('_revision',0)!=payload.expected_revision:raise HTTPException(409,'فروشنده درخواست را ویرایش کرده است؛ فهرست درخواست‌ها را تازه کنید.')
             if payload.status=='approved':
                 if not payload.approved_property_code or not conn.execute('SELECT 1 FROM app.properties WHERE public_code=%s',(payload.approved_property_code,)).fetchone():
                     raise HTTPException(422,'برای تأیید، ملک ثبت‌شده را مشخص کنید')
@@ -396,6 +400,8 @@ def create_transaction(payload: TransactionIn, user=Depends(require_roles("owner
 def admin_me(user=Depends(require_roles("owner","admin","data_entry","analyst","editor","viewer"))): return user
 
 class DirectPropertyIn(BaseModel):
+    source_submission_id:UUID|None=None
+    expected_submission_revision:int|None=Field(default=None,ge=0)
     code_reservation_id: UUID | None = None
     public_code: str | None = Field(default=None, min_length=1, max_length=80)
     property_type_id: str
@@ -482,6 +488,14 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
     try:
         with pool.connection() as conn:
             with conn.transaction():
+                source=None
+                if payload.source_submission_id:
+                    source=conn.execute('SELECT status,details,approved_property_code FROM app.property_submissions WHERE id=%s FOR UPDATE',(payload.source_submission_id,)).fetchone()
+                    if not source:raise HTTPException(404,'درخواست پیدا نشد')
+                    if source['status']=='approved':
+                        return {'public_code':source['approved_property_code'],'submission_approved':True,'status':payload.status}
+                    if source['status']!='pending' or payload.expected_submission_revision is None or (source['details'] or {}).get('_revision',0)!=payload.expected_submission_revision:
+                        raise HTTPException(409,'درخواست تغییر کرده است؛ دوباره آخرین نسخه را از فهرست درخواست‌ها باز کنید.')
                 assigned_code,reservation,previous=creation_code(conn,payload,user)
                 if previous:return previous
                 kind = conn.execute("SELECT id FROM app.property_types WHERE id=%s", (payload.property_type_id,)).fetchone()
@@ -520,7 +534,10 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
                 conn.execute("INSERT INTO app.audit_logs(user_id,action,entity_type,entity_id) VALUES (%s,'create','property',%s)",
                              (user['sub'],row['id']))
                 finish_reservation(conn,reservation,row['id'])
-        return {"id":str(row['id']),"public_code":row['public_code'],"status":payload.status}
+                if source:
+                    conn.execute("UPDATE app.property_submissions SET status='approved',approved_property_code=%s,reviewed_at=now(),reviewed_by=%s WHERE id=%s",(row['public_code'],user['sub'],payload.source_submission_id))
+                    conn.execute("INSERT INTO app.audit_logs(user_id,action,entity_type,entity_id) VALUES (%s,'approved','seller_submission',%s)",(user['sub'],payload.source_submission_id))
+        return {"id":str(row['id']),"public_code":row['public_code'],"status":payload.status,"submission_approved":bool(source)}
     except HTTPException:
         raise
     except CheckViolation as exc:

@@ -1,3 +1,6 @@
+import {installActionFeedback} from './shared/actionFeedback';
+import './shared/action-feedback.css';
+installActionFeedback();
 import {installPrivatePageGuard} from './shared/privateDevice';
 installPrivatePageGuard();
 import {installWheelValueGuard} from './shared/wheelValueGuard';
@@ -9,6 +12,7 @@ import ErrorBoundary from "./shared/ErrorBoundary";
 import "./styles.css";
 import "./shared/professional-compact.css";
 import "./shared/listing-rail.css";
+import "./shared/home-boxes.css";
 document.documentElement.lang = "fa";
 document.documentElement.dir = "rtl";
 createRoot(document.getElementById("root")!).render(<React.StrictMode><ErrorBoundary><App /></ErrorBoundary></React.StrictMode>);

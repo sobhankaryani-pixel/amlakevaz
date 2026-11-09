@@ -1,3 +1,6 @@
+import {installActionFeedback} from './actionFeedback';
+import './action-feedback.css';
+installActionFeedback();
 import {installPrivatePageGuard} from './privateDevice';
 installPrivatePageGuard();
 import {installWheelValueGuard} from './wheelValueGuard';
