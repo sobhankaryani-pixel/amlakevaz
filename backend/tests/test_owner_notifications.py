@@ -37,14 +37,28 @@ def test_closed_request_does_not_send_old_notice(seller_case,monkeypatch):
  monkeypatch.setattr(module,'owner_notification_configured',lambda:True);send=MagicMock();monkeypatch.setattr(module,'send_owner_submission_notice',send)
  assert module.process_one() is True;send.assert_not_called()
 
-def test_smsir_owner_uses_separate_template_and_only_owner_phone(monkeypatch):
- monkeypatch.setenv('ADMIN_NOTIFICATION_PHONE','09120000000');monkeypatch.setenv('SMS_PROVIDER','smsir');monkeypatch.setenv('SMSIR_API_KEY','isolated-key');monkeypatch.setenv('SMSIR_ADMIN_NOTIFICATION_TEMPLATE_ID','123');monkeypatch.setenv('SMSIR_TEMPLATE_ID','999')
- response=MagicMock();response.__enter__.return_value.read.return_value=json.dumps({'status':1,'data':{'messageId':45}}).encode();send=MagicMock(return_value=response);monkeypatch.setattr(sms_gateway,'urlopen',send)
- assert sms_gateway.send_owner_submission_notice()=='45'
- req=send.call_args.args[0];payload=json.loads(req.data);assert payload=={'mobile':'09120000000','templateId':123,'parameters':[{'name':'COUNT','value':'1'}]}
- assert send.call_args.kwargs['timeout']==12
- monkeypatch.delenv('SMSIR_ADMIN_NOTIFICATION_TEMPLATE_ID');assert not sms_gateway.owner_notification_configured()
- with pytest.raises(sms_gateway.SmsUnavailable):sms_gateway.send_owner_submission_notice()
+def test_manager_sms_is_disabled_but_customer_otp_still_works(monkeypatch):
+ monkeypatch.setenv('ADMIN_SMS_NOTIFICATIONS_ENABLED','true')
+ monkeypatch.setenv('ADMIN_NOTIFICATION_PHONE','09120000000')
+ monkeypatch.setenv('SMS_PROVIDER','smsir')
+ monkeypatch.setenv('SMSIR_API_KEY','isolated-key')
+ monkeypatch.setenv('SMSIR_ADMIN_NOTIFICATION_TEMPLATE_ID','123')
+ monkeypatch.setenv('SMSIR_TEMPLATE_ID','999')
+ response=MagicMock()
+ response.__enter__.return_value.read.return_value=json.dumps({'status':1,'data':{'messageId':45}}).encode()
+ send=MagicMock(return_value=response);monkeypatch.setattr(sms_gateway,'urlopen',send)
+ assert sms_gateway.owner_notification_configured() is False
+ try:sms_gateway.send_owner_submission_notice()
+ except sms_gateway.SmsUnavailable:pass
+ else:raise AssertionError('Manager SMS must remain disabled')
+ send.assert_not_called()
+ # Login OTP uses its own template and must remain available.
+ assert sms_gateway.otp_configured() is True
+ assert sms_gateway.send_login_code('09120000001','012345')=='45'
+ payload=json.loads(send.call_args.args[0].data)
+ assert payload=={'mobile':'09120000001','templateId':999,'parameters':[{'name':'CODE','value':'012345'}]}
+ assert send.call_count==1
+
 
 @pytest.mark.parametrize('kind,area',[('land',{'area_m2':100}),('villa',{'area_m2':100}),('garden',{'area_m2':100}),('apartment',{'building_area_m2':100}),('mehr',{'building_area_m2':100}),('national',{'building_area_m2':100}),('shop',{'commercial_area_m2':100})])
 def test_minimal_form_needs_only_area_region_price_beyond_signed_in_identity(kind,area):
