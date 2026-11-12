@@ -9,7 +9,7 @@ os.environ.setdefault('JWT_SECRET','integration-only-secret')
 from fastapi.testclient import TestClient
 from psycopg_pool import ConnectionPool
 from psycopg.rows import dict_row
-from backend.app import main,agency,inquiries,auth,launch,media_cleanup,seller_auth,property_codes,owner_notifications
+from backend.app import main,agency,inquiries,auth,launch,media_cleanup,seller_auth,property_codes,owner_notifications,manager_notifications,admin_accounts
 
 @pytest.fixture
 def system(monkeypatch):
@@ -19,7 +19,7 @@ def system(monkeypatch):
   db=Database()
  elif url:db=ConnectionPool(url,min_size=1,max_size=1,kwargs={'row_factory':dict_row},open=True)
  else:pytest.skip('Disposable integration database not configured')
- for mod in (main,agency,inquiries,auth,launch,media_cleanup,seller_auth,property_codes,owner_notifications):monkeypatch.setattr(mod,'pool',db)
+ for mod in (main,agency,inquiries,auth,launch,media_cleanup,seller_auth,property_codes,owner_notifications,manager_notifications,admin_accounts):monkeypatch.setattr(mod,'pool',db)
  owner_id=str(uuid4());password='Agency-test-1234';hashed=auth.hash_password(password)
  with db.connection() as c:
   c.execute("INSERT INTO app.users(id,email,password_hash,role) VALUES (%s,%s,%s,'owner')",(owner_id,owner_id+'@example.invalid',hashed))

@@ -1,0 +1,24 @@
+import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';import {mkdtemp,writeFile,rm} from 'node:fs/promises';import {dirname,join} from 'node:path';import {fileURLToPath,pathToFileURL} from 'node:url';import {build} from 'vite';import react from '@vitejs/plugin-react';
+const {JSDOM}=await import(process.env.JSDOM_MODULE||'jsdom');
+test('push worker always displays a notification and opens only the management page',async()=>{
+ const handlers={},shown=[];let opened;const self={location:{origin:'https://evazmelk.ir'},addEventListener:(n,f)=>handlers[n]=f,registration:{showNotification:async(...x)=>shown.push(x)},clients:{matchAll:async()=>[],openWindow:async url=>opened=url}};
+ vm.runInNewContext(readFileSync(new URL('../public/manager-push-sw.js',import.meta.url),'utf8'),{self,URL});let pending;
+ handlers.push({data:{json:()=>({title:'درخواست جدید',body:'اعلان جدید',url:'https://evil.test'})},waitUntil:p=>pending=p});await pending;assert.equal(shown.length,1);assert.equal(shown[0][1].data.url,'/management/');
+ handlers.notificationclick({notification:{close(){}},waitUntil:p=>pending=p});await pending;assert.equal(opened,'https://evazmelk.ir/management/');
+ handlers.push({data:{json(){throw Error('bad json')}},waitUntil:p=>pending=p});await pending;assert.equal(shown.length,2);
+});
+test('owner enables phone push through explicit permission, tests it and marks inbox items read',async()=>{
+ const root=dirname(fileURLToPath(new URL('../package.json',import.meta.url))),folder=await mkdtemp(join(root,'.qa-manager-'));const globals=new Map();let dom,instance,act;
+ const put=(k,v)=>{globals.set(k,Object.getOwnPropertyDescriptor(globalThis,k));Object.defineProperty(globalThis,k,{value:v,configurable:true,writable:true})};
+ try{
+  await writeFile(join(folder,'entry.tsx'),"export {default as Panel} from '../src/ManagerNotifications';export {act,createElement} from 'react';export {createRoot} from 'react-dom/client';");
+  await build({root,configFile:false,plugins:[react()],logLevel:'silent',build:{lib:{entry:join(folder,'entry.tsx'),formats:['es'],fileName:()=> 'test.mjs'},outDir:folder,emptyOutDir:false,rollupOptions:{external:['react','react/jsx-runtime','react-dom/client']}}});
+  process.env.NODE_ENV='test';dom=new JSDOM('<div id="root"></div>',{url:'https://evazmelk.ir/management/',pretendToBeVisual:true});for(const k of ['window','document','HTMLElement','Element','navigator','location','Event'])put(k,dom.window[k]);put('IS_REACT_ACT_ENVIRONMENT',true);
+  const order=[],calls=[];let devices=0,read=false;const sub={toJSON:()=>({endpoint:'https://web.push.apple.com/test',keys:{p256dh:'B'+'A'.repeat(86),auth:'A'.repeat(22)}}),unsubscribe:async()=>true};const reg={pushManager:{getSubscription:async()=>null,subscribe:async()=>{order.push('subscribe');return sub}}};
+  put('Notification',{requestPermission:async()=>{order.push('permission');return 'granted'}});window.PushManager=class{};Object.defineProperty(navigator,'serviceWorker',{value:{register:async()=>reg,ready:Promise.resolve(reg)},configurable:true});
+  put('fetch',async(url,options={})=>{calls.push(String(url));let data={items:[{id:'test',title:'درخواست جدید فروش ملک',created_at:'2026-11-11',is_read:read}],unread:read?0:1,delivery:{}};if(String(url).endsWith('/push/config'))data={devices,sms:{contact:false}};if(String(url).endsWith('/push/initialize')){order.push('initialize');data={public_key:'B'+'A'.repeat(86)}}if(String(url).endsWith('/push/subscribe')){devices=1;data={ok:true};assert.equal(JSON.parse(options.body).subscription.endpoint,'https://web.push.apple.com/test')}if(String(url).endsWith('/push/test'))data={message:'در صف قرار گرفت'};if(String(url).endsWith('/test/read')){read=true;data={ok:true}}return new Response(JSON.stringify(data),{headers:{'Content-Type':'application/json'}})});
+  const m=await import(pathToFileURL(join(folder,'test.mjs')));act=m.act;instance=m.createRoot(document.querySelector('#root'));await act(async()=>instance.render(m.createElement(m.Panel,{token:'test-token'})));
+  const click=async text=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent===text);assert.ok(b,text);await act(async()=>b.click())};
+  await click('فعال‌کردن اعلان این گوشی');assert.deepEqual(order,['permission','initialize','subscribe']);assert.match(document.body.textContent,/فعال شد/);await click('ارسال آزمایشی');assert.match(document.body.textContent,/در صف/);await click('خوانده شد');assert.equal(read,true);assert.ok(calls.some(x=>x.endsWith('/test/read')));
+ }finally{if(instance)await act(async()=>instance.unmount());dom?.window.close();for(const[k,v]of globals)v?Object.defineProperty(globalThis,k,v):delete globalThis[k];await rm(folder,{recursive:true,force:true})}
+});

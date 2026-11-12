@@ -1,26 +1,82 @@
 name: Operations alerts
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ['Operational monitor', 'Daily database backup', 'Database recovery rehearsal']
     types: [completed]
 permissions:
+  contents: read
   actions: read
   issues: write
+concurrency:
+  group: operations-alert-${{ github.event.workflow_run.name }}
+  cancel-in-progress: false
 jobs:
   alert:
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
+    if: github.event.workflow_run.head_repository.full_name == github.repository && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
     steps:
-      - uses: actions/github-script@v8
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          persist-credentials: false
+      - id: transition
+        uses: actions/github-script@v8
         with:
           script: |
             const run=context.payload.workflow_run;
-            if(run.head_repository?.full_name!==`${context.repo.owner}/${context.repo.repo}` || run.head_branch!=='main') return;
             const title=`[Operations] ${run.name}`;
             const issues=await github.paginate(github.rest.issues.listForRepo,{...context.repo,state:'open',creator:'github-actions[bot]',per_page:100});
             const previous=issues.find(x=>x.title===title && !x.pull_request);
-            if(run.conclusion==='success') {
-              if(previous) await github.rest.issues.update({...context.repo,issue_number:previous.number,state:'closed'});
-            } else if(['failure','timed_out','startup_failure','action_required'].includes(run.conclusion) && !previous) {
-              await github.rest.issues.create({...context.repo,title,body:`An operational check failed. Inspect the private workflow logs: ${run.html_url}\nNo credentials or database contents are included here.`});
+            let category=run.name==='Operational monitor'?'outage':'backup';
+            if(run.name==='Operational monitor' && run.conclusion!=='success') {
+              const {data}=await github.rest.actions.listJobsForWorkflowRun({...context.repo,run_id:run.id});
+              const failed=data.jobs.filter(j=>['failure','timed_out'].includes(j.conclusion));
+              if(failed.length && failed.every(j=>j.name==='backup-freshness')) category='backup';
             }
+            if(run.conclusion==='success' && previous) {
+              category=previous.body?.includes('Category: backup')?'backup_recovery':'recovery';
+              await github.rest.issues.update({...context.repo,issue_number:previous.number,state:'closed'});
+              core.setOutput('send','true');
+              core.setOutput('event_id',`${previous.number}:resolved`);
+            } else if(['failure','timed_out','startup_failure','action_required'].includes(run.conclusion) && !previous) {
+              const {data}=await github.rest.issues.create({...context.repo,title,body:`Category: ${category}\nAn operational check failed: ${run.html_url}\nNo credentials or customer details are included.`});
+              core.setOutput('send','true');core.setOutput('event_id',`${data.number}:failed`);
+            }
+            core.setOutput('category',category);
+      - if: steps.transition.outputs.send == 'true'
+        run: python3 -m pip install -r backend/requirements-notifications.txt
+      - if: steps.transition.outputs.send == 'true'
+        env:
+          NOTICE_CATEGORY: ${{ steps.transition.outputs.category }}
+          NOTICE_EVENT_ID: ${{ steps.transition.outputs.event_id }}
+          OPERATIONS_PUSH_CONFIG: ${{ secrets.OPERATIONS_PUSH_CONFIG }}
+          ADMIN_SMS_NOTIFICATIONS_ENABLED: ${{ secrets.ADMIN_SMS_NOTIFICATIONS_ENABLED }}
+          ADMIN_NOTIFICATION_PHONE: ${{ secrets.ADMIN_NOTIFICATION_PHONE }}
+          SMSIR_API_KEY: ${{ secrets.SMSIR_API_KEY }}
+          SMSIR_ADMIN_OUTAGE_TEMPLATE_ID: ${{ secrets.SMSIR_ADMIN_OUTAGE_TEMPLATE_ID }}
+          SMSIR_ADMIN_RECOVERY_TEMPLATE_ID: ${{ secrets.SMSIR_ADMIN_RECOVERY_TEMPLATE_ID }}
+          SMSIR_ADMIN_BACKUP_TEMPLATE_ID: ${{ secrets.SMSIR_ADMIN_BACKUP_TEMPLATE_ID }}
+          SMSIR_ADMIN_BACKUP_RECOVERY_TEMPLATE_ID: ${{ secrets.SMSIR_ADMIN_BACKUP_RECOVERY_TEMPLATE_ID }}
+        run: python3 backend/scripts/send_operations_notice.py
+
+  phone-test:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          persist-credentials: false
+      - run: python3 -m pip install -r backend/requirements-notifications.txt
+      - env:
+          NOTICE_CATEGORY: test
+          NOTICE_EVENT_ID: test-${{ github.run_id }}
+          OPERATIONS_PUSH_CONFIG: ${{ secrets.OPERATIONS_PUSH_CONFIG }}
+          ADMIN_SMS_NOTIFICATIONS_ENABLED: ${{ secrets.ADMIN_SMS_NOTIFICATIONS_ENABLED }}
+          ADMIN_NOTIFICATION_PHONE: ${{ secrets.ADMIN_NOTIFICATION_PHONE }}
+          SMSIR_API_KEY: ${{ secrets.SMSIR_API_KEY }}
+          SMSIR_ADMIN_TEST_TEMPLATE_ID: ${{ secrets.SMSIR_ADMIN_TEST_TEMPLATE_ID }}
+        run: python3 backend/scripts/send_operations_notice.py

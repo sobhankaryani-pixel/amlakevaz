@@ -75,6 +75,7 @@ def send_sms(phone: str, message: str) -> str:
 
 
 def owner_notification_configured():
+    if os.getenv('ADMIN_SMS_NOTIFICATIONS_ENABLED','true').lower() in ('false','0','off'):return False
     phone=os.getenv('ADMIN_NOTIFICATION_PHONE','').strip()
     if not re.fullmatch(r'09[0-9]{9}',phone):return False
     return bool((os.getenv('SMS_PROVIDER','').lower()!='smsir' and configured()) or (os.getenv('SMS_PROVIDER','').lower()=='smsir' and os.getenv('SMSIR_API_KEY','').strip() and re.fullmatch(r'[1-9][0-9]*',os.getenv('SMSIR_ADMIN_NOTIFICATION_TEMPLATE_ID',''))))

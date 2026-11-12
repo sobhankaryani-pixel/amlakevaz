@@ -1,0 +1,3 @@
+
+# Private phone push export: paste only into GitHub Actions Secrets.
+operations-push-secret*.json

@@ -17,3 +17,36 @@
  .site.mobile-site .content-section.home-charts-box{width:calc(100% - 24px);margin:12px auto 18px;padding:12px 10px;border-radius:13px}
 }
 :root[data-theme=dark] .site .content-section.featured,:root[data-theme=dark] .site .home-action-card,:root[data-theme=dark] .site .home-charts-box{border-color:#6484a2}
+/* The paired invitations are SELL + MAP. Index heading stays with its charts. */
+.site .home-actions-row>.home-action-card,.site .home-actions-row>.home-map-section{width:100%;max-width:none;margin:0;padding:0;min-width:0;box-sizing:border-box;border:1px solid #173957;border-radius:14px;overflow:hidden;background:var(--soft)}
+.site .home-actions-row>.seller-action-card{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0}
+.site .home-actions-row .home-action-picture{margin:0;min-width:0;overflow:hidden;background:var(--paper)}
+.site .home-actions-row .home-action-picture img,.site .home-actions-row .home-map-preview img{display:block;width:100%;height:auto;aspect-ratio:1663/945;object-fit:cover}
+.site .home-actions-row .home-action-copy{padding:16px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;flex:1}
+.site .home-actions-row .home-action-copy p{flex:1;margin:0}.site .home-actions-row .home-action-copy .link-button{margin-top:auto}
+.site .home-actions-row .home-map-intro:not(.home-map-intro-open){height:100%;display:flex;flex-direction:column;align-items:stretch;gap:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.site .home-actions-row .home-map-intro:not(.home-map-intro-open) .home-map-preview{order:-1;margin:0;border-radius:0;min-width:0}
+.site .home-actions-row .home-map-preview figcaption{display:none}
+.site .home-actions-row .home-map-intro:not(.home-map-intro-open) .home-map-copy{padding:16px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;flex:1}
+.site .home-actions-row .home-map-copy h2,.site .home-actions-row .home-action-copy h2{font-size:21px;line-height:1.7;margin:0;min-height:3.4em}
+.site .home-actions-row .home-map-copy>p{display:block;font-size:13px;line-height:1.8;margin:0;flex:1}
+.site .home-actions-row .home-map-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;width:100%}
+.site .home-actions-row .home-map-actions>.home-map-open,.site .home-actions-row .home-map-actions>.link-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 12px;background:#173957;color:#fff;border:1px solid #173957;border-radius:10px;font-size:12px;line-height:1.7;gap:5px}
+.site .home-actions-row .home-map-copy>.section-kicker{display:block}
+.site .home-actions-row:has(.home-map-intro-open)>.home-map-section{grid-column:1/-1}
+.site .home-actions-row .home-map-intro-open{padding:16px;border:0;border-radius:0}
+@media(max-width:900px){
+ .site.mobile-site .home-actions-row>.home-action-card,.site.mobile-site .home-actions-row>.home-map-section{margin:0;padding:0;min-height:0;gap:0}
+ .site.mobile-site .home-actions-row .home-map-intro:not(.home-map-intro-open){display:flex;padding:0;gap:0}
+ .site.mobile-site .home-actions-row .home-map-intro:not(.home-map-intro-open) .home-map-copy,.site.mobile-site .home-actions-row .home-action-copy{display:flex;padding:10px;gap:7px}
+ .site.mobile-site .home-actions-row .home-map-intro:not(.home-map-intro-open) .home-map-preview{border-radius:0}
+ .site.mobile-site .home-actions-row .home-map-preview img{height:auto;aspect-ratio:1663/945}
+ .site.mobile-site .home-actions-row .home-map-copy h2,.site.mobile-site .home-actions-row .home-action-copy h2{font-size:15px;line-height:1.8;min-height:3.6em}
+ .site.mobile-site .home-actions-row .home-map-copy>p,.site.mobile-site .home-actions-row .home-action-copy p{display:block;font-size:12px;line-height:1.8}
+ .site.mobile-site .home-actions-row .home-map-copy .section-kicker{display:block;font-size:10px}
+ .site.mobile-site .home-actions-row .home-map-actions{display:flex;width:100%;gap:7px}
+ .site.mobile-site .home-actions-row .home-map-actions>.home-map-open,.site.mobile-site .home-actions-row .home-map-actions>.link-button,.site.mobile-site .home-actions-row .home-action-copy>.link-button{display:flex;width:100%;max-width:none;font-size:11px;min-height:44px;padding:7px 5px;text-align:center;white-space:normal;box-sizing:border-box}
+}
+/* Keep the two pictures identical in size without stretching the invitations. */
+.site .home-actions-row .home-action-picture img,.site .home-actions-row .home-map-preview img{height:clamp(150px,15vw,210px);aspect-ratio:auto;object-fit:cover}
+@media(max-width:900px){.site.mobile-site .home-actions-row .home-action-picture img,.site.mobile-site .home-actions-row .home-map-preview img{height:auto;aspect-ratio:1663/945;object-fit:cover}}

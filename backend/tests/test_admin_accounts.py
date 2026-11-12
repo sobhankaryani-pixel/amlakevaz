@@ -25,7 +25,7 @@ def env(monkeypatch):
         parse_sql(re.sub('%s', 'NULL', sql))
         calls.append((sql, params))
         cursor = MagicMock()
-        cursor.fetchone.return_value = dict(target)
+        cursor.fetchone.return_value = None if "entity_type='manager_notice'" in sql else dict(target)
         cursor.fetchall.return_value = [dict(target)]
         return cursor
     conn.execute.side_effect = execute

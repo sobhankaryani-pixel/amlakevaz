@@ -5,6 +5,8 @@ from .db import pool
 from .sms_gateway import owner_notification_configured,send_owner_submission_notice
 
 def enqueue(conn,submission_id,revision=0):
+    from .manager_notifications import enqueue as manager_enqueue
+    manager_enqueue(conn,'property',submission_id,key='property:'+str(submission_id)+':'+str(revision))
     conn.execute("INSERT INTO app.audit_logs(action,entity_type,entity_id,after_data) VALUES ('owner_sms_pending','owner_notification',%s,%s)",(submission_id,Jsonb({'revision':revision})))
 
 def process_one():
@@ -28,7 +30,11 @@ def process_one():
 
 async def worker(stop):
     while not stop.is_set():
-        try:active=await asyncio.to_thread(process_one)
+        try:
+            from .manager_notifications import process_one as process_manager
+            # Always service both queues so repeated new events cannot starve seller SMS.
+            active=await asyncio.to_thread(process_one)
+            active=(await asyncio.to_thread(process_manager)) or active
         except Exception:
             logging.getLogger('evaz.operations').warning('Owner notification worker could not finish; inspect private notification status')
             active=False

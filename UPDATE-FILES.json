@@ -1,7 +1,7 @@
 {
-  "package": "evaz-requests-update",
+  "package": "evaz-combined-update-v2",
   "files": [
-    "README-update-fa.txt",
+    "README-fa.txt",
     "admin/src/App.tsx",
     "admin/src/action-feedback.css",
     "admin/src/actionFeedback.ts",
@@ -15,6 +15,8 @@
     "backend/tests/test_request_experience.py",
     "backend/tests/test_seller_revisions.py",
     "backend/tests/test_step08.py",
+    "frontend/public/visual/evaz-map-symbol-v2.webp",
+    "frontend/public/visual/sell-property-symbol-v1.webp",
     "frontend/src/SellerAccount.tsx",
     "frontend/src/SellerRegistration.tsx",
     "frontend/src/desktop/DesktopView.tsx",
@@ -22,6 +24,7 @@
     "frontend/src/mobile/MobileView.tsx",
     "frontend/src/shared/EyeIcon.tsx",
     "frontend/src/shared/HomeActionCards.tsx",
+    "frontend/src/shared/HomeMapSection.tsx",
     "frontend/src/shared/PropertyPage.tsx",
     "frontend/src/shared/SubmissionGuide.tsx",
     "frontend/src/shared/SubmissionList.tsx",
@@ -38,12 +41,5 @@
     "frontend/tests/submission-pricing.test.mjs"
   ],
   "deleted_files": [],
-  "restore_tools": false,
-  "validation": {
-    "backend_tests": 179,
-    "frontend_tests": 64,
-    "admin_tests": 3,
-    "typecheck": "passed",
-    "liara_build": "passed"
-  }
+  "restore_tools": false
 }

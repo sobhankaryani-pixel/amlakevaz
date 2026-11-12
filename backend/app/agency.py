@@ -10,6 +10,7 @@ from psycopg.types.json import Jsonb
 from .auth import require_roles,hash_password,verify_password,_session_stamp
 from .config import settings
 from .db import pool
+from .manager_notifications import enqueue as notify_manager
 from .seller_auth import normalize_phone
 from .launch import limit_request,store_upload,validate_media,MediaItem
 from .media_cleanup import retain_files,RetainIn
@@ -76,7 +77,7 @@ def create(payload:AgencyIn,user=owner):
  phone=normalize_phone(payload.phone)
  try:
   with pool.connection() as conn:
-   row=conn.execute('INSERT INTO app.agencies(name,username,phone,password_hash) VALUES (%s,%s,%s,%s) RETURNING id',(payload.name.strip(),payload.username.lower(),phone,hash_password(payload.password))).fetchone();conn.commit()
+   row=conn.execute('INSERT INTO app.agencies(name,username,phone,password_hash) VALUES (%s,%s,%s,%s) RETURNING id',(payload.name.strip(),payload.username.lower(),phone,hash_password(payload.password))).fetchone();notify_manager(conn,'agency',row['id']);conn.commit()
  except Exception as exc:
   if getattr(exc,'sqlstate',None)=='23505':raise HTTPException(409,'این نام کاربری قبلاً ثبت شده است.') from None
   raise
@@ -153,6 +154,7 @@ def mount_listing_routes(model):
     target=conn.execute('SELECT updated_at FROM app.properties WHERE id=%s FOR SHARE',(row['property_id'],)).fetchone() if row['property_id'] else None
     item=conn.execute('''INSERT INTO app.agency_requests(file_id,agency_id,action,details,base_updated_at,file_version)
      VALUES (%s,%s,%s,%s,%s,%s) RETURNING id''',(file_id,user['id'],payload.action,Jsonb(details),target['updated_at'] if target else None,row['version'])).fetchone()
+    notify_manager(conn,'agency',item['id'])
   return {'id':str(item['id']),'message':'درخواست برای بررسی مالک اصلی ارسال شد.'}
 
 @router.get('/api/admin/agency-requests')

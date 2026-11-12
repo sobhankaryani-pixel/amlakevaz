@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, model_validator
 from psycopg.errors import UniqueViolation
 from .auth import require_roles, hash_password
 from .db import pool
+from .manager_notifications import enqueue as notify_manager
 
 admin_accounts = APIRouter(prefix='/api/admin/accounts', tags=['admin accounts'])
 owner_only = Depends(require_roles('owner'))
@@ -51,6 +52,7 @@ def create_account(payload: AdminCreate, user=owner_only):
                     (payload.username.lower(), encoded_password, payload.role)).fetchone()
                 conn.execute('''INSERT INTO app.audit_logs(user_id,action,entity_type,entity_id)
                     VALUES (%s,'create_admin','user',%s)''', (user['sub'], row['id']))
+                notify_manager(conn,'security')
     except UniqueViolation as exc:
         raise HTTPException(409, 'این نام کاربری قبلاً ثبت شده است.') from exc
     return {'item': dict(row)}
@@ -85,6 +87,7 @@ def update_account(account_id: UUID, payload: AdminUpdate, user=owner_only):
                 # Never log either the plain password or its hash in audit records.
                 conn.execute('''INSERT INTO app.audit_logs(user_id,action,entity_type,entity_id)
                     VALUES (%s,'update_admin','user',%s)''', (user['sub'], account_id))
+                notify_manager(conn,'security')
     except UniqueViolation as exc:
         raise HTTPException(409, 'این نام کاربری قبلاً ثبت شده است.') from exc
     return {'item': dict(row), 'sign_in_again': str(account_id) == user['sub']}

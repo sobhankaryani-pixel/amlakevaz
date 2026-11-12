@@ -49,8 +49,9 @@ def test_iphone_still_images_are_not_video(brand):
  with pytest.raises(HTTPException) as err:launch.file_kind(b'\x00\x00\x00\x18ftyp'+brand+b'\x00'*4+brand)
  assert err.value.status_code==422
 
-def test_workflows_parse_and_alerts_execute_no_repository_code():
+def test_workflows_parse_and_alerts_only_execute_trusted_default_branch():
  for path in Path('.github/workflows').glob('*.yml'):assert isinstance(yaml.safe_load(path.read_text()),dict)
  alert=Path('.github/workflows/operations-alerts.yml').read_text()
- assert 'actions/checkout' not in alert and 'download-artifact' not in alert
- assert 'head_repository' in alert and "head_branch!=='main'" in alert
+ assert 'download-artifact' not in alert and 'ref: main' in alert and 'persist-credentials: false' in alert
+ assert 'head_repository.full_name == github.repository' in alert and "head_branch == 'main'" in alert
+ assert 'NOTICE_EVENT_ID' in alert and 'OPERATIONS_PUSH_CONFIG' in alert
