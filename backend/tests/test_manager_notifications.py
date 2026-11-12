@@ -80,13 +80,20 @@ def test_signed_operations_ingest_rejects_replay_age_and_is_idempotent(system):
  with db.connection() as conn:assert conn.execute("SELECT action FROM app.audit_logs WHERE entity_type='manager_notice'").fetchone()['action']=='notice_external'
 
 
-def test_sms_categories_use_distinct_template_and_only_manager_number(monkeypatch):
- monkeypatch.setenv('ADMIN_NOTIFICATION_PHONE','09120000000');monkeypatch.setenv('SMSIR_API_KEY','test');monkeypatch.setenv('SMSIR_ADMIN_INQUIRY_TEMPLATE_ID','123')
- response=MagicMock();response.__enter__.return_value.read.return_value=b'{"status":1,"data":{"messageId":42}}'
- sender=MagicMock(return_value=response);monkeypatch.setattr(transport,'urlopen',sender)
- assert transport.send_sms_notice('inquiry')=='42'
- payload=json.loads(sender.call_args.args[0].data);assert payload['mobile']=='09120000000' and payload['templateId']==123
- assert transport.sms_ready('inquiry') and not transport.sms_ready('contact')
+def test_manager_sms_disabled_even_with_legacy_environment(monkeypatch):
+ from app import sms_gateway
+ monkeypatch.setenv('ADMIN_SMS_NOTIFICATIONS_ENABLED','true')
+ monkeypatch.setenv('ADMIN_NOTIFICATION_PHONE','09120000000')
+ monkeypatch.setenv('SMSIR_API_KEY','test')
+ monkeypatch.setenv('SMSIR_ADMIN_INQUIRY_TEMPLATE_ID','123')
+ sender=MagicMock();monkeypatch.setattr(transport,'urlopen',sender)
+ for category in transport.CATEGORIES:
+  assert transport.sms_ready(category) is False
+  try:transport.send_sms_notice(category)
+  except ValueError as exc:assert str(exc)=='manager_sms_disabled'
+  else:raise AssertionError('Manager SMS must be disabled')
+ assert sms_gateway.owner_notification_configured() is False
+ sender.assert_not_called()
 
 
 def test_actual_seller_and_admin_change_hooks(seller_case):

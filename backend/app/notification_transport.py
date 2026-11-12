@@ -24,16 +24,12 @@ def validate_subscription(sub):
  if not isinstance(keys,dict) or not re.fullmatch(r'[A-Za-z0-9_-]{80,150}={0,2}',keys.get('p256dh','')) or not re.fullmatch(r'[A-Za-z0-9_-]{20,30}={0,2}',keys.get('auth','')):raise ValueError('invalid_push_keys')
  return {'endpoint':endpoint,'keys':{'p256dh':keys['p256dh'],'auth':keys['auth']}}
 def sms_ready(category):
- if os.getenv('ADMIN_SMS_NOTIFICATIONS_ENABLED','true').lower() in ('false','0','off'):return False
- return bool(category in CATEGORIES and re.fullmatch(r'09[0-9]{9}',os.getenv('ADMIN_NOTIFICATION_PHONE','').strip()) and os.getenv('SMSIR_API_KEY','').strip() and re.fullmatch(r'[1-9][0-9]*',os.getenv(CATEGORIES[category][1],'')))
+ # Manager notifications are push-only, regardless of legacy environment settings.
+ return False
+
 def send_sms_notice(category):
- if not sms_ready(category):raise ValueError('sms_not_configured')
- payload={'mobile':os.environ['ADMIN_NOTIFICATION_PHONE'].strip(),'templateId':int(os.environ[CATEGORIES[category][1]]),'parameters':[{'name':'COUNT','value':'1'}]}
- req=Request('https://api.sms.ir/v1/send/verify',data=json.dumps(payload).encode(),headers={'x-api-key':os.environ['SMSIR_API_KEY'].strip(),'Content-Type':'application/json'},method='POST')
- with urlopen(req,timeout=12) as response:data=json.loads(response.read(16384))
- reference=data.get('data',{}).get('messageId') if isinstance(data.get('data'),dict) else None
- if data.get('status')!=1 or type(data.get('status')) is not int or not re.fullmatch(r'[1-9][0-9]*',str(reference)):raise ValueError('sms_unconfirmed')
- return str(reference)
+ raise ValueError('manager_sms_disabled')
+
 def send_push_notice(subscription,private_key,payload,subject='https://evazmelk.ir'):
  from pywebpush import webpush
  import requests

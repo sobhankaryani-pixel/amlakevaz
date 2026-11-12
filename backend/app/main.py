@@ -241,7 +241,7 @@ def submission_notifications(user=Depends(require_roles('owner','admin','data_en
     with pool.connection() as conn:
         row=conn.execute("SELECT count(*) AS count,max(COALESCE((details->>'_resubmitted_at')::timestamptz,created_at)) AS latest FROM app.property_submissions WHERE status='pending'").fetchone()
         states=conn.execute("SELECT action,count(*) AS count FROM app.audit_logs WHERE entity_type='owner_notification' AND created_at>now()-interval '7 days' GROUP BY action").fetchall()
-    return {'count':row['count'],'latest':row['latest'],'sms_enabled':__import__('os').getenv('ADMIN_SMS_NOTIFICATIONS_ENABLED','true').lower() not in ('false','0','off'),'sms_configured':owner_notifications.owner_notification_configured(),'sms_states':{x['action']:x['count'] for x in states}}
+    return {'count':row['count'],'latest':row['latest'],'sms_enabled':False,'sms_configured':owner_notifications.owner_notification_configured(),'sms_states':{x['action']:x['count'] for x in states}}
 
 @admin.get('/property-submissions')
 def list_seller_submissions(user=Depends(require_roles('owner','admin','data_entry'))):
