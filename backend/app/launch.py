@@ -13,6 +13,7 @@ from starlette.concurrency import run_in_threadpool
 from .attribution import clean_attribution, record_conversion, CAMPAIGN_REPORT_SQL
 from .auth import require_roles
 from .db import pool
+from .manager_notifications import enqueue as notify_manager
 from .config import settings
 from . import media_storage
 from .seller_auth import require_seller,normalize_phone
@@ -258,6 +259,9 @@ def contact_request(payload:ContactIn,request:Request):
     phone=normalize_phone(payload.phone)
     with pool.connection() as conn:
         conn.execute('INSERT INTO app.contact_requests(name,phone,description) VALUES (%s,%s,%s)',(payload.name.strip(),phone,payload.description.strip()))
+        import time
+        notice_key='contact:'+hashlib.sha256((phone+payload.description.strip()).encode()).hexdigest()+':'+str(int(time.time())//300)
+        notify_manager(conn,'contact',key=notice_key)
         record_conversion(conn,'contact_submit','/contact',payload.analytics)
         conn.commit()
     return {'message':'پیام شما ثبت شد؛ در ساعت پاسخ‌گویی با شما تماس می‌گیریم.'}

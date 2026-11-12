@@ -1,5 +1,6 @@
 import asyncio
 from . import owner_notifications
+from .manager_notifications import router as manager_notifications_router
 from .submission_tracking import ensure_tracking
 from contextlib import asynccontextmanager
 import json
@@ -38,6 +39,7 @@ async def lifespan(app: FastAPI):
         stop.set();await task;close_pool()
 
 app = FastAPI(title="Evaz Property Index API", version="0.1.0", lifespan=lifespan)
+app.include_router(manager_notifications_router)
 
 app.include_router(private_media_router)
 app.include_router(availability_router)
@@ -239,7 +241,7 @@ def submission_notifications(user=Depends(require_roles('owner','admin','data_en
     with pool.connection() as conn:
         row=conn.execute("SELECT count(*) AS count,max(COALESCE((details->>'_resubmitted_at')::timestamptz,created_at)) AS latest FROM app.property_submissions WHERE status='pending'").fetchone()
         states=conn.execute("SELECT action,count(*) AS count FROM app.audit_logs WHERE entity_type='owner_notification' AND created_at>now()-interval '7 days' GROUP BY action").fetchall()
-    return {'count':row['count'],'latest':row['latest'],'sms_configured':owner_notifications.owner_notification_configured(),'sms_states':{x['action']:x['count'] for x in states}}
+    return {'count':row['count'],'latest':row['latest'],'sms_enabled':__import__('os').getenv('ADMIN_SMS_NOTIFICATIONS_ENABLED','true').lower() not in ('false','0','off'),'sms_configured':owner_notifications.owner_notification_configured(),'sms_states':{x['action']:x['count'] for x in states}}
 
 @admin.get('/property-submissions')
 def list_seller_submissions(user=Depends(require_roles('owner','admin','data_entry'))):
