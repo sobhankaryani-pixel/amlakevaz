@@ -50,3 +50,29 @@
 /* Keep the two pictures identical in size without stretching the invitations. */
 .site .home-actions-row .home-action-picture img,.site .home-actions-row .home-map-preview img{height:clamp(150px,15vw,210px);aspect-ratio:auto;object-fit:cover}
 @media(max-width:900px){.site.mobile-site .home-actions-row .home-action-picture img,.site.mobile-site .home-actions-row .home-map-preview img{height:auto;aspect-ratio:1663/945;object-fit:cover}}
+
+/* Final paired home actions: compact, mirrored primary actions. */
+.site .content-section.home-actions-row{margin:10px auto 8px;gap:12px}
+.site .content-section.home-charts-box{margin-top:8px;margin-bottom:18px}
+.site .home-actions-row .home-action-copy,.site .home-actions-row .home-map-intro:not(.home-map-intro-open) .home-map-copy{justify-content:flex-start;gap:9px}
+.site .home-actions-row .home-action-copy .section-kicker,.site .home-actions-row .home-map-copy>.section-kicker{font-size:14px;font-weight:900;line-height:1.5}
+.site .home-actions-row .home-action-copy h2,.site .home-actions-row .home-map-copy h2{min-height:0;font-size:20px;line-height:1.65}
+.site .home-actions-row .home-action-copy .home-action-primary,.site .home-actions-row .home-map-actions>.home-action-primary{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin-top:auto;padding:9px 14px;border:1px solid #e6a62b;border-radius:11px;background:linear-gradient(120deg,#ffd567,#efab28);color:#123153;font-size:15px;font-weight:900;line-height:1.5;box-shadow:0 5px 14px #bc7b1725;cursor:pointer}
+.site .home-actions-row .home-action-copy .home-action-primary:hover,.site .home-actions-row .home-map-actions>.home-action-primary:hover{background:linear-gradient(120deg,#ffdc7b,#eaa01c)}
+.site .home-actions-row .home-map-actions{display:flex;flex-direction:column;align-items:stretch;gap:4px;width:100%;margin-top:auto}
+.site .home-actions-row .home-map-actions>.home-map-page-link{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;min-height:26px;padding:2px 0;border:0;background:transparent;color:var(--primary);font-size:11px;font-weight:700;line-height:1.5;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.site .home-actions-row .home-map-actions>.home-map-page-link span{font-size:15px;text-decoration:none}
+.site .home-actions-row .home-map-copy>p{flex:1}
+@media(max-width:900px){
+ .site.mobile-site .content-section.home-actions-row{margin:8px auto 6px;gap:8px}
+ .site.mobile-site .content-section.home-charts-box{margin-top:6px;margin-bottom:14px}
+ .site.mobile-site .home-actions-row .home-action-copy,.site.mobile-site .home-actions-row .home-map-intro:not(.home-map-intro-open) .home-map-copy{padding:10px;gap:7px}
+ .site.mobile-site .home-actions-row .home-action-copy .section-kicker,.site.mobile-site .home-actions-row .home-map-copy>.section-kicker{font-size:12px;font-weight:900}
+ .site.mobile-site .home-actions-row .home-action-copy h2,.site.mobile-site .home-actions-row .home-map-copy h2{font-size:15px;line-height:1.75;min-height:0}
+ .site.mobile-site .home-actions-row .home-action-copy .home-action-primary,.site.mobile-site .home-actions-row .home-map-actions>.home-action-primary{width:100%;min-height:46px;margin-top:auto;padding:7px 5px;font-size:12px;white-space:normal;box-sizing:border-box}
+ .site.mobile-site .home-actions-row .home-map-actions{display:flex;flex-direction:column;align-items:stretch;gap:2px;width:100%;margin-top:auto}
+ .site.mobile-site .home-map-intro:not(.home-map-intro-open) .home-map-actions{display:contents}
+ .site.mobile-site .home-map-intro:not(.home-map-intro-open) .home-map-actions>.home-map-open{grid-column:2;grid-row:1;min-height:46px;padding:7px 5px;font-size:12px;background:linear-gradient(120deg,#ffd567,#efab28);color:#123153;border:1px solid #e6a62b}
+ .site.mobile-site .home-map-intro:not(.home-map-intro-open) .home-map-actions>.home-map-page-link{grid-column:2;grid-row:2;justify-self:start;display:inline-flex;min-height:24px;margin-top:0;font-size:10px}
+ .site.mobile-site .home-actions-row .home-map-copy>p{display:block;font-size:11px;line-height:1.65;margin:0;flex:1}
+}

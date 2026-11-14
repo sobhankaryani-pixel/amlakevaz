@@ -25,6 +25,7 @@ jobs:
       - run: node --test frontend/tests/*.test.mjs
         env:
           JSDOM_MODULE: ${{ github.workspace }}/qa/node_modules/jsdom/lib/api.js
+      - run: npm test --prefix admin
       - run: pip install -r backend/requirements-test.txt
       - run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends ffmpeg
       - run: python -m pytest -q backend/tests
