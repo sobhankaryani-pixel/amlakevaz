@@ -26,7 +26,7 @@ for(const path of Object.keys(PAGES)){
 }
 writeFileSync(join(output,'robots.txt'),'User-agent: *\nAllow: /\nDisallow: /account\nDisallow: /register\nDisallow: /agency\nDisallow: /management/\nDisallow: /seo-shell.html\nDisallow: /mobile-preview\nSitemap: https://evazmelk.ir/sitemap.xml\n');
 const pageLocations=Object.keys(PAGES).filter(path=>path!=='/').map(path=>`location = ${path} { try_files ${path}/index.html =404; }`).join('\n');
-writeFileSync(join(output,'liara_nginx.conf'),`${pageLocations}\nlocation = /mobile-preview { add_header X-Robots-Tag "noindex, nofollow" always; add_header Cache-Control "no-store" always; try_files /mobile-preview.html =404; }
+const nginxConfig=`${pageLocations}\nlocation = /mobile-preview { add_header X-Robots-Tag "noindex, nofollow" always; add_header Cache-Control "no-store" always; try_files /mobile-preview.html =404; }
 location = /mobile-preview/ { add_header X-Robots-Tag "noindex, nofollow" always; add_header Cache-Control "no-store" always; try_files /mobile-preview.html =404; }
 error_page 404 /404.html;
 location = /404.html { internal; add_header X-Robots-Tag "noindex, follow" always; }
@@ -56,7 +56,9 @@ location /properties/ {
 location /management/ { add_header X-Robots-Tag "noindex, nofollow" always; try_files $uri $uri/ /management/index.html =404; }
 location /management/assets/ { add_header Cache-Control "public, max-age=31536000, immutable"; add_header X-Robots-Tag "noindex, nofollow" always; try_files $uri =404; }
 location ~ /\\.well-known { allow all; }
-`);
+`;
+const securityHeaders='add_header X-Content-Type-Options \"nosniff\" always;\nadd_header X-Frame-Options \"DENY\" always;\nadd_header Referrer-Policy \"strict-origin-when-cross-origin\" always;';
+writeFileSync(join(output,'liara_nginx.conf'),nginxConfig.replace(/(location [^{]+\{)/g,`$1\n${securityHeaders}`));
 // Fail before deployment if either application or one of its HTML assets is missing.
 for(const html of ['index.html','management/index.html','mobile-preview.html']){
   const content=readFileSync(join(output,html),'utf8');

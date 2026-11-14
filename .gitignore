@@ -1,3 +1,27 @@
-
-# Private phone push export: paste only into GitHub Actions Secrets.
+# Secrets and local environment files
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
 operations-push-secret*.json
+
+# JavaScript dependencies and build output
+**/node_modules/
+**/dist/
+liara-web-dist/
+
+# Python virtual environments, bytecode and test caches
+**/.venv/
+**/venv/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local editor and operating-system files
+.DS_Store
+Thumbs.db
+*.log

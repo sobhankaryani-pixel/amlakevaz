@@ -18,7 +18,7 @@
 ## انتشار
 
 1. ابتدا فایل `database/migrations/0011_public_contact_capture.sql` را در Supabase SQL Editor اجرا کنید.
-2. فایل‌های `backend/app/main.py` و `backend/app/crm.py` را Commit/Push کنید تا Render نسخهٔ جدید API را منتشر کند.
+2. فایل‌های `backend/app/main.py` و `backend/app/crm.py` را Commit/Push کنید تا نسخهٔ جدید API روی سرویس بک‌اند Liara منتشر شود.
 3. فایل‌های `frontend/src/App.tsx`، `frontend/src/ContactSubscribe.tsx` و `frontend/src/styles.css` را Commit/Push کنید تا لیارا سایت و پنل را منتشر کند.
 4. فایل‌های `admin/src/CRM.tsx` و `admin/src/CRM.css` را Commit/Push کنید تا لیارا سایت و پنل را منتشر کند.
 5. ابتدا با شماره‌ای تحت کنترل خودتان فرم را آزمایش کنید. بررسی کنید رکورد در پنل دیده شود، رضایت‌های انتخاب‌شده درست ثبت شوند و TXT/CSV فقط مخاطبان مجاز همان کانال را صادر کند.

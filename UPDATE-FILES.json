@@ -1,20 +1,44 @@
 {
-  "package": "evaz-home-actions-admin-tests-v1",
-  "sources": ["current-project-archive"],
+  "package": "evaz-prelaunch-safe-fixes-v2",
+  "sources": [
+    "current-project-archive"
+  ],
   "conflict_resolution": "preserve current committed project; only apply the listed focused changes",
   "files": [
     ".github/workflows/quality.yml",
+    ".gitignore",
     "UPDATE-FILES.json",
     "admin/package.json",
+    "admin/src/AdminLogin.tsx",
+    "admin/src/App.tsx",
+    "admin/src/admin-login.css",
     "admin/tests/run.mjs",
+    "build-liara.mjs",
+    "docs/HANDOFF-public-contact-capture.md",
+    "frontend/public/brand/admin-login-villa.webp",
+    "frontend/public/brand/logo-emblem-v2.webp",
+    "frontend/src/SellerAccount.tsx",
+    "frontend/src/desktop/DesktopView.tsx",
+    "frontend/src/mobile/MobileView.tsx",
     "frontend/src/shared/HomeActionCards.tsx",
     "frontend/src/shared/HomeMapSection.tsx",
+    "frontend/src/shared/PanelLogin.tsx",
     "frontend/src/shared/home-boxes.css",
-    "frontend/tests/home-actions-contract.test.mjs"
+    "frontend/src/shared/panel-login.css",
+    "frontend/tests/deployment-routing.test.mjs",
+    "frontend/tests/home-actions-contract.test.mjs",
+    "frontend/tests/image-asset-optimization.test.mjs"
   ],
   "deleted_files": [],
   "restore_tools": false,
   "guides_included": false,
   "manager_notifications": "push_only",
-  "mobile_admin_login": "unchanged"
+  "mobile_admin_login": "unchanged",
+  "notes": [
+    "Completed the existing homepage action-card changes and admin test workflow wiring.",
+    "Hardened Git ignore rules for secrets, dependencies, build artifacts, Python caches, and local files while keeping .env.example files tracked.",
+    "Updated the historical public-contact handoff note from Render to the current Liara backend deployment context.",
+    "Did not alter proxy trust settings, delete TOTP code/tests, or remove public assets without runtime verification.",
+    "Optimized the browser-rendered logo and admin login artwork to WebP while retaining PNG versions for PWA/notification compatibility; added conservative static-site security headers in generated Liara Nginx locations."
+  ]
 }
