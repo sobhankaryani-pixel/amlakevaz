@@ -57,3 +57,26 @@
 :root[data-theme=dark] .site .market-refined .market-price-warning{background:#3d3117;border-color:#a47b2d;color:#ffdf9b}
 :root[data-theme=dark] .site .market-refined .market-price-warning strong,:root[data-theme=dark] .site .market-refined .market-price-warning-icon{color:#ffe7b6}
 @media(max-width:900px){.site.mobile-site .market-refined .market-price-warning{padding:10px;gap:7px;margin:10px 0}.site.mobile-site .market-refined .market-price-warning p{font-size:12px;line-height:1.9}}
+
+/* Gold, slightly larger CTA for the full market analysis link on the homepage. */
+.site:has(.home-hero) .market-refined .market-shared-footer>.link-button{
+ display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:9px 18px;
+ border:1px solid #e8a51e;border-radius:10px;
+ background:linear-gradient(105deg,#ffd76a 0%,#f8bd3f 52%,#efa91f 100%);
+ color:#12375c;font-size:14px;font-weight:900;line-height:1.6;text-decoration:none;
+ box-shadow:0 4px 12px #b97d2024;position:relative;isolation:isolate;overflow:hidden;
+}
+.site:has(.home-hero) .market-refined .market-shared-footer>.link-button:hover{
+ background:linear-gradient(105deg,#ffe08a,#f3b42d);color:#102f50;text-decoration:none;
+}
+.site:has(.home-hero) .market-refined .market-shared-footer>.link-button::after{
+ content:"";position:absolute;inset:1px;border-radius:inherit;pointer-events:none;z-index:1;
+ background:linear-gradient(110deg,transparent 0%,#fff9 46%,#fff2 52%,transparent 65%);
+ transform:translateX(-130%);animation:home-button-glint 3.64s ease-in-out infinite;
+}
+@media(max-width:900px){
+ .site.mobile-site .market-refined .market-shared-footer>.link-button{min-height:42px;padding:7px 13px;font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){
+ .site:has(.home-hero) .market-refined .market-shared-footer>.link-button::after{animation:none;display:none}
+}
