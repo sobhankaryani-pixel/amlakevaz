@@ -153,3 +153,31 @@
  .site:has(.home-hero) .service-grid>button>b::after,
  .site:has(.home-hero) .contact-banner>a::after{animation:none;display:none}
 }
+
+
+/* Unified home-page frame widths and stronger navy outlines. */
+.site:has(.home-hero) .content-section.featured,
+.site:has(.home-hero) .content-section.home-actions-row,
+.site:has(.home-hero) .content-section.home-charts-box,
+.site:has(.home-hero) .content-section.services-section{
+ width:calc(100% - 48px);max-width:1272px;box-sizing:border-box;
+}
+.site:has(.home-hero) .content-section.home-actions-row{
+ grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.site:has(.home-hero) .content-section.featured,
+.site:has(.home-hero) .content-section.home-charts-box,
+.site:has(.home-hero) .home-actions-row>.home-action-card,
+.site:has(.home-hero) .home-actions-row>.home-map-section,
+.site:has(.home-hero) .service-grid>button{
+ border:2px solid #173957;
+}
+.site:has(.home-hero) .content-section.services-section{margin-left:auto;margin-right:auto}
+.site:has(.home-hero) .content-section.home-charts-box>.section-heading>.link-button{display:none}
+@media(max-width:900px){
+ .site.mobile-site:has(.home-hero) .content-section.featured,
+ .site.mobile-site:has(.home-hero) .content-section.home-actions-row,
+ .site.mobile-site:has(.home-hero) .content-section.home-charts-box,
+ .site.mobile-site:has(.home-hero) .content-section.services-section{width:calc(100% - 24px);max-width:none}
+ .site.mobile-site:has(.home-hero) .content-section.services-section{margin-left:auto;margin-right:auto}
+}
