@@ -113,7 +113,7 @@
 .site:has(.home-hero) .header-register::after{
  content:"";position:absolute;inset:1px;border-radius:inherit;pointer-events:none;z-index:0;
  background:linear-gradient(110deg,transparent 0%,#fff9 46%,#fff2 52%,transparent 65%);
- transform:translateX(-130%);animation:home-button-glint 5.2s ease-in-out infinite;
+ transform:translateX(-130%);animation:home-button-glint 3.64s ease-in-out infinite;
 }
 @keyframes home-button-glint{0%,65%{transform:translateX(-130%)}88%,100%{transform:translateX(130%)}}
 .site:has(.home-hero) .home-action-primary>*{position:relative;z-index:1}
@@ -127,3 +127,29 @@
  .site.mobile-site .home-actions-row .home-map-actions>.home-map-page-link{font-size:10px;min-height:23px}
 }
 @media(prefers-reduced-motion:reduce){.site:has(.home-hero) .home-action-primary::after,.site:has(.home-hero) .section-heading>.link-button::after,.site:has(.home-hero) .hero-quick button::after,.site:has(.home-hero) .header-register::after{animation:none;display:none}}
+
+/* Gold treatment for the four secondary homepage actions shown in the services/contact area. */
+.site:has(.home-hero) .service-grid>button>b,
+.site:has(.home-hero) .contact-banner>a{
+ background:linear-gradient(105deg,#ffd76a 0%,#f8bd3f 52%,#efa91f 100%);
+ border:1px solid #e8a51e;color:#12375c;
+ box-shadow:0 4px 12px #b97d2024;
+}
+.site:has(.home-hero) .service-grid>button>b:hover,
+.site:has(.home-hero) .contact-banner>a:hover{
+ background:linear-gradient(105deg,#ffe08a,#f3b42d);color:#102f50;
+}
+.site:has(.home-hero) .service-grid>button>b,
+.site:has(.home-hero) .contact-banner>a{
+ position:relative;isolation:isolate;overflow:hidden;
+}
+.site:has(.home-hero) .service-grid>button>b::after,
+.site:has(.home-hero) .contact-banner>a::after{
+ content:"";position:absolute;inset:1px;border-radius:inherit;pointer-events:none;z-index:1;
+ background:linear-gradient(110deg,transparent 0%,#fff9 46%,#fff2 52%,transparent 65%);
+ transform:translateX(-130%);animation:home-button-glint 3.64s ease-in-out infinite;
+}
+@media(prefers-reduced-motion:reduce){
+ .site:has(.home-hero) .service-grid>button>b::after,
+ .site:has(.home-hero) .contact-banner>a::after{animation:none;display:none}
+}
