@@ -18,7 +18,7 @@
 .admin-login-submit svg{color:#e3b551}
 .admin-login-back{width:100%;border-top:1px solid #e9e6e0;margin-top:26px;padding:20px 0 0;text-decoration:none;color:#142c48;font-weight:600;font-size:14px;display:flex;gap:12px;align-items:center;justify-content:center}
 .admin-login-back span{font-size:28px;line-height:1}
-.admin-login-visual{position:relative;background:#193149 url('/brand/admin-login-villa.png') center center/cover no-repeat;min-height:620px;display:flex;align-items:flex-end;justify-content:center;padding:54px 24px;color:#fff}
+.admin-login-visual{position:relative;background:#193149 url('/brand/admin-login-villa.webp') center center/cover no-repeat;min-height:620px;display:flex;align-items:flex-end;justify-content:center;padding:54px 24px;color:#fff}
 .admin-login-visual::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,#0c2945de 100%)}
 .admin-login-visual>div{position:relative;text-align:center;z-index:1}
 .admin-login-visual h2{font-size:clamp(24px,2.7vw,38px);line-height:1.7;margin:0 0 16px;color:white}
