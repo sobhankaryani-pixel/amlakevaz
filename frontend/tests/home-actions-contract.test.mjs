@@ -13,14 +13,14 @@ test('home actions keep seller and map paired with matching golden primary actio
   read('frontend/src/shared/HomeMapSection.tsx'),
   read('frontend/src/shared/home-boxes.css')
  ]);
- assert.match(seller,/ملک خود را جهت فروش ثبت کنید/);
+ assert.match(seller,/ملک خود را برای فروش ثبت کنید/);
  assert.doesNotMatch(seller,/درخواست فروش ملک را ثبت کنید/);
  assert.match(seller,/className="home-action-primary"/);
  assert.match(map,/className="home-action-primary home-map-open"/);
- assert.match(map,/className="home-map-page-link"/);
+ assert.match(map,/املاک را روی نقشه ببینید/);
+ assert.doesNotMatch(map,/home-map-page-link|رفتن به صفحه نقشه/);
  assert.doesNotMatch(map,/className="link-button" type="button" onClick=\{onFullMap\}/);
  assert.match(styles,/linear-gradient\(120deg,#ffd567,#efab28\)/);
- assert.match(styles,/home-map-page-link/);
  assert.match(styles,/@media\(max-width:900px\)/);
  assert.match(styles,/home-actions-row\{margin:8px auto 6px/);
 });
