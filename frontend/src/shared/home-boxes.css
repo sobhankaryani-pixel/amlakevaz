@@ -60,8 +60,6 @@
 .site .home-actions-row .home-action-copy .home-action-primary,.site .home-actions-row .home-map-actions>.home-action-primary{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin-top:auto;padding:9px 14px;border:1px solid #e6a62b;border-radius:11px;background:linear-gradient(120deg,#ffd567,#efab28);color:#123153;font-size:15px;font-weight:900;line-height:1.5;box-shadow:0 5px 14px #bc7b1725;cursor:pointer}
 .site .home-actions-row .home-action-copy .home-action-primary:hover,.site .home-actions-row .home-map-actions>.home-action-primary:hover{background:linear-gradient(120deg,#ffdc7b,#eaa01c)}
 .site .home-actions-row .home-map-actions{display:flex;flex-direction:column;align-items:stretch;gap:4px;width:100%;margin-top:auto}
-.site .home-actions-row .home-map-actions>.home-map-page-link{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;min-height:26px;padding:2px 0;border:0;background:transparent;color:var(--primary);font-size:11px;font-weight:700;line-height:1.5;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.site .home-actions-row .home-map-actions>.home-map-page-link span{font-size:15px;text-decoration:none}
 .site .home-actions-row .home-map-copy>p{flex:1}
 @media(max-width:900px){
  .site.mobile-site .content-section.home-actions-row{margin:8px auto 6px;gap:8px}
@@ -73,7 +71,6 @@
  .site.mobile-site .home-actions-row .home-map-actions{display:flex;flex-direction:column;align-items:stretch;gap:2px;width:100%;margin-top:auto}
  .site.mobile-site .home-map-intro:not(.home-map-intro-open) .home-map-actions{display:contents}
  .site.mobile-site .home-map-intro:not(.home-map-intro-open) .home-map-actions>.home-map-open{grid-column:2;grid-row:1;min-height:46px;padding:7px 5px;font-size:12px;background:linear-gradient(120deg,#ffd567,#efab28);color:#123153;border:1px solid #e6a62b}
- .site.mobile-site .home-map-intro:not(.home-map-intro-open) .home-map-actions>.home-map-page-link{grid-column:2;grid-row:2;justify-self:start;display:inline-flex;min-height:24px;margin-top:0;font-size:10px}
  .site.mobile-site .home-actions-row .home-map-copy>p{display:block;font-size:11px;line-height:1.65;margin:0;flex:1}
 }
 
@@ -87,7 +84,6 @@
 .site .home-actions-row .home-map-copy>p{display:none}
 .site .home-actions-row .home-map-actions{gap:4px;flex-direction:column-reverse}
 .site .home-actions-row .home-action-copy .home-action-primary,.site .home-actions-row .home-map-actions>.home-action-primary{min-height:60px;margin-top:auto;border-radius:13px;font-size:21px;font-weight:900;background:linear-gradient(105deg,#ffd76a 0%,#f8bd3f 52%,#efa91f 100%);border:1px solid #e8a51e;color:#12375c;box-shadow:0 4px 12px #b97d2024}
-.site .home-actions-row .home-map-actions>.home-map-page-link{min-height:29px;font-size:13px}
 
 /* Gold is the shared primary-action color across the homepage. */
 .site:has(.home-hero) .section-heading>.link-button,
@@ -124,7 +120,6 @@
  .site.mobile-site .home-actions-row .home-action-copy .section-kicker,.site.mobile-site .home-actions-row .home-map-copy>.section-kicker{font-size:11px}
  .site.mobile-site .home-actions-row .home-action-copy h2,.site.mobile-site .home-actions-row .home-map-copy h2{font-size:15px;line-height:1.75}
  .site.mobile-site .home-actions-row .home-action-copy .home-action-primary,.site.mobile-site .home-actions-row .home-map-actions>.home-action-primary{min-height:46px;font-size:13px}
- .site.mobile-site .home-actions-row .home-map-actions>.home-map-page-link{font-size:10px;min-height:23px}
 }
 @media(prefers-reduced-motion:reduce){.site:has(.home-hero) .home-action-primary::after,.site:has(.home-hero) .section-heading>.link-button::after,.site:has(.home-hero) .hero-quick button::after,.site:has(.home-hero) .header-register::after{animation:none;display:none}}
 
@@ -180,4 +175,20 @@
  .site.mobile-site:has(.home-hero) .content-section.home-charts-box,
  .site.mobile-site:has(.home-hero) .content-section.services-section{width:calc(100% - 24px);max-width:none}
  .site.mobile-site:has(.home-hero) .content-section.services-section{margin-left:auto;margin-right:auto}
+}
+
+
+/* Final symmetric seller/map cards: one-line titles, identical imagery and aligned CTAs. */
+.site .home-actions-row .home-action-picture img,.site .home-actions-row .home-map-preview img{height:clamp(196px,16.4vw,270px);aspect-ratio:auto;object-fit:cover;object-position:center}
+.site .home-actions-row .home-action-copy,.site .home-actions-row .home-map-intro:not(.home-map-intro-open) .home-map-copy{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;min-width:0;flex:1}
+.site .home-actions-row .home-action-copy h2,.site .home-actions-row .home-map-copy h2{white-space:nowrap;overflow:visible;text-overflow:clip;min-height:0;line-height:1.45}
+.site .home-actions-row .home-map-actions{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:0;margin-top:auto;width:100%}
+.site .home-actions-row .home-action-copy .home-action-primary,.site .home-actions-row .home-map-actions>.home-action-primary{width:100%;min-height:60px;box-sizing:border-box}
+@media(max-width:900px){
+ .site.mobile-site .home-actions-row .home-action-picture img,.site.mobile-site .home-actions-row .home-map-preview img{height:auto;aspect-ratio:1663/910;object-fit:cover;object-position:center}
+ .site.mobile-site .home-actions-row .home-action-copy,.site.mobile-site .home-actions-row .home-map-intro:not(.home-map-intro-open) .home-map-copy{min-width:0;padding:12px 8px 10px;gap:7px;flex:1}
+ .site.mobile-site .home-actions-row .home-action-copy h2,.site.mobile-site .home-actions-row .home-map-copy h2{display:block;width:100%;min-width:0;white-space:nowrap;overflow:visible;text-overflow:clip;font-size:clamp(8.5px,2.65vw,10.5px);font-weight:900;letter-spacing:-.25px;line-height:1.5;margin:0;text-align:center}
+ .site.mobile-site .home-actions-row .home-action-copy .section-kicker,.site.mobile-site .home-actions-row .home-map-copy>.section-kicker{font-size:10px;line-height:1.4;white-space:nowrap}
+ .site.mobile-site .home-actions-row .home-action-copy .home-action-primary,.site.mobile-site .home-actions-row .home-map-actions>.home-action-primary{width:100%;min-height:46px;margin-top:auto;padding:7px 4px;font-size:12px;white-space:nowrap}
+ .site.mobile-site .home-actions-row .home-map-actions{display:flex;flex-direction:column;gap:0;margin-top:auto}
 }

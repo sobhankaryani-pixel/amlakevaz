@@ -2,7 +2,7 @@ import {lazy,Suspense,useEffect,useRef,useState} from 'react';
 import './homeMapSection.css';
 const PropertyMap=lazy(()=>import('../PropertyMap'));
 
-export default function HomeMapSection({onFullMap}:{onFullMap:()=>void}){
+export default function HomeMapSection(){
  const [open,setOpen]=useState(false);
  const frame=useRef<HTMLDivElement>(null),opener=useRef<HTMLButtonElement>(null);
  const close=()=>{setOpen(false);requestAnimationFrame(()=>{opener.current?.focus({preventScroll:true});opener.current?.scrollIntoView({block:'center',behavior:'auto'})})};
@@ -28,9 +28,8 @@ export default function HomeMapSection({onFullMap}:{onFullMap:()=>void}){
   return()=>{cancelAnimationFrame(raf);observer.disconnect();window.removeEventListener('resize',fit);window.visualViewport?.removeEventListener('resize',fit)};
  },[open]);
  return <section className="content-section home-map-section" aria-labelledby="home-map-title">
- <div className={`home-map-intro${open?' home-map-intro-open':''}`}><div className="home-map-copy"><span className="section-kicker">ملک را با موقعیتش ببینید</span><h2 id="home-map-title">املاک روی نقشهٔ اوز</h2><p>موقعیت آگهی‌های فعال را روی نقشه بررسی کنید و ملک موردنظرتان را در منطقهٔ دلخواه پیدا کنید.</p><div className="home-map-actions"><button ref={opener} className="home-action-primary home-map-open" type="button" onClick={()=>open?close():setOpen(true)} aria-expanded={open} aria-controls="home-online-map">{open?'بستن نقشه':'نمایش نقشهٔ آنلاین'} <span aria-hidden="true">⌖</span></button>
- {open&&<div ref={frame} id="home-online-map" className="home-map-live"><div className="home-map-live-bar"><strong>نقشهٔ آنلاین اوز</strong><button type="button" className="home-map-close" onClick={close}><span aria-hidden="true">×</span> بستن نقشه</button></div><Suspense fallback={<p className="state-message" role="status">در حال بازکردن نقشهٔ اوز…</p>}><PropertyMap/></Suspense></div>}
- <button className="home-map-page-link" type="button" onClick={onFullMap}>رفتن به صفحهٔ نقشه <span aria-hidden="true">←</span></button></div></div>
+ <div className={`home-map-intro${open?' home-map-intro-open':''}`}><div className="home-map-copy"><span className="section-kicker">ملک را با موقعیتش ببینید</span><h2 id="home-map-title">املاک را روی نقشه ببینید</h2><p>موقعیت آگهی‌های فعال را روی نقشه بررسی کنید و ملک موردنظرتان را در منطقهٔ دلخواه پیدا کنید.</p><div className="home-map-actions"><button ref={opener} className="home-action-primary home-map-open" type="button" onClick={()=>open?close():setOpen(true)} aria-expanded={open} aria-controls="home-online-map">{open?'بستن نقشه':'نمایش نقشهٔ آنلاین'}</button>
+ {open&&<div ref={frame} id="home-online-map" className="home-map-live"><div className="home-map-live-bar"><strong>نقشهٔ آنلاین اوز</strong><button type="button" className="home-map-close" onClick={close}><span aria-hidden="true">×</span> بستن نقشه</button></div><Suspense fallback={<p className="state-message" role="status">در حال بازکردن نقشهٔ اوز…</p>}><PropertyMap/></Suspense></div>}</div></div>
  {!open&&<figure className="home-map-preview evaz-satellite-preview"><img src="/visual/evaz-map-symbol-v2.webp" width="1663" height="945" loading="lazy" decoding="async" alt="پیش‌نمایش سه‌بعدی بر پایهٔ نقشهٔ واقعی اوز؛ نشانگرهای زمین و خانه نمادین هستند"/><figcaption>تصویر نمادین بر پایهٔ نقشهٔ اوز؛ موقعیت‌های واقعی املاک را در نقشهٔ آنلاین ببینید.</figcaption></figure>}</div>
  </section>;
 }
