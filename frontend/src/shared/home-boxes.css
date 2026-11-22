@@ -187,7 +187,7 @@
 @media(max-width:900px){
  .site.mobile-site .home-actions-row .home-action-picture img,.site.mobile-site .home-actions-row .home-map-preview img{height:auto;aspect-ratio:1663/910;object-fit:cover;object-position:center}
  .site.mobile-site .home-actions-row .home-action-copy,.site.mobile-site .home-actions-row .home-map-intro:not(.home-map-intro-open) .home-map-copy{min-width:0;padding:12px 8px 10px;gap:7px;flex:1}
- .site.mobile-site .home-actions-row .home-action-copy h2,.site.mobile-site .home-actions-row .home-map-copy h2{display:block;width:100%;min-width:0;white-space:nowrap;overflow:visible;text-overflow:clip;font-size:clamp(8.5px,2.65vw,10.5px);font-weight:900;letter-spacing:-.25px;line-height:1.5;margin:0;text-align:center}
+ .site.mobile-site .home-actions-row .home-action-copy h2,.site.mobile-site .home-actions-row .home-map-copy h2{display:block;width:100%;min-width:0;white-space:nowrap;overflow:visible;text-overflow:clip;font-size:clamp(8.5px,2.65vw,10.5px);font-weight:900;letter-spacing:-.25px;line-height:1.5;margin:0;text-align:right;direction:rtl}
  .site.mobile-site .home-actions-row .home-action-copy .section-kicker,.site.mobile-site .home-actions-row .home-map-copy>.section-kicker{font-size:10px;line-height:1.4;white-space:nowrap}
  .site.mobile-site .home-actions-row .home-action-copy .home-action-primary,.site.mobile-site .home-actions-row .home-map-actions>.home-action-primary{width:100%;min-height:46px;margin-top:auto;padding:7px 4px;font-size:12px;white-space:nowrap}
  .site.mobile-site .home-actions-row .home-map-actions{display:flex;flex-direction:column;gap:0;margin-top:auto}
