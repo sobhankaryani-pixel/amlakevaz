@@ -401,3 +401,35 @@
 @media(max-width:900px){
  .mobile-site .site-header{top:calc(-1 * var(--mobile-header-hidden,0px))}
 }
+
+
+/* Keep the mobile site locked to the device viewport; map gestures are enabled only after explicit activation. */
+@media (max-width: 900px) {
+  html, body, #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+  }
+  body { overflow-x: hidden; }
+  .site.mobile-site {
+    width: 100%;
+    max-width: 100vw;
+    min-width: 0;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+  }
+  .site.mobile-site *,
+  .site.mobile-site *::before,
+  .site.mobile-site *::after {
+    box-sizing: border-box;
+  }
+  .site.mobile-site .map-interaction-active,
+  .site.mobile-site .map-interaction-active .property-map,
+  .site.mobile-site .map-interaction-active .property-map * {
+    touch-action: none !important;
+  }
+  .site.mobile-site .map-interaction-locked .map-control-cover {
+    touch-action: pan-y !important;
+  }
+}

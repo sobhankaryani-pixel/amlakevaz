@@ -5,6 +5,8 @@ import {installPrivatePageGuard} from './shared/privateDevice';
 installPrivatePageGuard();
 import {installWheelValueGuard} from './shared/wheelValueGuard';
 installWheelValueGuard();
+import {installMobileGestureLock} from './shared/mobileGestureLock';
+installMobileGestureLock();
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
