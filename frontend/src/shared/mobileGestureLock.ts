@@ -6,6 +6,7 @@ function isActiveMapTarget(target: EventTarget | null): boolean {
 
 /** Prevent iOS Safari's page-level pinch zoom while preserving Leaflet/Neshan gestures on an activated map. */
 export function installMobileGestureLock(): () => void {
+  if (document.documentElement.dataset.desktopView === "true") return () => {};
   const blockPageGesture = (event: Event) => {
     if (!isActiveMapTarget(event.target)) event.preventDefault();
   };

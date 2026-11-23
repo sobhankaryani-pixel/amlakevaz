@@ -6,3 +6,11 @@ test('Liara routing keeps management and previews while unknown public paths ret
  assert.ok(source.includes('X-Content-Type-Options'));assert.ok(source.includes('X-Frame-Options'));assert.ok(source.includes('Referrer-Policy'));assert.ok(source.includes('nginxConfig.replace(/(location [^{]+\\{)/g'));
  assert.ok(!source.includes('try_files $uri $uri/ /index.html'));
 });
+
+test('only previewable pages opt into same-origin framing',()=>{
+ const source=readFileSync(new URL('../../build-liara.mjs',import.meta.url),'utf8');
+ assert.match(source,/location = \/ \{[^}]*try_files \/index.html =404;/);
+ assert.match(source,/path=>path!==['"]\/agency['"]/);
+ assert.match(source,/previewLocations\.has\(route\)\?'SAMEORIGIN':'DENY'/);
+ assert.match(source,/location \/properties\/ \{\s*proxy_hide_header X-Frame-Options;/);
+});

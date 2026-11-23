@@ -30,6 +30,7 @@ const nginxConfig=`${pageLocations}\nlocation = /mobile-preview { add_header X-R
 location = /mobile-preview/ { add_header X-Robots-Tag "noindex, nofollow" always; add_header Cache-Control "no-store" always; try_files /mobile-preview.html =404; }
 error_page 404 /404.html;
 location = /404.html { internal; add_header X-Robots-Tag "noindex, follow" always; }
+location = / { add_header Cache-Control "no-cache, no-store, must-revalidate" always; try_files /index.html =404; }
 location / { add_header Cache-Control "no-cache, no-store, must-revalidate" always; index index.html; try_files $uri $uri/ =404; }
 location /assets/ { add_header Cache-Control "public, max-age=31536000, immutable"; try_files $uri =404; }
 location = /seo-shell.html { add_header X-Robots-Tag "noindex, nofollow" always; add_header Cache-Control "no-store" always; try_files $uri =404; }
@@ -44,6 +45,7 @@ location = /sitemap.xml {
   proxy_pass https://backend.evazmelk.ir/api/public/seo/sitemap.xml;
 }
 location /properties/ {
+  proxy_hide_header X-Frame-Options;
   proxy_ssl_server_name on;
   proxy_ssl_name backend.evazmelk.ir;
   proxy_set_header Host backend.evazmelk.ir;
@@ -57,8 +59,19 @@ location /management/ { add_header X-Robots-Tag "noindex, nofollow" always; try_
 location /management/assets/ { add_header Cache-Control "public, max-age=31536000, immutable"; add_header X-Robots-Tag "noindex, nofollow" always; try_files $uri =404; }
 location ~ /\\.well-known { allow all; }
 `;
-const securityHeaders='add_header X-Content-Type-Options \"nosniff\" always;\nadd_header X-Frame-Options \"DENY\" always;\nadd_header Referrer-Policy \"strict-origin-when-cross-origin\" always;';
-writeFileSync(join(output,'liara_nginx.conf'),nginxConfig.replace(/(location [^{]+\{)/g,`$1\n${securityHeaders}`));
+// The preview embeds only pages from its own origin. Keep unrelated routes frame-denied.
+const previewLocations=new Set([
+  ...Object.keys(PAGES).filter(path=>path!=='/agency').map(path=>`= ${path}`),
+  '/properties/'
+]);
+writeFileSync(join(output,'liara_nginx.conf'),nginxConfig.replace(/(location [^{]+\{)/g, location=>{
+  const route=location.slice('location '.length,-1).trim();
+  const framePolicy=previewLocations.has(route)?'SAMEORIGIN':'DENY';
+  return `${location}
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header X-Frame-Options "${framePolicy}" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;`;
+}));
 // Fail before deployment if either application or one of its HTML assets is missing.
 for(const html of ['index.html','management/index.html','mobile-preview.html']){
   const content=readFileSync(join(output,html),'utf8');

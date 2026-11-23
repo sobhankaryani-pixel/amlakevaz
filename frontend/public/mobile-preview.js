@@ -17,6 +17,7 @@ function safePage(value){
     if(url.origin!==location.origin)return '/';
     const path=url.pathname.replace(/\/$/,'')||'/';
     if(!pages.has(path)&&!/^\/properties\/[^/]+$/.test(path))return '/';
+    url.searchParams.delete('view');
     return path+url.search+url.hash;
   }catch{return '/'}
 }
@@ -48,10 +49,13 @@ function openPage(value){
 function syncPage(){
   try{
     const child=frame.contentWindow.location;
-    if(child.origin!==location.origin)return;
+    if(child.origin!==location.origin||!frame.contentDocument?.getElementById('root')){
+      status.textContent='سایت داخل قاب باز نشد. گزینهٔ بارگذاری دوباره را بزن.';
+      return;
+    }
     currentPage=safePage(child.pathname+child.search+child.hash);selectCurrentPage();remember();
     status.textContent='آمادهٔ مشاهده و اسکرین‌شات';
-  }catch{status.textContent='برای ادامه، یکی از صفحات بالا را انتخاب کن.'}
+  }catch{status.textContent='سایت داخل قاب باز نشد. گزینهٔ بارگذاری دوباره را بزن.'}
 }
 frame.addEventListener('load',()=>{
   unbind();syncPage();

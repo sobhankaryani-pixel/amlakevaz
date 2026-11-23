@@ -1,0 +1,22 @@
+.site .nav-links .view-mode-link,.view-mode-return {
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ min-height:44px;
+ padding:8px 14px;
+ border:1px solid #6c90b9;
+ border-radius:10px;
+ background:#173957;
+ color:#fff;
+ font-weight:700;
+ text-decoration:none;
+}
+.view-mode-return {
+ position:fixed;
+ inset:auto auto 16px 16px;
+ z-index:95;
+}
+.view-mode-link:focus-visible {
+ outline:2px solid #f3ba50;
+ outline-offset:2px;
+}

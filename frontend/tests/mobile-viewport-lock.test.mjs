@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const mobileCss = readFileSync(new URL('../src/mobile/mobile.css', import.meta.url), 'utf8');
@@ -27,4 +28,26 @@ test('iOS Safari page gestures are blocked except inside the activated map', () 
   assert.match(gestureLock, /event\.touches\.length > 1/);
   assert.match(gestureLock, /MAP_SELECTOR/);
   assert.match(main, /installMobileGestureLock\(\)/);
+});
+
+test('explicit desktop viewport persists in the tab and never overrides the preview frame', () => {
+  const bootstrap = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  const stored = new Map();
+  const run = (search, framed = false) => {
+    const viewport = {content: 'width=device-width'};
+    const dataset = {};
+    const window = {location: {search}};
+    window.top = framed ? {} : window;
+    runInNewContext(bootstrap, {
+      window, URLSearchParams,
+      sessionStorage: {getItem: key => stored.get(key), setItem: (key, value) => stored.set(key, value)},
+      document: {documentElement: {dataset}, querySelector: () => viewport},
+    });
+    return {viewport: viewport.content, desktop: dataset.desktopView};
+  };
+  assert.equal(run('?view=desktop').viewport, 'width=1280, viewport-fit=cover');
+  assert.equal(run('?region=evaz').desktop, 'true');
+  assert.equal(run('?view=desktop', true).viewport, 'width=device-width');
+  assert.equal(run('?view=auto').desktop, undefined);
+  assert.equal(run('').viewport, 'width=device-width');
 });
