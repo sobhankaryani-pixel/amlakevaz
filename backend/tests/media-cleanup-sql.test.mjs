@@ -10,7 +10,9 @@ test('migration protects legacy files, all references and draft leases; triggers
  CREATE TABLE app.uploaded_media(id uuid PRIMARY KEY,filename text UNIQUE,kind text,size_bytes bigint,created_at timestamptz DEFAULT now());
  CREATE TABLE app.properties(id integer PRIMARY KEY,media jsonb DEFAULT '[]',cover_photo_url text,status text,notes text);
  CREATE TABLE app.property_submissions(id integer PRIMARY KEY,details jsonb,status text);
- CREATE TABLE app.homepage_promotions(id integer PRIMARY KEY,image_url text,is_active boolean);`);
+ CREATE TABLE app.homepage_promotions(id integer PRIMARY KEY,image_url text,is_active boolean);
+ CREATE TABLE app.agency_files(details jsonb);
+ CREATE TABLE app.agency_requests(details jsonb);`);
  const name=i=>`00000000-0000-4000-8000-${String(i).padStart(12,'0')}.webp`;
  const url=i=>'https://api.evazmelk.ir/api/public/media/'+name(i);
  for(let i=1;i<=6;i++)await db.query("INSERT INTO app.uploaded_media(id,filename,kind,size_bytes,created_at) VALUES ($1,$2,'image',100,now()-interval '80 days')",[name(i).slice(0,-5),name(i)]);
@@ -25,6 +27,11 @@ test('migration protects legacy files, all references and draft leases; triggers
  await db.query('INSERT INTO app.homepage_promotions VALUES (1,$1,false)',[url(4)]);
  await db.query("UPDATE app.uploaded_media SET retain_until=now()+interval '30 days' WHERE filename=$1",[name(5)]);
  assert.deepEqual(await candidates(),[name(6)]);
+ for(const table of ['agency_files','agency_requests']){
+  await db.query(`INSERT INTO app.${table}(details) VALUES ($1)`,[JSON.stringify({media:[{url:url(6)}]})]);
+  assert.deepEqual(await candidates(),[]);
+  await db.exec(`DELETE FROM app.${table}`);
+ }
  await db.query("UPDATE app.uploaded_media SET created_at=now()-interval '2 days' WHERE filename=$1",[name(6)]);
  assert.deepEqual(await candidates(),[]);
  await db.query("UPDATE app.uploaded_media SET created_at=now()-interval '80 days' WHERE filename=$1",[name(6)]);

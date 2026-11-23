@@ -9,6 +9,7 @@ test('245 properties remain reachable through every page; new seller kinds and l
  CREATE TABLE app.property_types(id text DEFAULT gen_random_uuid()::text,code text UNIQUE,name text,category text);
  CREATE TABLE app.regions(id text,name text);CREATE TABLE app.listings(market_record_id text,asking_price_toman numeric,published_at timestamptz);
  CREATE TABLE app.market_records(id text,property_id text);CREATE TABLE app.property_sales(property_id text,sale_date text,sale_price_toman numeric);
+ CREATE TABLE app.audit_logs(entity_type text,entity_id text,action text,created_at timestamptz);
  CREATE TABLE app.property_submissions(kind text CHECK(kind IN ('land','villa','apartment','mehr','national')));
  INSERT INTO app.property_types(id,code,name,category) VALUES ('type','raw_land','زمین','زمین');INSERT INTO app.property_submissions VALUES ('land');`);
  await db.exec("INSERT INTO app.properties(id,public_code,property_type_id,created_at) SELECT lpad(i::text,3,'0'),lpad(i::text,3,'0'),'type',now() FROM generate_series(1,245) i");
