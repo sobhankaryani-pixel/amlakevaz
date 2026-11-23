@@ -15,6 +15,7 @@ import "./styles.css";
 import "./shared/professional-compact.css";
 import "./shared/listing-rail.css";
 import "./shared/home-boxes.css";
+import "./shared/home-redesign.css";
 document.documentElement.lang = "fa";
 document.documentElement.dir = "rtl";
 createRoot(document.getElementById("root")!).render(<React.StrictMode><ErrorBoundary><App /></ErrorBoundary></React.StrictMode>);
