@@ -289,3 +289,32 @@
 .site .brand-link small {color:inherit}
 .site .brand-link .brand-highlight {color:#a57932}
 :root[data-theme=dark] .site .brand-link .brand-highlight {color:#edc575}
+
+/* One finish for home controls. Keep the header's register action gold. */
+.site[data-page=home][data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a,.site-footer button,.mobile-bottom-nav button,.view-mode-link) {
+ --home-blue:linear-gradient(145deg,#246bb8 0%,#125295 45%,#123e78 100%);
+ background:var(--home-blue);
+ border:1px solid #628fc2;
+ color:#fff;
+ box-shadow:inset 0 1px 0 #ffffff55,0 2px 6px #102d4929;
+ transition:filter .18s ease,transform .18s ease;
+}
+.site[data-page=home][data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a,.site-footer button,.mobile-bottom-nav button,.view-mode-link):is(:hover,:focus-visible) {
+ filter:brightness(1.17);
+}
+.site[data-page=home][data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a,.site-footer button,.mobile-bottom-nav button,.view-mode-link):is([aria-current=page],[aria-pressed=true]) {
+ outline:2px solid #8dcaff;
+ outline-offset:-3px;
+}
+.site[data-page=home][data-layout] :is(.service-grid button p,.service-grid button .service-arrow,.service-grid button h3,.footer-columns button,.mobile-bottom-nav button span,.mobile-bottom-nav button svg) {color:inherit}
+.site[data-page=home][data-layout] .footer-columns button {padding-inline:9px;border-radius:7px;margin-block:2px}
+.site[data-page=home][data-layout] .mobile-bottom-nav {gap:4px}
+.site[data-page=home][data-layout] .header-inner .theme-toggle {color:white}
+.site[data-page=home][data-layout] .header-inner .theme-toggle-thumb {background:#153963}
+.site[data-page=home][data-layout] .market-ranges button[aria-pressed=true] {background:linear-gradient(145deg,#246bb8,#123e78);color:#fff}
+.site[data-page=home][data-layout] .market-point-controls button {background:transparent;border:0;box-shadow:none}
+.site[data-page=home][data-layout] .market-point-controls button[aria-pressed=true] {background:#2477ed20}
+.site[data-page=home][data-layout] button:disabled {filter:saturate(.4);opacity:.6}
+@media(prefers-reduced-motion:reduce) {
+ .site[data-page=home][data-layout] :is(button,.contact-banner>a,.view-mode-link) {transition:none}
+}
