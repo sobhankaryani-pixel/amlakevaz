@@ -235,3 +235,53 @@
  .site :is(.header-register,.featured .link-button,.home-action-primary,.service-grid>button,.contact-banner>a):active,
  .site .listing-card:hover .listing-image img {transform:none}
 }
+
+.property-sample {position:relative;width:100%;height:100%;background:var(--soft);overflow:hidden}
+.property-sample img {display:block;width:100%;height:100%;object-fit:cover}
+.property-sample > span {
+ position:absolute;
+ inset:auto 8px 8px auto;
+ padding:3px 8px;
+ border-radius:6px;
+ background:#173550;
+ color:white;
+ font-size:11px;
+ font-weight:700;
+}
+.property-sample-detail {height:clamp(180px,36vw,360px);border-radius:14px}
+
+/* Shared home actions, with gold reserved for adding a property. */
+.site[data-page=home] {
+ --home-action-ink:#173550;
+ --home-action-gold:#f4c253;
+ --home-action-line:#6d849b;
+}
+.site[data-page=home] .featured > .section-heading > .link-button {
+ background:#244b70;
+ border-color:#9bb9d6;
+ color:#fff;
+}
+.site[data-page=home] .contact-banner > a,
+.site[data-page=home] .market-shared-footer > .link-button {
+ background:#244b70;
+ border:1px solid #9bb9d6;
+ color:#fff;
+}
+.site[data-page=home] .site-header .header-register,
+.site[data-page=home] .home-actions-row .seller-action-card .home-action-primary {
+ background:var(--home-action-gold);
+ border:1px solid #b58732;
+ color:var(--home-action-ink);
+}
+.site[data-page=home] .home-actions-row .home-map-actions > .home-action-primary,
+.site[data-page=home] .header-tools :is(.header-account,.header-search) {
+ background:var(--paper);
+ border:1px solid var(--home-action-line);
+ color:var(--ink);
+}
+.site[data-page=home] :is(.header-register,.home-action-primary,.section-heading .link-button,.contact-banner>a)::after {
+ animation:none;
+}
+.site[data-page=home] :is(.header-register,.home-action-primary,.section-heading .link-button,.contact-banner>a):hover {
+ filter:brightness(1.08);
+}

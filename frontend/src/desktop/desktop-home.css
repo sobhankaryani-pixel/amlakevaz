@@ -130,3 +130,27 @@
 @media(max-width:1120px) {
  .site.desktop-site[data-page="home"] .header-tools .header-search {display:none}
 }
+
+/* A quiet architectural backdrop behind the copy keeps the headline legible. */
+.desktop-home-hero-copy {
+ position:relative;
+ align-self:stretch;
+ display:flex;
+ flex-direction:column;
+ justify-content:center;
+ isolation:isolate;
+}
+.desktop-home-hero-copy::before {
+ content:"";
+ position:absolute;
+ inset:0;
+ z-index:-1;
+ background:
+  linear-gradient(270deg,#faf5e9 4%,#faf5e9eb 45%,#faf5e9a8),
+  url('/visual/evaz-desktop-villa.webp') 78% center / cover;
+}
+:root[data-theme=dark] .desktop-home-hero-copy::before {
+ background:
+  linear-gradient(270deg,#182b3f 4%,#182b3fed 48%,#182b3fb8),
+  url('/visual/evaz-desktop-villa.webp') 78% center / cover;
+}
