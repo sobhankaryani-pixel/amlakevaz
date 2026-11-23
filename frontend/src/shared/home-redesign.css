@@ -285,3 +285,7 @@
 .site[data-page=home] :is(.header-register,.home-action-primary,.section-heading .link-button,.contact-banner>a):hover {
  filter:brightness(1.08);
 }
+
+.site .brand-link small {color:inherit}
+.site .brand-link .brand-highlight {color:#a57932}
+:root[data-theme=dark] .site .brand-link .brand-highlight {color:#edc575}
