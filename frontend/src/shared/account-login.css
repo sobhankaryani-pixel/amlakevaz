@@ -67,3 +67,51 @@
 .account-login-card .seller-success,.account-login-card .seller-error{margin-bottom:10px;padding:7px 10px;font-size:12px}
 .account-login-card .account-edit-phone:focus-visible,.account-login-card .account-resend:focus-visible{outline:3px solid #d2aa60;outline-offset:2px}
 @media(max-width:360px){.account-login-scene .account-login-card{padding:16px}.account-login-card .account-login-title h1{font-size:23px}.account-login-card .account-verify-row{grid-template-columns:minmax(0,1fr) 76px}}
+
+@media(min-width:901px){
+ .desktop-site .account-login-scene{
+  display:grid;
+  grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);
+  align-items:stretch;
+  width:min(1100px,calc(100% - 48px));
+  min-height:480px;
+  aspect-ratio:auto;
+  margin:clamp(20px,4vh,42px) auto;
+  padding:0;
+  border:1px solid var(--line);
+  border-radius:22px;
+  background:var(--paper);
+  box-shadow:0 15px 40px #11263b20;
+ }
+ .desktop-site .account-login-background{
+  position:relative;
+  grid-column:2;
+  grid-row:1;
+  z-index:auto;
+  min-width:0;
+  overflow:hidden;
+  background:#0b2341;
+ }
+ .desktop-site .account-login-background img{
+  position:absolute;
+  inset:0;
+  object-fit:cover;
+  object-position:center bottom;
+ }
+ .desktop-site .account-login-scene .account-login-card{
+  grid-column:1;
+  grid-row:1;
+  place-self:center;
+  width:min(100%,410px);
+  padding:clamp(22px,3vw,40px);
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  color:var(--ink);
+ }
+ .desktop-site .account-login-card :is(h1,label){color:var(--ink)}
+ .desktop-site .account-login-card .account-login-intro{color:var(--muted)}
+}
