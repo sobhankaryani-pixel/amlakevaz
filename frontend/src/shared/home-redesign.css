@@ -291,7 +291,7 @@
 :root[data-theme=dark] .site .brand-link .brand-highlight {color:#edc575}
 
 /* One finish for home controls. Keep the header's register action gold. */
-.site[data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a,.site-footer button,.mobile-bottom-nav button,.view-mode-link,.page-heading button,.link-button,.seller-submit,.seller-kinds button,.account-login-primary,.map-filters button,.property-actions button,.contact-channels a,.areas-grid button,.search-pagination button) {
+.site[data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a:where(:not(.whatsapp-action)),.site-footer button,.mobile-bottom-nav button,.view-mode-link,.page-heading button,.link-button,.seller-submit,.seller-kinds button,.account-login-primary,.map-filters button,.property-actions button,.contact-channels a:where(:not(.whatsapp-action,.instagram-action)),.areas-grid button,.search-pagination button) {
  --home-blue:linear-gradient(145deg,#246bb8 0%,#125295 45%,#123e78 100%);
  background:var(--home-blue);
  border:1px solid #628fc2;
@@ -299,10 +299,10 @@
  box-shadow:inset 0 1px 0 #ffffff55,0 2px 6px #102d4929;
  transition:filter .18s ease,transform .18s ease;
 }
-.site[data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a,.site-footer button,.mobile-bottom-nav button,.view-mode-link,.page-heading button,.link-button,.seller-submit,.seller-kinds button,.account-login-primary,.map-filters button,.property-actions button,.contact-channels a,.areas-grid button,.search-pagination button):is(:hover,:focus-visible) {
+.site[data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a:where(:not(.whatsapp-action)),.site-footer button,.mobile-bottom-nav button,.view-mode-link,.page-heading button,.link-button,.seller-submit,.seller-kinds button,.account-login-primary,.map-filters button,.property-actions button,.contact-channels a:where(:not(.whatsapp-action,.instagram-action)),.areas-grid button,.search-pagination button):is(:hover,:focus-visible) {
  filter:brightness(1.17);
 }
-.site[data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a,.site-footer button,.mobile-bottom-nav button,.view-mode-link,.page-heading button,.link-button,.seller-submit,.seller-kinds button,.account-login-primary,.map-filters button,.property-actions button,.contact-channels a,.areas-grid button,.search-pagination button):is([aria-current=page],[aria-pressed=true]) {
+.site[data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a:where(:not(.whatsapp-action)),.site-footer button,.mobile-bottom-nav button,.view-mode-link,.page-heading button,.link-button,.seller-submit,.seller-kinds button,.account-login-primary,.map-filters button,.property-actions button,.contact-channels a:where(:not(.whatsapp-action,.instagram-action)),.areas-grid button,.search-pagination button):is([aria-current=page],[aria-pressed=true]) {
  outline:2px solid #8dcaff;
  outline-offset:-3px;
 }
@@ -316,7 +316,7 @@
 .site[data-layout] .market-point-controls button[aria-pressed=true] {background:#2477ed20}
 .site[data-layout] button:disabled {filter:saturate(.4);opacity:.6}
 @media(prefers-reduced-motion:reduce) {
- .site[data-layout] :is(button,.contact-banner>a,.view-mode-link,.page-heading button,.link-button,.seller-submit,.seller-kinds button,.account-login-primary,.map-filters button,.property-actions button,.contact-channels a,.areas-grid button,.search-pagination button) {transition:none}
+ .site[data-layout] :is(button,.contact-banner>a,.view-mode-link,.page-heading button,.link-button,.seller-submit,.seller-kinds button,.account-login-primary,.map-filters button,.property-actions button,.contact-channels a:where(:not(.whatsapp-action,.instagram-action)),.areas-grid button,.search-pagination button) {transition:none}
 }
 
 /* Shared bounds and title treatment for the public site. */
@@ -352,7 +352,7 @@
  border-color:#b58732;
  color:#173550;
 }
-.site[data-layout] :is(.contact-banner,.contact-channels,.site-footer) a.whatsapp-action {
+.site[data-layout] :is(.contact-banner,.contact-channels,.site-footer) a:is(.whatsapp-action,.instagram-action) {
  display:inline-flex;
  justify-content:center;
  align-items:center;
@@ -367,11 +367,17 @@
  font-weight:700;
  text-decoration:none;
 }
-.site[data-layout] a.whatsapp-action img {display:block;width:22px;height:22px;flex:none}
-.site[data-layout] a.whatsapp-action:hover {filter:brightness(1.15)}
-.site[data-layout] a.whatsapp-action::after {display:none}
-.site[data-layout] a.whatsapp-action:focus-visible {outline:2px solid #6edcaa;outline-offset:3px}
+.site[data-layout] a:is(.whatsapp-action,.instagram-action) img {display:block;width:22px;height:22px;flex:none}
+.site[data-layout] a:is(.whatsapp-action,.instagram-action):hover {filter:brightness(1.15)}
+.site[data-layout] a:is(.whatsapp-action,.instagram-action)::after {display:none}
+.site[data-layout] a:is(.whatsapp-action,.instagram-action):focus-visible {outline:2px solid #6edcaa;outline-offset:3px}
 .site[data-layout] :is(.link-button,.seller-submit,.account-login-primary,.property-actions button,.contact-channels a,.map-filters button,.search-pagination button) {
  min-height:44px;
  border-radius:10px;
 }
+
+.site[data-layout] :is(.contact-channels,.site-footer) a.instagram-action {
+ border-color:#f5a3c8;
+ background:linear-gradient(135deg,#5631a5,#9e216d 48%,#af4825);
+}
+.site[data-layout] a.instagram-action:focus-visible {outline-color:#f5a3c8}
