@@ -291,7 +291,7 @@
 :root[data-theme=dark] .site .brand-link .brand-highlight {color:#edc575}
 
 /* One finish for home controls. Keep the header's register action gold. */
-.site[data-page=home][data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a,.site-footer button,.mobile-bottom-nav button,.view-mode-link) {
+.site[data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a,.site-footer button,.mobile-bottom-nav button,.view-mode-link,.page-heading button,.link-button,.seller-submit,.seller-kinds button,.account-login-primary,.map-filters button,.property-actions button,.contact-channels a,.areas-grid button,.search-pagination button) {
  --home-blue:linear-gradient(145deg,#246bb8 0%,#125295 45%,#123e78 100%);
  background:var(--home-blue);
  border:1px solid #628fc2;
@@ -299,22 +299,79 @@
  box-shadow:inset 0 1px 0 #ffffff55,0 2px 6px #102d4929;
  transition:filter .18s ease,transform .18s ease;
 }
-.site[data-page=home][data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a,.site-footer button,.mobile-bottom-nav button,.view-mode-link):is(:hover,:focus-visible) {
+.site[data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a,.site-footer button,.mobile-bottom-nav button,.view-mode-link,.page-heading button,.link-button,.seller-submit,.seller-kinds button,.account-login-primary,.map-filters button,.property-actions button,.contact-channels a,.areas-grid button,.search-pagination button):is(:hover,:focus-visible) {
  filter:brightness(1.17);
 }
-.site[data-page=home][data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a,.site-footer button,.mobile-bottom-nav button,.view-mode-link):is([aria-current=page],[aria-pressed=true]) {
+.site[data-layout] :is(.header-inner button:not(.header-register):not(.brand-link),.featured button,.desktop-home-hero-actions button,.home-actions-row .home-action-primary,.home-actions-row .home-map-close,.home-charts-box button:not(.market-point-controls button),.service-grid button,.contact-banner>a,.site-footer button,.mobile-bottom-nav button,.view-mode-link,.page-heading button,.link-button,.seller-submit,.seller-kinds button,.account-login-primary,.map-filters button,.property-actions button,.contact-channels a,.areas-grid button,.search-pagination button):is([aria-current=page],[aria-pressed=true]) {
  outline:2px solid #8dcaff;
  outline-offset:-3px;
 }
-.site[data-page=home][data-layout] :is(.service-grid button p,.service-grid button .service-arrow,.service-grid button h3,.footer-columns button,.mobile-bottom-nav button span,.mobile-bottom-nav button svg) {color:inherit}
-.site[data-page=home][data-layout] .footer-columns button {padding-inline:9px;border-radius:7px;margin-block:2px}
-.site[data-page=home][data-layout] .mobile-bottom-nav {gap:4px}
-.site[data-page=home][data-layout] .header-inner .theme-toggle {color:white}
-.site[data-page=home][data-layout] .header-inner .theme-toggle-thumb {background:#153963}
-.site[data-page=home][data-layout] .market-ranges button[aria-pressed=true] {background:linear-gradient(145deg,#246bb8,#123e78);color:#fff}
-.site[data-page=home][data-layout] .market-point-controls button {background:transparent;border:0;box-shadow:none}
-.site[data-page=home][data-layout] .market-point-controls button[aria-pressed=true] {background:#2477ed20}
-.site[data-page=home][data-layout] button:disabled {filter:saturate(.4);opacity:.6}
+.site[data-layout] :is(.service-grid button p,.service-grid button .service-arrow,.service-grid button h3,.footer-columns button,.mobile-bottom-nav button span,.mobile-bottom-nav button svg) {color:inherit}
+.site[data-layout] .footer-columns button {padding-inline:9px;border-radius:7px;margin-block:2px}
+.site[data-layout] .mobile-bottom-nav {gap:4px}
+.site[data-layout] .header-inner .theme-toggle {color:white}
+.site[data-layout] .header-inner .theme-toggle-thumb {background:#153963}
+.site[data-layout] .market-ranges button[aria-pressed=true] {background:linear-gradient(145deg,#246bb8,#123e78);color:#fff}
+.site[data-layout] .market-point-controls button {background:transparent;border:0;box-shadow:none}
+.site[data-layout] .market-point-controls button[aria-pressed=true] {background:#2477ed20}
+.site[data-layout] button:disabled {filter:saturate(.4);opacity:.6}
 @media(prefers-reduced-motion:reduce) {
- .site[data-page=home][data-layout] :is(button,.contact-banner>a,.view-mode-link) {transition:none}
+ .site[data-layout] :is(button,.contact-banner>a,.view-mode-link,.page-heading button,.link-button,.seller-submit,.seller-kinds button,.account-login-primary,.map-filters button,.property-actions button,.contact-channels a,.areas-grid button,.search-pagination button) {transition:none}
+}
+
+/* Shared bounds and title treatment for the public site. */
+.site[data-layout] {
+ --site-page-gutter:clamp(16px,3vw,52px);
+ --site-page-width:min(1440px,calc(100% - 2 * var(--site-page-gutter)));
+}
+.site[data-layout]:not([data-page=home]) > :is(.content-section,.map-page,.contact-banner) {
+ width:var(--site-page-width);
+ max-width:none;
+ margin-inline:auto;
+}
+.site[data-layout]:not([data-page=home]) > :is(.content-section,.map-page) {
+ padding:0;
+ margin-block-start:clamp(14px,2.1vh,26px);
+ margin-block-end:24px;
+}
+.site[data-layout] :is(.content-section > .page-heading,.map-page > .map-toolbar,.info-page > article > h1) {
+ box-sizing:border-box;
+ margin:0 0 clamp(12px,2vw,20px);
+ padding:clamp(14px,2.2vw,26px);
+ border:1px solid var(--line);
+ border-radius:14px;
+ background:var(--paper);
+}
+.site[data-layout] :is(.page-heading h1,.map-toolbar h2,.info-page > article > h1,.property-full > h1) {
+ font-size:clamp(21px,2.3vw,32px);
+ line-height:1.5;
+}
+.site[data-layout] :is(.page-heading h1,.map-toolbar h2) {margin-block:0 4px}
+.site[data-layout] .site-header .header-register {
+ background:#f4c253;
+ border-color:#b58732;
+ color:#173550;
+}
+.site[data-layout] :is(.contact-banner,.contact-channels,.site-footer) a.whatsapp-action {
+ display:inline-flex;
+ justify-content:center;
+ align-items:center;
+ gap:8px;
+ min-height:44px;
+ padding:8px 14px;
+ border:1px solid #65c49a;
+ border-radius:10px;
+ background:linear-gradient(145deg,#14764d,#09563a);
+ box-shadow:inset 0 1px 0 #ffffff50;
+ color:#fff;
+ font-weight:700;
+ text-decoration:none;
+}
+.site[data-layout] a.whatsapp-action img {display:block;width:22px;height:22px;flex:none}
+.site[data-layout] a.whatsapp-action:hover {filter:brightness(1.15)}
+.site[data-layout] a.whatsapp-action::after {display:none}
+.site[data-layout] a.whatsapp-action:focus-visible {outline:2px solid #6edcaa;outline-offset:3px}
+.site[data-layout] :is(.link-button,.seller-submit,.account-login-primary,.property-actions button,.contact-channels a,.map-filters button,.search-pagination button) {
+ min-height:44px;
+ border-radius:10px;
 }

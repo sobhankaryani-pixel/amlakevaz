@@ -1,23 +1,23 @@
-.site.desktop-site[data-page="home"] {
+.site.desktop-site {
  --desktop-home-width:1440px;
  --desktop-home-gutter:clamp(20px,3vw,52px);
 }
-.site.desktop-site[data-page="home"] .header-utility-inner,
-.site.desktop-site[data-page="home"] .header-inner {
+.site.desktop-site .header-utility-inner,
+.site.desktop-site .header-inner {
  width:min(100%,calc(var(--desktop-home-width) + 2 * var(--desktop-home-gutter)));
  max-width:none;
  margin-inline:auto;
  padding-inline:var(--desktop-home-gutter);
 }
-.site.desktop-site[data-page="home"] .header-utility-inner {min-height:36px}
-.site.desktop-site[data-page="home"] .header-inner {min-height:72px;padding-block:6px}
-.site.desktop-site[data-page="home"] .brand-link img {
+.site.desktop-site .header-utility-inner {min-height:36px}
+.site.desktop-site .header-inner {min-height:72px;padding-block:6px}
+.site.desktop-site .brand-link img {
  width:clamp(44px,4vw,63px);
  height:clamp(42px,4vw,60px);
  object-fit:contain;
 }
-.site.desktop-site[data-page="home"] .brand-link :is(strong,small) {font-size:clamp(15px,1.45vw,24px)}
-.site.desktop-site[data-page="home"] .nav-links button {
+.site.desktop-site .brand-link :is(strong,small) {font-size:clamp(15px,1.45vw,24px)}
+.site.desktop-site .nav-links button {
  min-height:44px;
  height:44px;
  padding:5px clamp(5px,.65vw,11px);
@@ -25,7 +25,7 @@
  background:transparent;
  box-shadow:none;
 }
-.site.desktop-site[data-page="home"] .nav-links button:is(.selected,:hover,:focus-visible) {
+.site.desktop-site .nav-links button:is(.selected,:hover,:focus-visible) {
  background:var(--soft);
  border-color:var(--line);
  color:var(--ink);
@@ -34,7 +34,8 @@
  position:relative;
  z-index:1;
  display:grid;
- grid-template-columns:minmax(0,.87fr) minmax(0,1.13fr);
+ isolation:isolate;
+ grid-template-columns:minmax(0,1fr);
  grid-template-rows:minmax(clamp(265px,41svh,370px),auto);
  width:min(var(--desktop-home-width),calc(100% - 2 * var(--desktop-home-gutter)));
  margin:clamp(14px,2.1vh,26px) auto 0;
@@ -46,6 +47,7 @@
 }
 .desktop-home-hero-copy {
  align-self:center;
+ width:min(54%,680px);
  padding:clamp(20px,3vw,56px);
  color:#173550;
 }
@@ -91,14 +93,24 @@
 .desktop-home-hero-actions button .header-icon {width:18px;height:18px}
 .desktop-home-hero-actions button:hover {box-shadow:0 3px 12px #17355030}
 .desktop-home-hero-actions button:focus-visible {outline:2px solid #1368ce;outline-offset:3px}
-.desktop-home-hero-media {position:relative;min-width:0;background:#d2b382}
-.desktop-home-hero-media img {
+.desktop-home-hero-media {
  position:absolute;
  inset:0;
+ z-index:-2;
  width:100%;
  height:100%;
  object-fit:cover;
- object-position:35% center;
+ object-position:33% 56%;
+}
+.desktop-home-hero::before {
+ content:"";
+ position:absolute;
+ inset:0;
+ z-index:-1;
+ background:linear-gradient(to left,#fffefaed 0%,#fffefacc 25%,#fffefa6b 44%,transparent 67%);
+}
+:root[data-theme=dark] .desktop-home-hero::before {
+ background:linear-gradient(to left,#14263bf5 0%,#14263bd9 25%,#14263b70 44%,transparent 67%);
 }
 :root[data-theme=dark] .desktop-home-hero {background:#182b3f;border-color:#45617b}
 :root[data-theme=dark] .desktop-home-hero-copy {color:#eff5ff}
@@ -129,28 +141,4 @@
 .site.desktop-site[data-page="home"] > .featured .listing-image {height:clamp(110px,17vh,150px)}
 @media(max-width:1120px) {
  .site.desktop-site[data-page="home"] .header-tools .header-search {display:none}
-}
-
-/* A quiet architectural backdrop behind the copy keeps the headline legible. */
-.desktop-home-hero-copy {
- position:relative;
- align-self:stretch;
- display:flex;
- flex-direction:column;
- justify-content:center;
- isolation:isolate;
-}
-.desktop-home-hero-copy::before {
- content:"";
- position:absolute;
- inset:0;
- z-index:-1;
- background:
-  linear-gradient(270deg,#faf5e9 4%,#faf5e9eb 45%,#faf5e9a8),
-  url('/visual/evaz-desktop-villa.webp') 78% center / cover;
-}
-:root[data-theme=dark] .desktop-home-hero-copy::before {
- background:
-  linear-gradient(270deg,#182b3f 4%,#182b3fed 48%,#182b3fb8),
-  url('/visual/evaz-desktop-villa.webp') 78% center / cover;
 }
