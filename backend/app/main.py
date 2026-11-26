@@ -31,6 +31,8 @@ from .launch import launch,MediaItem,validate_media,limit_request,public_page
 from fastapi import Request
 from starlette.responses import JSONResponse
 
+HOUSE_CONDITIONS = ("نوساز", "کلنگی", "نیمه‌کاره", "چند سال ساخت")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Enable this only when DATABASE_URL points to a real/staging PostgreSQL instance.
@@ -107,7 +109,7 @@ class SellerSubmissionIn(BaseModel):
         area=self.commercial_area_m2 if self.kind=='shop' else self.building_area_m2 if self.kind in ('apartment','mehr','national') else self.area_m2
         if not area:raise ValueError('متراژ را وارد کنید')
         if (self.latitude is None)!=(self.longitude is None):raise ValueError('هر دو مختصات باید با هم وارد شوند')
-        for value,allowed in [(self.usage_type,('مسکونی','تجاری')),(self.house_condition,('نوساز','کلنگی')),(self.mehr_section,('محلی','فرهنگیان')),(self.mehr_level,('بالا','پایین')),(self.national_phase,('1','2','3','4','5')),(self.national_level,('بالا','پایین','نامشخص')),(self.national_stage,NATIONAL_STAGES)]:
+        for value,allowed in [(self.usage_type,('مسکونی','تجاری')),(self.house_condition,HOUSE_CONDITIONS),(self.mehr_section,('محلی','فرهنگیان')),(self.mehr_level,('بالا','پایین')),(self.national_phase,('1','2','3','4','5')),(self.national_level,('بالا','پایین','نامشخص')),(self.national_stage,NATIONAL_STAGES)]:
             if value and value not in allowed:raise ValueError('مشخصات اختیاری معتبر نیست')
         if self.national_block and not self.national_block.isdecimal():raise ValueError('شماره بلوک معتبر نیست')
         return self
@@ -525,7 +527,7 @@ def create_direct_property(payload: DirectPropertyIn, user=Depends(require_roles
                     raise HTTPException(422, "بخش مسکن مهر معتبر نیست")
                 if payload.mehr_level and payload.mehr_level not in ("بالا", "پایین"):
                     raise HTTPException(422, "طبقهٔ مسکن مهر معتبر نیست")
-                if payload.house_condition and payload.house_condition not in ("نوساز", "کلنگی"):
+                if payload.house_condition and payload.house_condition not in HOUSE_CONDITIONS:
                     raise HTTPException(422, "وضعیت ساختمان معتبر نیست")
                 row = conn.execute("""INSERT INTO app.properties
                   (public_code,property_type_id,region_id,general_area,private_address,area_m2,
@@ -585,7 +587,7 @@ def update_direct_property(public_code: str, payload: DirectPropertyIn,
         raise HTTPException(422, 'بخش مسکن مهر معتبر نیست')
     if payload.mehr_level and payload.mehr_level not in ('بالا','پایین'):
         raise HTTPException(422, 'طبقهٔ مسکن مهر معتبر نیست')
-    if payload.house_condition and payload.house_condition not in ('نوساز','کلنگی'):
+    if payload.house_condition and payload.house_condition not in HOUSE_CONDITIONS:
         raise HTTPException(422, 'وضعیت ساختمان معتبر نیست')
     with pool.connection() as conn:
         with conn.transaction():

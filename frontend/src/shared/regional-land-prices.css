@@ -43,3 +43,43 @@
 .regional-price-tables table {table-layout:fixed}
 .regional-price-tables :is(th,td) {overflow-wrap:anywhere}
 .regional-price-tables td:first-of-type strong {font-variant-numeric:tabular-nums}
+
+.site[data-layout] :is(.home-charts-box,.standalone):has(> .market-refined) > :is(.page-heading,.section-heading),
+.site[data-layout] .regional-prices > header {
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ gap:3px;
+ padding:clamp(12px,2vw,20px) 14px;
+ border-radius:13px;
+ background:#173550;
+ color:#fff;
+ text-align:center;
+}
+.site[data-layout] .home-charts-box:has(> .market-refined) > .section-heading > div {
+ width:100%;
+ text-align:center;
+}
+.site[data-layout] :is(.home-charts-box,.standalone):has(> .market-refined) > :is(.page-heading,.section-heading) :is(h1,h2),
+.site[data-layout] .regional-prices > header h2 {
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:clamp(6px,2vw,22px);
+ color:#fff;
+ font-size:clamp(18px,2.3vw,30px);
+ line-height:1.6;
+ margin:0;
+}
+.site[data-layout] :is(.home-charts-box,.standalone):has(> .market-refined) > :is(.page-heading,.section-heading) :is(h1,h2)::before,
+.site[data-layout] :is(.home-charts-box,.standalone):has(> .market-refined) > :is(.page-heading,.section-heading) :is(h1,h2)::after,
+.site[data-layout] .regional-prices > header h2::before,
+.site[data-layout] .regional-prices > header h2::after {
+ content:"";
+ flex:0 1 clamp(10px,8vw,110px);
+ min-width:8px;
+ height:1px;
+ background:#a0b9d1;
+}
+.site[data-layout] .regional-prices > header p {color:#e0ebf7}
