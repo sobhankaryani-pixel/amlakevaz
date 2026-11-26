@@ -1,0 +1,34 @@
+.registered-properties .table-wrap {
+ margin-block:14px;
+ border:1px solid #c8d6e4;
+ border-radius:12px;
+}
+.registered-properties .property-list-table {
+ width:100%;
+ border-collapse:separate;
+ border-spacing:0;
+ text-align:right;
+}
+.registered-properties .property-list-table th {
+ background:#173550;
+ color:#fff;
+ white-space:nowrap;
+}
+.registered-properties .property-list-table :is(th,td) {padding:11px 12px;vertical-align:middle}
+.registered-properties .property-list-table tbody tr:nth-child(even) {background:#dce9f530}
+.registered-properties .property-list-table td small {display:block;margin-top:3px;font-size:.8em}
+.registered-properties :is(.property-list-code,.property-location-set,.property-location-missing) {
+ display:inline-block;
+ border-radius:7px;
+ padding:3px 7px;
+ font-size:.86em;
+ white-space:nowrap;
+}
+.property-list-code {background:#e0ebf7;color:#173550}
+.property-location-set {background:#e2f5e9;color:#185436}
+.property-location-missing {background:#fff1d6;color:#704600}
+@media(max-width:700px) {
+ .registered-properties .property-list-table td {
+  padding:7px 10px;
+ }
+}

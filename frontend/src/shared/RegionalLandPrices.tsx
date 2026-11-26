@@ -19,7 +19,7 @@ export function rankRegionalPrices(items:Estimate[]){
   const ordered=estimates.filter(item=>item.period&&pointMonth(item.period)>0&&Number(item.value_toman)>0)
    .sort((a,b)=>b.period!.localeCompare(a.period!));
   const latest=ordered[0];
-  const baseline=latest&&ordered.find(item=>pointMonth(latest.period!)-pointMonth(item.period!)===3);
+  const baseline=latest&&ordered.find(item=>pointMonth(latest.period!)-pointMonth(item.period!)===2);
   const points=latest&&baseline?[baseline,latest].map(item=>({period:item.period!,value_toman:Number(item.value_toman),count:null})):[];
   const growth=baseline?(Number(latest.value_toman)/Number(baseline.value_toman)-1)*100:null;
   return {name:estimates[0].name,slug:estimates[0].slug,latest,growth,change:windowChange(points)};
@@ -59,6 +59,6 @@ export default function RegionalLandPrices({segment}:{segment:Segment}){
      </span></td>
     </tr>)}</tbody>
    </table>)}</div>}
-  <p className="regional-price-note">رشد از مقایسهٔ آخرین قیمت هر منطقه با قیمت دقیقاً سه ماه قبل محاسبه می‌شود.</p>
+  <p className="regional-price-note">رشد از مقایسهٔ آخرین قیمت هر منطقه با قیمت ابتدای بازهٔ سه‌ماهه محاسبه می‌شود.</p>
  </section>;
 }
