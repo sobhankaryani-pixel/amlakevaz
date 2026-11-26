@@ -1,0 +1,14 @@
+.site .change-property-sample {
+ display:inline-flex;
+ align-items:center;
+ min-height:44px;
+ margin-block:8px 0;
+ padding:7px 14px;
+ border:1px solid #628fc2;
+ border-radius:10px;
+ background:linear-gradient(145deg,#246bb8,#123e78);
+ color:white;
+ font-weight:700;
+}
+.site .change-property-sample:hover {filter:brightness(1.15)}
+.site .change-property-sample:focus-visible {outline:2px solid #628fc2;outline-offset:3px}
