@@ -22,13 +22,13 @@ jobs:
           persist-credentials: false
       - name: Apply migration 0022
         env:
-          PGDATABASE: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           PGCONNECT_TIMEOUT: '15'
         run: |
-          if [ -z "$PGDATABASE" ]; then
+          if [ -z "$DATABASE_URL" ]; then
             echo 'The DATABASE_URL repository secret is missing.' >&2
             exit 1
           fi
-          psql -X -v ON_ERROR_STOP=1 \
+          psql --dbname="$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
             -c "SET lock_timeout = '10s'; SET statement_timeout = '60s';" \
             -f database/migrations/0022_villa_house_conditions.sql
