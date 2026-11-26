@@ -1,3 +1,4 @@
+from typing import Literal
 import asyncio
 from . import owner_notifications
 from .manager_notifications import router as manager_notifications_router
@@ -356,6 +357,22 @@ def public_price_series(region: str = "all"):
             if row['segment'] in series:
                 series[row['segment']].append({'period': row['period'], 'value_toman': row['value_toman'], 'count': None,'updated_at':row['updated_at']})
     return {'regions': [dict(r) for r in regions], 'source': 'manual', 'label': 'قیمت اعلامی خودمونی', 'series': series}
+
+@public.get("/regional-land-prices")
+def public_regional_land_prices(segment: Literal["land_residential", "land_commercial"] = "land_residential"):
+    with pool.connection() as conn:
+        rows = conn.execute("""
+            SELECT r.name, r.slug, price.period, price.value_toman
+            FROM app.regions r
+            LEFT JOIN LATERAL (
+                SELECT period, value_toman FROM app.monthly_price_estimates
+                WHERE region_key = r.slug AND segment = %s AND value_toman > 0
+                ORDER BY period DESC LIMIT 4
+            ) price ON true
+            WHERE r.is_public = true AND left(r.slug, 2) = 'R-'
+            ORDER BY r.slug, price.period DESC
+        """, (segment,)).fetchall()
+    return {"items": [dict(row) for row in rows]}
 
 @public.get("/transactions")
 def public_transactions():

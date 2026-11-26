@@ -1,0 +1,45 @@
+.site .market-refined .market-card-body {
+ grid-template-columns:minmax(0,1fr);
+ gap:8px;
+}
+.site .market-refined .market-graph {height:clamp(64px,8vw,110px)}
+.site .market-refined .market-card {overflow:hidden}
+.regional-prices {margin-block:24px 12px;border-top:1px solid var(--line);padding-top:16px}
+.regional-prices > header {text-align:center;margin-bottom:15px}
+.regional-prices h2 {font-size:clamp(19px,2.35vw,30px);margin:0;color:var(--ink)}
+.regional-prices p {margin:3px 0;color:var(--muted);font-size:13px;line-height:1.8}
+.regional-price-tables {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.regional-price-tables table {width:100%;border-spacing:0;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:var(--paper);text-align:right;font-size:clamp(12px,1.12vw,15px)}
+.regional-price-tables table:only-child {grid-column:1/-1}
+.regional-price-tables thead {background:#173550;color:white}
+.regional-price-tables :is(th,td) {padding:10px clamp(6px,1.15vw,15px);vertical-align:middle}
+.regional-price-tables tbody tr:nth-child(even) {background:var(--soft)}
+.regional-price-tables tbody tr+tr > * {border-top:1px solid var(--line)}
+.regional-price-tables small,.regional-price-tables time {font-size:.8em;color:var(--muted)}
+.regional-price-tables time {display:block}
+.regional-growth {display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:7px;background:#e9eef3;color:#35475a;font-weight:700;white-space:nowrap}
+.regional-growth.up {background:#dff4df;color:#19602d}
+.regional-growth.down {background:#f8e2de;color:#972d26}
+.regional-price-note {padding-top:8px}
+@media(max-width:900px) {
+ .regional-price-tables {grid-template-columns:minmax(0,1fr);gap:0}
+ .regional-price-tables table+table {border-top:0;border-radius:0 0 13px 13px}
+ .regional-price-tables table:has(+table) {border-radius:13px 13px 0 0}
+ .regional-price-tables table+table thead {position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden}
+}
+.site :is(.home-charts-box,.standalone):has(> .market-refined) > :is(.page-heading,.section-heading) {
+ display:flex;
+ justify-content:center;
+ text-align:center;
+ padding:12px 16px;
+ border-radius:13px;
+ background:#173550;
+ color:white;
+}
+.site :is(.home-charts-box,.standalone):has(> .market-refined) > :is(.page-heading,.section-heading) :is(h1,h2,.section-kicker) {
+ color:white;
+ margin-block:2px;
+}
+.regional-price-tables table {table-layout:fixed}
+.regional-price-tables :is(th,td) {overflow-wrap:anywhere}
+.regional-price-tables td:first-of-type strong {font-variant-numeric:tabular-nums}
