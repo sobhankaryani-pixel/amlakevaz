@@ -1,0 +1,38 @@
+name: Apply property sample photo migration
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - database/migrations/0023_property_sample_photo.sql
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evazmelk-property-sample-photo-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    container: postgres:18-bookworm
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Apply migration 0023
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PGCONNECT_TIMEOUT: '15'
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo 'The DATABASE_URL repository secret is missing.' >&2
+            exit 1
+          fi
+          psql --dbname="$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+            -c "SET lock_timeout = '10s'; SET statement_timeout = '60s';" \
+            -f database/migrations/0023_property_sample_photo.sql

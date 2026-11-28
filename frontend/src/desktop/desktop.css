@@ -139,15 +139,16 @@
  .desktop-site .brand-link>span{gap:clamp(5px,.5vw,10px);white-space:nowrap}
  .desktop-site .brand-link strong,.desktop-site .brand-link small{font-size:clamp(18px,1.85vw,36px);white-space:nowrap}
  .desktop-site .nav-links{grid-column:auto;position:static;display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:center;gap:clamp(3px,.4vw,8px);order:0;flex-basis:auto;min-width:0;padding:0;border:0;background:transparent;box-shadow:none}
- .desktop-site .nav-links button{display:flex;flex:0 1 auto;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:52px;height:clamp(52px,3.45vw,64px);padding:6px clamp(4px,.6vw,11px);border:1px solid #d4dfed;border-radius:12px;background:#f0f4f9;color:#17385c;box-shadow:0 2px 4px #17385c05;font-size:clamp(10px,.85vw,14px);font-weight:700;line-height:1.6;white-space:nowrap}
- .desktop-site .nav-links button .header-icon{width:clamp(17px,1.2vw,22px);height:clamp(17px,1.2vw,22px)}
- .desktop-site .nav-links button.selected,.desktop-site .nav-links button:hover{background:#103c76;color:#fff;border-color:#103c76;border-radius:12px;box-shadow:0 4px 12px #123b7720}
  .desktop-site .header-tools{grid-column:auto;display:flex;flex-wrap:nowrap;gap:clamp(4px,.5vw,10px);align-items:center;justify-content:flex-end;justify-self:end;min-width:0;margin:0;margin-inline-start:clamp(4px,.4vw,8px);padding:0;padding-inline-start:clamp(10px,1vw,20px);border-inline-start:1px solid #dbe2eb}
- .desktop-site .header-account,.desktop-site .header-search{height:44px;min-height:44px;padding:8px clamp(5px,.65vw,12px);gap:clamp(4px,.4vw,7px);border-radius:11px;font-size:clamp(11px,.8vw,14px);white-space:nowrap;font-weight:700}
+ .desktop-site :is(.nav-links button,.header-account,.header-search){
+  display:inline-flex;flex-direction:row;align-items:center;justify-content:center;
+  height:44px;min-height:44px;padding:8px clamp(5px,.65vw,12px);gap:clamp(4px,.4vw,7px);
+  border-radius:11px;font-size:clamp(11px,.8vw,14px);white-space:nowrap;font-weight:700;line-height:1.6;
+ }
  .desktop-site .header-account{background:#fff;border:1px solid #214f89;color:#183b68}
  .desktop-site .header-search{background:#e8f1ff;border-color:#b5cceb;color:#173e70}
  .desktop-site .header-register{height:50px;min-height:50px;min-width:0;padding:9px clamp(7px,.8vw,15px);gap:5px;border-radius:12px;font-size:clamp(12px,1vw,17px);white-space:nowrap}
- .desktop-site .header-tools .header-icon{width:clamp(16px,1.1vw,21px);height:clamp(16px,1.1vw,21px)}
+ .desktop-site :is(.nav-links,.header-tools) .header-icon{width:clamp(16px,1.1vw,21px);height:clamp(16px,1.1vw,21px);flex:none}
  .desktop-site .theme-toggle{width:58px;min-width:58px;height:36px;padding:6px;gap:6px;border-radius:12px}
  .desktop-site .theme-toggle .header-icon{width:16px;height:16px}
  .desktop-site .theme-toggle-thumb{width:24px;height:26px;top:4px;inset-inline-start:4px;border-radius:8px}
@@ -159,17 +160,15 @@
  .desktop-site .brand-link strong,.desktop-site .brand-link small{font-size:16px}
  .desktop-site .brand-link img{width:48px;height:46px}
  .desktop-site .nav-links{gap:3px}
- .desktop-site .nav-links button{font-size:10px;padding-left:4px;padding-right:4px}
  .desktop-site .header-tools{gap:4px;margin-inline-start:4px;padding-inline-start:10px}
- .desktop-site .header-account,.desktop-site .header-search{font-size:11px;padding-left:5px;padding-right:5px}
- .desktop-site .header-tools .header-icon{width:15px;height:15px}
+ .desktop-site :is(.nav-links button,.header-account,.header-search){font-size:11px;padding-inline:5px}
+ .desktop-site :is(.nav-links,.header-tools) .header-icon{width:15px;height:15px}
  .desktop-site .theme-toggle{width:52px;min-width:52px;padding:5px}
  .desktop-site .theme-toggle .header-icon{width:14px;height:14px}
  .desktop-site .theme-toggle-thumb{width:22px}
  .desktop-site .theme-toggle[aria-checked=true] .theme-toggle-thumb{transform:translateX(-20px)}
 }
 :root[data-theme=dark] .desktop-site .nav-links button{background:#23354b;border-color:#405571;color:#dbe7f6}
-:root[data-theme=dark] .desktop-site .nav-links button.selected,:root[data-theme=dark] .desktop-site .nav-links button:hover{background:#365d91;border-color:#7498c4;color:#fff}
 :root[data-theme=dark] .desktop-site .header-account{background:#182c44;color:#eef5ff;border-color:#8da8c8}
 :root[data-theme=dark] .desktop-site .header-search{background:#2a4360;color:#edf5ff;border-color:#526f91}
 :root[data-theme=dark] .desktop-site .header-tools{border-color:#41536a}

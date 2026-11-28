@@ -1,5 +1,7 @@
 from typing import Literal
 import asyncio
+from hashlib import sha256
+from unicodedata import normalize
 from . import owner_notifications
 from .manager_notifications import router as manager_notifications_router
 from .submission_tracking import ensure_tracking
@@ -18,7 +20,7 @@ from .admin_accounts import admin_accounts
 from .media_cleanup import media_cleanup
 from .property_codes import property_codes,allocate_code,creation_code,finish_reservation
 from uuid import UUID
-from psycopg.errors import CheckViolation
+from psycopg.errors import CheckViolation, UndefinedColumn
 from .price_series import SEGMENTS
 from .seller_auth import seller,require_seller,normalize_phone
 from .crm import crm
@@ -27,7 +29,7 @@ from .thumbnails import router as thumbnails_router
 from .availability import router as availability_router
 from .private_media import router as private_media_router
 from .inquiries import router as inquiry_router
-from .launch import launch,MediaItem,validate_media,limit_request,public_page
+from .launch import launch,MediaItem,validate_media,limit_request,public_page,SAMPLE_LAND_FRONTS_SQL
 from fastapi import Request
 from starlette.responses import JSONResponse
 
@@ -405,6 +407,36 @@ def admin_reference(user=Depends(require_roles("owner","admin","data_entry","ana
         regions = conn.execute("SELECT id,name,slug FROM app.regions ORDER BY name").fetchall()
     return {"property_types": [dict(r) for r in types], "regions": [dict(r) for r in regions]}
 
+class RegionIn(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+
+
+def _region_name_key(name: str) -> str:
+    folded = normalize("NFKC", name).translate(str.maketrans({"ي": "ی", "ك": "ک", "\u200c": " "}))
+    return " ".join(folded.split()).casefold()
+
+
+@admin.post("/regions", status_code=201)
+def create_region(payload: RegionIn, user=Depends(require_roles("owner", "admin"))):
+    name = " ".join(payload.name.split())
+    key = _region_name_key(name)
+    if not key or any(ord(char) < 32 for char in name):
+        raise HTTPException(400, "نام معتبر منطقه را وارد کنید.")
+    slug = "R-" + sha256(key.encode()).hexdigest()[:20]
+    with pool.connection() as conn:
+        existing = conn.execute("SELECT name FROM app.regions").fetchall()
+        if any(_region_name_key(region["name"]) == key for region in existing):
+            raise HTTPException(409, "این منطقه قبلاً ثبت شده است.")
+        row = conn.execute("""
+            INSERT INTO app.regions (name, slug, is_public) VALUES (%s, %s, true)
+            ON CONFLICT (slug) DO NOTHING RETURNING id, name, slug
+        """, (name, slug)).fetchone()
+        if row is None:
+            raise HTTPException(409, "این منطقه قبلاً ثبت شده است.")
+        conn.commit()
+    return dict(row)
+
+
 @admin.post("/listings")
 def create_listing(payload: ListingIn, user=Depends(require_roles("owner","admin","data_entry"))):
     with pool.connection() as conn:
@@ -757,6 +789,32 @@ def save_price_range(payload: PriceRangeIn, user=Depends(require_roles("owner","
         conn.commit()
     return {"id":str(row['id'])}
 
+@admin.post("/properties/{public_code}/sample-photo")
+def advance_property_sample(public_code: str, user=Depends(require_roles("owner", "admin", "data_entry"))):
+    try:
+        with pool.connection() as conn:
+            row = conn.execute("""
+                UPDATE app.properties p
+                SET sample_photo_index = mod(sample_photo_index + 1, 60)
+                FROM app.property_types t
+                WHERE p.property_type_id = t.id AND p.public_code = %s
+                  AND t.code IN ('raw_land','land','residential_land','commercial_land',
+                                 'villa_house','villa','house','apartment','mehr_housing','urban_garden')
+                  AND NULLIF(p.cover_photo_url, '') IS NULL
+                  AND NOT EXISTS (
+                     SELECT 1 FROM jsonb_array_elements(COALESCE(p.media, '[]'::jsonb)) photo
+                     WHERE photo->>'kind' = 'image'
+                  )
+                RETURNING p.sample_photo_index
+            """, (public_code,)).fetchone()
+            if row is None:
+                raise HTTPException(409, "تغییر تصویر نمونه برای این ملک در دسترس نیست.")
+            conn.commit()
+    except UndefinedColumn as exc:
+        raise HTTPException(503, "به‌روزرسانی پایگاه دادهٔ تصویر نمونه هنوز انجام نشده است.") from exc
+    return dict(row)
+
+
 @admin.get("/properties/direct")
 def list_direct_properties(offset:int=Query(default=0,ge=0,le=2000000000),limit:int=Query(default=50,ge=1,le=100),code:str=Query(default='',max_length=80),user=Depends(require_roles("owner","admin","data_entry","analyst","editor","viewer"))):
     code=code.translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩','01234567890123456789')).strip()
@@ -769,6 +827,8 @@ def list_direct_properties(offset:int=Query(default=0,ge=0,le=2000000000),limit:
           p.mehr_block,p.floor AS mehr_floor,p.mehr_unit,p.national_phase,p.national_block,p.national_level,p.national_stage,
           p.national_notes,p.build_year,p.bedrooms,p.land_length_m,p.land_width_m,p.mehr_section,
           p.mehr_level,p.house_condition,p.floor_count,p.cover_photo_url,p.media,p.updated_at,p.latitude,p.longitude,
+          COALESCE((to_jsonb(p)->>'sample_photo_index')::integer, 0) AS sample_photo_index,
+          """ + SAMPLE_LAND_FRONTS_SQL + """ AS sample_land_fronts,
           (SELECT max(a.created_at) FROM app.audit_logs a WHERE a.entity_type='property' AND a.entity_id=p.id AND a.action='availability_checked') AS availability_checked_at,
           t.name AS property_type,t.code AS property_type_code,r.name AS region,
           l.asking_price_toman,s.sale_date,s.sale_price_toman

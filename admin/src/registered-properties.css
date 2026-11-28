@@ -32,3 +32,17 @@
   padding:7px 10px;
  }
 }
+
+.location-edit-heading { scroll-margin-top: 1rem; }
+
+.property-sample-admin {
+  display: grid;
+  gap: .35rem;
+}
+.property-sample-admin img {
+  width: 100%;
+  max-width: 11rem;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: .4rem;
+}

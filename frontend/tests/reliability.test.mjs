@@ -5,12 +5,12 @@ test('recovery, real links, account connectivity and mobile photo navigation',as
  const root=dirname(fileURLToPath(new URL('../package.json',import.meta.url))),folder=await mkdtemp(join(root,'.qa-reliability-'));const saved=new Map();let dom,instance;
  const put=(name,value)=>{saved.set(name,Object.getOwnPropertyDescriptor(globalThis,name));Object.defineProperty(globalThis,name,{value,configurable:true,writable:true})};
  try{
-  await writeFile(join(folder,'entry.tsx'),`export {ListingCard} from '../src/shared/propertyUI';export {default as Boundary} from '../src/shared/ErrorBoundary';export {default as Viewer} from '../src/shared/PhotoViewer';export {default as Gate} from '../src/shared/SessionGate';export {useSiteState} from '../src/shared/useSiteState';export {act,createElement,useState} from 'react';export {createRoot} from 'react-dom/client';`);
+  await writeFile(join(folder,'entry.tsx'),`export {PropertyContent} from '../src/shared/PropertyPage';export {ListingCard} from '../src/shared/propertyUI';export {default as Boundary} from '../src/shared/ErrorBoundary';export {default as Viewer} from '../src/shared/PhotoViewer';export {default as Gate} from '../src/shared/SessionGate';export {useSiteState} from '../src/shared/useSiteState';export {act,createElement,useState} from 'react';export {createRoot} from 'react-dom/client';`);
   await build({root,configFile:false,plugins:[react()],logLevel:'silent',build:{lib:{entry:join(folder,'entry.tsx'),formats:['es'],fileName:()=> 'test.mjs'},outDir:folder,emptyOutDir:false,rollupOptions:{external:['react','react/jsx-runtime','react-dom/client']}}});
   process.env.NODE_ENV='test';dom=new JSDOM('<div id="root"></div>',{url:'https://evazmelk.ir/account',pretendToBeVisual:true});
   for(const key of ['window','document','HTMLElement','Element','Event','CustomEvent','location','navigator','localStorage','sessionStorage'])put(key,dom.window[key]);put('IS_REACT_ACT_ENVIRONMENT',true);window.scrollTo=()=>{};
   Object.assign(window.HTMLDialogElement.prototype,{showModal(){this.open=true},close(){this.open=false}});
-  const {ListingCard,Boundary,Viewer,Gate,useSiteState,act,createElement:h,useState,createRoot}=await import(pathToFileURL(join(folder,'test.mjs')));
+  const {PropertyContent,ListingCard,Boundary,Viewer,Gate,useSiteState,act,createElement:h,useState,createRoot}=await import(pathToFileURL(join(folder,'test.mjs')));
   const unmount=async()=>{if(instance){await act(async()=>instance.unmount());instance=null}};
   const mount=async node=>{await unmount();instance=createRoot(document.querySelector('#root'));await act(async()=>instance.render(node))};
   const click=async text=>{const button=[...document.querySelectorAll('button')].find(x=>x.textContent===text);assert.ok(button,text);await act(async()=>button.click())};
@@ -19,6 +19,20 @@ test('recovery, real links, account connectivity and mobile photo navigation',as
    const link=document.querySelector('a.listing-open');assert.equal(link.getAttribute('href'),'/properties/A%2F1');
    const plain=new window.MouseEvent('click',{button:0,bubbles:true,cancelable:true});link.dispatchEvent(plain);assert.equal(opens,1);assert.equal(plain.defaultPrevented,true);
    const modified=new window.MouseEvent('click',{button:0,ctrlKey:true,bubbles:true,cancelable:true});link.addEventListener('click',event=>{assert.equal(event.defaultPrevented,false);event.preventDefault()},{once:true});link.dispatchEvent(modified);assert.equal(opens,1);
+  });
+  await t.test('public detail previews the selected sample or real photo without a change control',async()=>{
+   put('fetch',async()=>new Response('{}'));
+   const land={public_code:'40',property_type:'زمین',property_code:'raw_land',sample_land_fronts:2,asking_price_toman:1820000000};
+   await mount(h(PropertyContent,{item:land}));
+   assert.match(document.querySelector('.property-sample-detail img').src,/land-corner-1\.webp$/);
+   assert.doesNotMatch(document.body.textContent,/تغییر عکس نمونه/);
+   await mount(h(PropertyContent,{item:{...land,sample_photo_index:1}}));
+   assert.match(document.querySelector('.property-sample-detail img').src,/land-corner-2\.webp$/);
+   await mount(h(PropertyContent,{item:{...land,cover_photo_url:'https://example.invalid/real.webp'}}));
+   assert.match(document.querySelector('.property-gallery .property-main-photo').src,/real\.webp$/);
+   assert.equal(document.querySelector('.property-sample-detail'),null);
+   assert.equal(document.querySelector('.property-thumbnails'),null);
+   assert.equal(document.querySelector('.photo-viewer'),null);
   });
   await t.test('error boundary renders recovery controls without exposing internal error text',async()=>{
    const before=console.error;console.error=()=>{};try{await mount(h(Boundary,null,h(()=>{throw Error('private-internal-test')})));assert.match(document.body.textContent,/تلاش مجدد/);assert.ok(!document.body.textContent.includes('private-internal-test'));assert.ok(document.querySelector('a[href="tel:09212745755"]'))}finally{console.error=before}

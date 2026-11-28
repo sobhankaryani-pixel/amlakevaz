@@ -17,19 +17,6 @@
  object-fit:contain;
 }
 .site.desktop-site .brand-link :is(strong,small) {font-size:clamp(15px,1.45vw,24px)}
-.site.desktop-site .nav-links button {
- min-height:44px;
- height:44px;
- padding:5px clamp(5px,.65vw,11px);
- border-color:transparent;
- background:transparent;
- box-shadow:none;
-}
-.site.desktop-site .nav-links button:is(.selected,:hover,:focus-visible) {
- background:var(--soft);
- border-color:var(--line);
- color:var(--ink);
-}
 .desktop-home-hero {
  position:relative;
  z-index:1;

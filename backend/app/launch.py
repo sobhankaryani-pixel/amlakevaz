@@ -206,18 +206,20 @@ def test_media_storage(request:Request,user=manager):
     if error:raise error
     return {'ok':True,'message':'اتصال آروان تأیید شد؛ نوشتن، خواندن و حذف فایل آزمایشی موفق بود.'}
 
+# Expose the inferred frontage count without adding listing notes to card responses.
+SAMPLE_LAND_FRONTS_SQL = """CASE
+ WHEN p.public_notes ~ 'سه[[:space:]‌-]*بر' THEN 3
+ WHEN p.public_notes ~ 'دو[[:space:]‌-]*(بر|کله)' THEN 2
+ ELSE 1 END"""
+
 # Deliberately excludes private_address, seller phones, internal notes and exact unit identifiers.
 PUBLIC_SELECT='''SELECT p.public_code,t.code AS property_code,t.name AS property_type,
  r.name AS region,r.slug AS region_key,p.general_area AS neighborhood,p.area_m2,p.building_area_m2,
  p.commercial_area_m2,p.bedrooms,p.mehr_section,p.mehr_level,p.usage_type,p.house_condition,
  p.floor_count,p.national_phase,p.national_block,p.national_level,p.national_stage,
- CASE
-   WHEN p.public_notes ~ 'دو[[:space:]‌-]*کله' THEN 'through'
-   WHEN p.public_notes ~ 'دو[[:space:]‌-]*بر' THEN 'corner'
-   WHEN p.public_notes ~ 'سه[[:space:]‌-]*بر' THEN 'other'
-   ELSE 'single'
- END AS land_frontage,
  p.latitude,p.longitude,p.cover_photo_url,p.media,p.public_notes,p.build_year,p.street_width,
+ COALESCE((to_jsonb(p)->>'sample_photo_index')::integer, 0) AS sample_photo_index,
+ ''' + SAMPLE_LAND_FRONTS_SQL + ''' AS sample_land_fronts,
  p.street_frontage_m,p.floor,p.land_length_m,p.land_width_m,p.registration_month,p.updated_at,
  l.asking_price_toman,l.published_at,
  (SELECT max(a.created_at) FROM app.audit_logs a WHERE a.entity_type='property' AND a.entity_id=p.id AND a.action='availability_checked') AS availability_checked_at
@@ -341,7 +343,7 @@ def operations(user=manager):
         blocked=conn.execute('SELECT count(*) AS count FROM app.request_limits WHERE expires_at>now() AND hits>10').fetchone()['count']
     return {'backups':[dict(r) for r in backups],'errors':[dict(r) for r in errors],'media_directory_configured':bool(os.getenv('MEDIA_DIR')),'media_storage':media_storage.mode(),'media_storage_configured':media_storage.configured(),'recent_busy_limit_buckets':blocked}
 
-CARD_COLUMNS='public_code,property_code,property_type,region,region_key,neighborhood,area_m2,building_area_m2,commercial_area_m2,bedrooms,mehr_section,mehr_level,usage_type,land_frontage,house_condition,floor_count,national_phase,national_block,national_level,national_stage,latitude,longitude,cover_photo_url,asking_price_toman,published_at'
+CARD_COLUMNS='public_code,property_code,property_type,region,region_key,neighborhood,area_m2,building_area_m2,commercial_area_m2,bedrooms,mehr_section,mehr_level,usage_type,house_condition,floor_count,national_phase,national_block,national_level,national_stage,latitude,longitude,cover_photo_url,sample_photo_index,sample_land_fronts,asking_price_toman,published_at'
 
 def public_page(where,params,offset,limit,order='published_at DESC NULLS LAST,public_code',columns=CARD_COLUMNS):
     # All SQL fragments are internal constants; visitor values stay bound parameters.

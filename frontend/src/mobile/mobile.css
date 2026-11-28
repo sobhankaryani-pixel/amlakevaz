@@ -387,8 +387,8 @@
  .mobile-site .header-account .header-icon,.mobile-site .header-search .header-icon,.mobile-site .header-register .header-icon{width:21px;height:21px}
  .mobile-site .menu-switch{height:63px}
  .mobile-site .nav-links{gap:7px}
- .mobile-site .nav-links button{display:flex;align-items:center;gap:12px;min-height:49px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink)}
- .mobile-site .nav-links button.selected{background:#103c76;color:white;border-color:#103c76}
+ .mobile-site .nav-links button{display:inline-flex;align-items:center;gap:8px;min-height:52px;padding:8px 14px;border:1px solid var(--line);border-radius:11px;font-size:13px;line-height:1.6;font-weight:700}
+ .mobile-site .nav-links button .header-icon{width:20px;height:20px}
 }
 @media(max-width:380px){
  .mobile-site .brand-link img{width:48px;height:48px}
